@@ -394,7 +394,7 @@ export default function Home() {
 
   // 통계 계산
   const totalItems = stockItems.length
-  const totalValue = stockItems.reduce((sum, item) => sum + item.total_value, 0)
+  const totalValue = stockItems.reduce((sum, item) => sum + item.total_amount, 0)
   const lowStockItems = stockItems.filter(item => item.stock_status === 'low_stock').length
 
   const handleStockInList = () => {
@@ -579,7 +579,7 @@ export default function Home() {
                   {filteredStockItems.length > 0 && (
                     <div className="mt-2 text-xs text-blue-600">
                       총 수량: {filteredStockItems.reduce((sum, item) => sum + (item.current_quantity || 0), 0).toLocaleString()}개 | 
-                      총 금액: {formatCurrency(filteredStockItems.reduce((sum, item) => sum + (item.total_value || 0), 0))}
+                      총 금액: {formatCurrency(filteredStockItems.reduce((sum, item) => sum + (item.total_amount || 0), 0))}
                     </div>
                   )}
                 </div>
@@ -602,34 +602,34 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
               
-              {/* 좌측: 입고, 출고, 대여 버튼 */}
+              {/* 좌측: 입고, 출고, 이력관리 버튼 */}
               <div className="flex items-center space-x-2">
-                           <Button
-             size="sm"
-             onClick={() => setStockInModalOpen(true)}
-             disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
-             className={`px-4 py-2 text-white ${
-               selectedItems.size > 0 
-                 ? 'bg-gray-400 cursor-not-allowed' 
-                 : 'bg-green-600 hover:bg-green-700'
-             }`}
-           >
-             <ArrowDown className="h-4 w-4 mr-1" />
-             입고
-           </Button>
-           <Button
-             size="sm"
-             onClick={() => setCsvUploadModalOpen(true)}
-             disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
-             className={`px-4 py-2 text-white ${
-               selectedItems.size > 0 
-                 ? 'bg-gray-400 cursor-not-allowed' 
-                 : 'bg-blue-600 hover:bg-blue-700'
-             }`}
-           >
-             <Upload className="h-4 w-4 mr-1" />
-             CSV 업로드
-           </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setStockInModalOpen(true)}
+                  disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
+                  className={`px-4 py-2 text-white ${
+                    selectedItems.size > 0 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                >
+                  <ArrowDown className="h-4 w-4 mr-1" />
+                  입고
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setCsvUploadModalOpen(true)}
+                  disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
+                  className={`px-4 py-2 text-white ${
+                    selectedItems.size > 0 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  <Upload className="h-4 w-4 mr-1" />
+                  CSV 업로드
+                </Button>
                 <Button
                   size="sm"
                   onClick={handleBulkStockOut}
@@ -645,16 +645,11 @@ export default function Home() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setRentalModalOpen(true)}
-                  disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
-                  className={`px-4 py-2 text-white ${
-                    selectedItems.size > 0 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                  onClick={() => setHistoryModalOpen(true)}
+                  className="px-4 py-2 text-white bg-gray-600 hover:bg-gray-700"
                 >
                   <Clock className="h-4 w-4 mr-1" />
-                  대여
+                  이력관리
                 </Button>
               </div>
               
@@ -668,17 +663,6 @@ export default function Home() {
                     onChange={(e) => {
                       const value = e.target.value
                       setSearchTerm(value)
-                      // 실시간 검색
-                      if (value.trim()) {
-                        const filtered = stockItems.filter(item => 
-                          (item.name?.toLowerCase() || '').includes(value.toLowerCase()) ||
-                          (item.specification?.toLowerCase() || '').includes(value.toLowerCase()) ||
-                          (item.category?.toLowerCase() || '').includes(value.toLowerCase())
-                        )
-                        setFilteredStockItems(filtered)
-                      } else {
-                        setFilteredStockItems([])
-                      }
                     }}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

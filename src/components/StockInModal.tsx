@@ -110,10 +110,10 @@ export default function StockInModal({ isOpen, onClose, items, onSave }: StockIn
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-white text-black">
         <DialogHeader>
-          <DialogTitle>입고 등록</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-black">입고 등록</DialogTitle>
+          <DialogDescription className="text-gray-700">
             새로운 품목을 입고하거나 기존 품목의 수량을 추가합니다.
           </DialogDescription>
         </DialogHeader>

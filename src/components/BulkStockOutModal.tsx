@@ -216,10 +216,10 @@ export default function BulkStockOutModal({ isOpen, onClose, selectedItems, onSa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto bg-white text-black">
         <DialogHeader>
-          <DialogTitle>다중 출고 등록 ({selectedItems.length}개 품목)</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-black">다중 출고 등록 ({selectedItems.length}개 품목)</DialogTitle>
+          <DialogDescription className="text-gray-700">
             선택된 품목들의 출고 정보를 입력해주세요.
           </DialogDescription>
         </DialogHeader>
