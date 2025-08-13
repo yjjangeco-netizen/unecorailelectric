@@ -758,57 +758,57 @@ export default function Home() {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      checked={selectedItems.size === displayItems.length && displayItems.length > 0}
-                      onChange={handleSelectAll}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('name')}
-                  >
-                    품명 {getSortIcon('name')}
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('specification')}
-                  >
-                    모델명 {getSortIcon('specification')}
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('maker')}
-                  >
-                    상세사양 {getSortIcon('maker')}
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('purpose')}
-                  >
-                    RACK {getSortIcon('purpose')}
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('current_quantity')}
-                  >
-                    바코드 {getSortIcon('current_quantity')}
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('unit_price')}
-                  >
-                    출고일시 {getSortIcon('unit_price')}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                    작업
-                  </th>
-                </tr>
-              </thead>
+                      <thead className="bg-gray-800">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              <input
+                type="checkbox"
+                checked={selectedItems.size === displayItems.length && displayItems.length > 0}
+                onChange={handleSelectAll}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('name')}
+            >
+              품명 {getSortIcon('name')}
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('specification')}
+            >
+              규격 {getSortIcon('specification')}
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('unit_price')}
+            >
+              단가 {getSortIcon('unit_price')}
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('current_quantity')}
+            >
+              수량 {getSortIcon('current_quantity')}
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('total_amount')}
+            >
+              금액 {getSortIcon('total_amount')}
+            </th>
+            <th 
+              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              onClick={() => handleSort('notes')}
+            >
+              기타 {getSortIcon('notes')}
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+              작업
+            </th>
+          </tr>
+        </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {displayItems.length > 0 ? (
                   displayItems.map((item) => (
@@ -821,26 +821,26 @@ export default function Home() {
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.specification || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.maker || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.purpose || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {item.id.slice(-8) || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date().toLocaleString('ko-KR')}
-                      </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.specification || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.unit_price ? `${item.unit_price.toLocaleString()}원` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.current_quantity || 0}개
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.total_amount ? `${item.total_amount.toLocaleString()}원` : '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {item.notes || '-'}
+                  </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
@@ -856,7 +856,7 @@ export default function Home() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                       {searchTerm ? (
                         <div className="space-y-2">
                           <div className="text-lg font-medium text-gray-700">

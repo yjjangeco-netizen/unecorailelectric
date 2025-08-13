@@ -54,71 +54,56 @@ export const mockCurrentStock: CurrentStock[] = [
     id: '1',
     name: '노트북',
     specification: '15인치',
-    maker: '삼성',
     unit_price: 1200000,
-    purpose: '업무용',
     current_quantity: 8,
-    total_value: 9600000,
-    stock_status: 'normal',
+    total_amount: 9600000,
+    notes: '사무실 업무용',
     category: '전자기기',
-    description: '사무실 업무용 노트북',
-    min_stock: 5
+    stock_status: 'normal'
   },
   {
     id: '2',
     name: '프린터',
     specification: 'A4 컬러',
-    maker: 'HP',
     unit_price: 300000,
-    purpose: '문서출력',
     current_quantity: 2,
-    total_value: 600000,
-    stock_status: 'low_stock',
+    total_amount: 600000,
+    notes: '컬러 레이저',
     category: '사무용품',
-    description: '컬러 레이저 프린터',
-    min_stock: 3
+    stock_status: 'low_stock'
   },
   {
     id: '3',
     name: '의자',
     specification: '사무용',
-    maker: '시디즈',
     unit_price: 150000,
-    purpose: '업무환경',
     current_quantity: 15,
-    total_value: 2250000,
-    stock_status: 'normal',
+    total_amount: 2250000,
+    notes: '인체공학',
     category: '가구',
-    description: '인체공학 사무용 의자',
-    min_stock: 10
+    stock_status: 'normal'
   },
   {
     id: '4',
     name: '모니터',
     specification: '27인치',
-    maker: 'LG',
     unit_price: 350000,
-    purpose: '업무용',
     current_quantity: 12,
-    total_value: 4200000,
-    stock_status: 'normal',
+    total_amount: 4200000,
+    notes: 'IPS 패널',
     category: '전자기기',
-    description: 'IPS 패널 모니터',
-    min_stock: 8
+    stock_status: 'normal'
   },
   {
     id: '5',
     name: '키보드',
     specification: '기계식',
-    maker: '체리',
     unit_price: 150000,
-    purpose: '업무용',
     current_quantity: 20,
-    total_value: 3000000,
-    stock_status: 'normal',
+    total_amount: 3000000,
+    notes: '청축',
     category: '전자기기',
-    description: '청축 기계식 키보드',
-    min_stock: 15
+    stock_status: 'normal'
   }
 ]
 
@@ -167,15 +152,12 @@ export interface CurrentStock {
   id: string
   name: string
   specification: string
-  maker: string
   unit_price: number
-  purpose: string
   current_quantity: number
-  total_value: number
-  stock_status: 'normal' | 'low_stock'
+  total_amount: number
+  notes?: string
   category?: string
-  description?: string
-  min_stock: number
+  stock_status: 'normal' | 'low_stock'
 }
 
 export interface User {
