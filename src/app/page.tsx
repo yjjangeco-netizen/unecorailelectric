@@ -489,39 +489,41 @@ export default function Home() {
 
       {/* 통계 카드 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Package className="h-6 w-6 text-blue-600" />
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">총 품목 수</p>
-                <p className="text-2xl font-bold text-gray-900">{totalItems}</p>
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-600">총 품목 수</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalItems}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-green-600" />
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">총 재고 금액</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</p>
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-600">총 재고 금액</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">부족 재고</p>
-                <p className="text-2xl font-bold text-gray-900">{lowStockItems}</p>
+              <div className="ml-3 sm:ml-4">
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">부족 재고</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{lowStockItems}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -529,17 +531,17 @@ export default function Home() {
 
         {/* 관리자 전용 섹션 */}
         {checkUserPermission('permission_management') && (
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div>
-                <h3 className="text-lg font-semibold text-indigo-900 mb-2">
+                <h3 className="text-base sm:text-lg font-semibold text-indigo-900 mb-2">
                   🎯 관리자 전용 기능
                 </h3>
-                <p className="text-sm text-indigo-700">
+                <p className="text-xs sm:text-sm text-indigo-700">
                   시스템 관리 및 권한 설정을 위한 관리자 전용 기능입니다.
                 </p>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button
                   size="sm"
                   onClick={() => setPermissionManagementModalOpen(true)}
@@ -564,12 +566,12 @@ export default function Home() {
 
         {/* 검색 결과 표시 */}
         {searchTerm && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Search className="h-5 w-5 text-blue-600" />
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex items-start space-x-3">
+                <Search className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mt-0.5 sm:mt-0" />
                 <div>
-                  <p className="text-sm font-medium text-blue-900">
+                  <p className="text-xs sm:text-sm font-medium text-blue-900">
                     검색 결과: <span className="font-bold">{filteredStockItems.length}</span>개
                   </p>
                   <p className="text-xs text-blue-700">
@@ -588,7 +590,7 @@ export default function Home() {
                 size="sm"
                 variant="outline"
                 onClick={handleClearSearch}
-                className="px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-100"
+                className="px-3 py-2 text-blue-600 border-blue-300 hover:bg-blue-100 text-xs sm:text-sm"
               >
                 검색 해제
               </Button>
@@ -598,12 +600,12 @@ export default function Home() {
 
         {/* 재고 목록 */}
         <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">전체 재고 현황</h2>
               
               {/* 좌측: 입고, 출고, 이력관리 버튼 */}
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2 sm:space-x-2">
                 <Button
                   size="sm"
                   onClick={() => setStockInModalOpen(true)}
@@ -654,8 +656,8 @@ export default function Home() {
               </div>
               
               {/* 우측: 검색창, 검색 버튼 */}
-              <div className="flex items-center space-x-2">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:flex-none">
                   <input
                     type="text"
                     placeholder="품명, 규격, 분류로 검색..."
@@ -665,13 +667,13 @@ export default function Home() {
                       setSearchTerm(value)
                     }}
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
                 <Button
                   size="sm"
                   onClick={handleSearch}
-                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white"
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm"
                 >
                   <Search className="h-4 w-4 mr-1" />
                   검색
@@ -740,55 +742,67 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+                      <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
                       <thead className="bg-gray-800">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+            <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
               <input
                 type="checkbox"
                 checked={selectedItems.size === displayItems.length && displayItems.length > 0}
                 onChange={handleSelectAll}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('name')}
             >
-              품명 {getSortIcon('name')}
+              <span className="hidden sm:inline">품명</span>
+              <span className="sm:hidden">품명</span>
+              {getSortIcon('name')}
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('specification')}
             >
-              규격 {getSortIcon('specification')}
+              <span className="hidden sm:inline">규격</span>
+              <span className="sm:hidden">규격</span>
+              {getSortIcon('specification')}
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('unit_price')}
             >
-              단가 {getSortIcon('unit_price')}
+              <span className="hidden sm:inline">단가</span>
+              <span className="sm:hidden">단가</span>
+              {getSortIcon('unit_price')}
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('current_quantity')}
             >
-              수량 {getSortIcon('current_quantity')}
+              <span className="hidden sm:inline">수량</span>
+              <span className="sm:hidden">수량</span>
+              {getSortIcon('current_quantity')}
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('total_amount')}
             >
-              금액 {getSortIcon('total_amount')}
+              <span className="hidden sm:inline">금액</span>
+              <span className="sm:hidden">금액</span>
+              {getSortIcon('total_amount')}
             </th>
             <th 
-              className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
               onClick={() => handleSort('notes')}
             >
-              기타 {getSortIcon('notes')}
+              <span className="hidden sm:inline">기타</span>
+              <span className="sm:hidden">기타</span>
+              {getSortIcon('notes')}
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+            <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
               작업
             </th>
           </tr>
@@ -805,34 +819,34 @@ export default function Home() {
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                      <div className="text-xs sm:text-sm font-medium text-gray-900">{item.name}</div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {item.specification || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {item.unit_price ? `${item.unit_price.toLocaleString()}원` : '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {item.current_quantity || 0}개
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {item.total_amount ? `${item.total_amount.toLocaleString()}원` : '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {item.notes || '-'}
                   </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewHistory(item)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                             title="재고 이력 보기"
                           >
-                            <History className="h-4 w-4" />
+                            <History className="h-3 w-3 sm:h-4 sm:w-4" />
                           </button>
                         </div>
                       </td>
@@ -866,22 +880,22 @@ export default function Home() {
       </div>
 
       {/* 이력 조회 버튼들 */}
-      <div className="flex justify-center space-x-4 mt-6 mb-4">
-        <Button onClick={handleHistory} variant="outline" size="sm">
-          <Package className="h-4 w-4 mr-2" />
+      <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-6 mb-4 px-4">
+        <Button onClick={handleHistory} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
           통합 이력
         </Button>
-        <Button onClick={handleStockInList} variant="outline" size="sm">
-          <Package className="h-4 w-4 mr-2" />
+        <Button onClick={handleStockInList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
           입고 이력
         </Button>
-        <Button onClick={handleStockOutList} variant="outline" size="sm">
-          <Package className="h-4 w-4 mr-2" />
+        <Button onClick={handleStockOutList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
           출고 이력
         </Button>
         {isAdmin && (
-          <Button onClick={handleDisposalList} variant="outline" size="sm">
-            <Trash2 className="h-4 w-4 mr-2" />
+          <Button onClick={handleDisposalList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             폐기 이력
           </Button>
         )}
