@@ -194,6 +194,9 @@ export default function BulkStockOutModal({ isOpen, onClose, selectedItems, onSa
        })
     } catch (error) {
       console.error('다중 출고 저장 오류:', error)
+      // 더 자세한 오류 메시지 표시
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      alert(`출고 처리 중 오류가 발생했습니다:\n\n${errorMessage}\n\n자세한 내용은 브라우저 콘솔을 확인해주세요.`)
     } finally {
       setLoading(false)
     }
