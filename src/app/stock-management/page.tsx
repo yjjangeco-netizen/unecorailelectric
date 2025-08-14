@@ -99,68 +99,25 @@ export default function StockManagementPage() {
     loadItems()
   }, [])
 
-
-
   // CSV 업로드 완료
   const handleCSVUploadComplete = () => {
     loadStockData()
     loadItems()
   }
 
-  // 입고 저장
+  // 입고 저장 - 비활성화
   const handleSaveStockIn = async (stockInData: any) => {
-    try {
-      console.log('입고 저장 시작:', stockInData)
-      
-      const { data, error } = await supabase
-        .from('stock_in')
-        .insert([{
-          ...stockInData,
-          received_at: stockInData.received_at || new Date().toISOString()
-        }])
-        .select()
-      
-      if (error) {
-        console.error('입고 저장 오류 상세:', error)
-        throw new Error(`입고 저장 실패: ${error.message}`)
-      }
-      
-      console.log('입고 저장 완료:', data)
-      await loadStockData()
-    } catch (err: any) {
-      console.error('입고 저장 오류:', err)
-      throw new Error(`입고 저장 중 오류: ${err.message}`)
-    }
+    alert('로그인이 필요한 기능입니다.')
   }
 
-  // 출고 저장
+  // 출고 저장 - 비활성화
   const handleSaveStockOut = async (stockOutData: any) => {
-    try {
-      // issued_at 필드가 없으면 현재 시간으로 설정
-      const dataToInsert = {
-        ...stockOutData,
-        issued_at: stockOutData.issued_at || new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('stock_out')
-        .insert([dataToInsert])
-      
-      if (error) throw error
-      
-      await loadStockData()
-    } catch (err) {
-      console.error('출고 저장 오류:', err)
-      throw err
-    }
+    alert('로그인이 필요한 기능입니다.')
   }
 
-
-
-  // 검색에서 출고 처리
+  // 검색에서 출고 처리 - 비활성화
   const handleSearchStockOut = (itemId: string) => {
-    setSelectedStockOutItem(itemId)
-    setStockOutModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   // 이력 보기
@@ -170,8 +127,7 @@ export default function StockManagementPage() {
   }
 
   const handleRental = (itemId: string) => {
-    setSelectedStockOutItem(itemId)
-    setStockOutModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   // 검색 기능 - 품명, 규격, 분류에서만 검색
@@ -225,44 +181,21 @@ export default function StockManagementPage() {
   const baseItems = searchTerm.trim() && filteredStockItems.length > 0 ? filteredStockItems : stockItems
   const displayItems = sortItems(baseItems)
 
-  // 체크박스 관련 함수들
+  // 체크박스 관련 함수들 - 비활성화
   const handleSelectItem = (itemId: string) => {
-    const newSelectedItems = new Set(selectedItems)
-    if (newSelectedItems.has(itemId)) {
-      newSelectedItems.delete(itemId)
-    } else {
-      newSelectedItems.add(itemId)
-    }
-    setSelectedItems(newSelectedItems)
+    // 체크박스 선택 비활성화
   }
 
   const handleSelectAll = () => {
-    if (selectedItems.size === displayItems.length) {
-      setSelectedItems(new Set())
-    } else {
-      setSelectedItems(new Set(displayItems.map(item => item.id)))
-    }
+    // 전체 선택 비활성화
   }
 
   const handleBulkStockOut = () => {
-    if (selectedItems.size === 0) {
-      alert('출고할 품목을 선택해주세요.')
-      return
-    }
-    setBulkStockOutModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleBulkStockOutSave = async (stockOuts: Omit<StockOut, 'id' | 'issued_at'>[]) => {
-    try {
-      for (const stockOut of stockOuts) {
-        await handleSaveStockOut(stockOut)
-      }
-      setSelectedItems(new Set())
-      alert('다중 출고가 완료되었습니다.')
-    } catch (error) {
-      console.error('다중 출고 오류:', error)
-      alert('다중 출고 중 오류가 발생했습니다.')
-    }
+    alert('로그인이 필요한 기능입니다.')
   }
 
   // 정렬 처리 함수
@@ -281,39 +214,25 @@ export default function StockManagementPage() {
     return sortDirection === 'asc' ? '↑' : '↓'
   }
 
-  // 관리자 전용 기능들
+  // 관리자 전용 기능들 - 비활성화
   const handleDispose = () => {
-    if (selectedItems.size === 0) {
-      alert('폐기할 품목을 선택해주세요.')
-      return
-    }
-    setDisposalModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleDisposalComplete = () => {
-    loadStockData()
-    setSelectedItems(new Set())
+    // 비활성화
   }
 
   const handleDisposalList = () => {
-    setDisposalListModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleDelete = () => {
-    if (selectedItems.size === 0) {
-      alert('삭제할 품목을 선택해주세요.')
-      return
-    }
-    if (confirm('선택된 품목들을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      // 삭제 로직 구현
-      console.log('삭제할 품목들:', Array.from(selectedItems))
-      alert('삭제가 완료되었습니다.')
-      setSelectedItems(new Set())
-    }
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleEditBaseData = () => {
-    alert('기초데이터 수정 기능은 별도 관리 페이지에서 처리됩니다.')
+    alert('로그인이 필요한 기능입니다.')
   }
 
   // 사용자 권한 체크 함수
@@ -347,6 +266,14 @@ export default function StockManagementPage() {
         return true
       }
 
+      // 전기팀 계정 확인
+      if (username === 'electric' && password === 'electric') {
+        setCurrentUser({ username: 'electric', name: '전기팀', role: '전기팀' })
+        setIsAdmin(false)
+        setShowLoginModal(false)
+        return true
+      }
+
       // 실제 데이터베이스에서 사용자 확인
       const { data, error } = await supabase
         .from('users')
@@ -359,8 +286,19 @@ export default function StockManagementPage() {
         return false
       }
 
-              setCurrentUser({ username: data.username, name: data.name, role: '사용자' })
-      setIsAdmin(data.is_admin)
+      // 데이터베이스에서 가져온 역할 설정
+      let userRole = '사용자'
+      if (data.role === 'admin' || data.is_admin) {
+        userRole = '관리자'
+        setIsAdmin(true)
+      } else if (data.role === 'electric' || data.department === '전기팀') {
+        userRole = '전기팀'
+        setIsAdmin(false)
+      } else {
+        setIsAdmin(false)
+      }
+
+      setCurrentUser({ username: data.username, name: data.name, role: userRole })
       setShowLoginModal(false)
       return true
     } catch (error) {
@@ -400,11 +338,11 @@ export default function StockManagementPage() {
   const lowStockItems = stockItems.filter(item => item.stock_status === 'low_stock').length
 
   const handleStockInList = () => {
-    setStockInListModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleStockOutList = () => {
-    setStockOutListModalOpen(true)
+    alert('로그인이 필요한 기능입니다.')
   }
 
   const handleHistory = () => {
@@ -441,22 +379,25 @@ export default function StockManagementPage() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-                         <div className="flex items-center">
-               <Package className="h-8 w-8 text-blue-600 mr-3" />
-               <h1 className="text-2xl font-bold text-gray-900">유네코레일 전기팀 자재관리 시스템</h1>
-             </div>
-             <div className="flex items-center space-x-2">
-               <Button
-                 onClick={() => router.push('/work-tool')}
-                 variant="outline"
-                 size="sm"
-                 className="flex items-center space-x-2"
-               >
-                 <ArrowLeft className="h-4 w-4" />
-                 <span>업무툴로 돌아가기</span>
-               </Button>
-             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center">
+              <Package className="h-8 w-8 text-blue-600 mr-3" />
+              <h1 className="text-2xl font-bold text-gray-900">유네코레일 전기팀 자재관리 시스템</h1>
+            </div>
+            
+            {/* 우측: 로그인/사용자 정보 및 메인으로 돌아가기 */}
+            <div className="flex items-center space-x-4">
+              {/* 메인으로 돌아가기 버튼 */}
+              <Button
+                onClick={() => router.push('/')}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>메인으로</span>
+              </Button>
+              
+              {/* 로그인/사용자 정보 */}
               {currentUser ? (
                 <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-300">
                   <User className="h-4 w-4 text-gray-600" />
@@ -489,8 +430,9 @@ export default function StockManagementPage() {
                     size="sm"
                     onClick={() => setShowLoginModal(true)}
                     variant="outline"
-                    className="px-2 py-1 text-xs"
+                    className="px-3 py-2 text-sm bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
                   >
+                    <User className="h-4 w-4 mr-1" />
                     로그인
                   </Button>
                 </div>
@@ -542,35 +484,188 @@ export default function StockManagementPage() {
           </div>
         </div>
 
-        {/* 관리자 전용 섹션 */}
-        {checkUserPermission('permission_management') && (
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        {/* 권한별 메뉴 버튼 */}
+        {currentUser && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                🚀 업무 메뉴
+              </h3>
+              <p className="text-sm text-blue-700">
+                {currentUser.name}님의 권한에 맞는 메뉴입니다
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* 관리자 권한 */}
+              {currentUser.role === '관리자' && (
+                <>
+                  <Button
+                    onClick={() => router.push('/manual-management')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📚</div>
+                      <div className="text-xs font-medium">메뉴얼 관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/stock-management')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📦</div>
+                      <div className="text-xs font-medium">재고관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/sop')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📋</div>
+                      <div className="text-xs font-medium">SOP</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/work-diary')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📝</div>
+                      <div className="text-xs font-medium">업무일지</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setShowUserManagementModal(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">👥</div>
+                      <div className="text-xs font-medium">회원관리</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+              
+              {/* 전기팀 권한 */}
+              {currentUser.role === '전기팀' && (
+                <>
+                  <Button
+                    onClick={() => router.push('/manual-management')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📚</div>
+                      <div className="text-xs font-medium">메뉴얼 관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/stock-management')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📦</div>
+                      <div className="text-xs font-medium">재고관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/sop')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📋</div>
+                      <div className="text-xs font-medium">SOP</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/work-diary')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📝</div>
+                      <div className="text-xs font-medium">업무일지</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+              
+              {/* 그 외 사용자 권한 */}
+              {currentUser.role !== '관리자' && currentUser.role !== '전기팀' && (
+                <>
+                  <Button
+                    onClick={() => router.push('/stock-management')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📦</div>
+                      <div className="text-xs font-medium">재고관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/work-diary')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📝</div>
+                      <div className="text-xs font-medium">업무일지</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 로그인 안내 메시지 */}
+        {!currentUser && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div>
-                <h3 className="text-base sm:text-lg font-semibold text-indigo-900 mb-2">
-                  🎯 관리자 전용 기능
+                <h3 className="text-base sm:text-lg font-semibold text-yellow-900 mb-2">
+                  🔒 로그인이 필요한 기능
                 </h3>
-                <p className="text-xs sm:text-sm text-indigo-700">
-                  시스템 관리 및 권한 설정을 위한 관리자 전용 기능입니다.
+                <p className="text-sm text-yellow-700 mb-3">
+                  현재 재고 검색만 가능합니다. 입고, 출고, 이력관리 등 모든 기능을 이용하려면 로그인이 필요합니다.
                 </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
                 <Button
                   size="sm"
-                  onClick={() => setPermissionManagementModalOpen(true)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => setShowLoginModal(true)}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
                 >
-                  <Shield className="h-4 w-4 mr-2" />
-                  권한관리
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleEditBaseData}
-                  variant="outline"
-                  className="px-4 py-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  기초데이터
+                  <User className="h-4 w-4 mr-2" />
+                  로그인하기
                 </Button>
               </div>
             </div>
@@ -617,58 +712,7 @@ export default function StockManagementPage() {
             <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">전체 재고 현황</h2>
               
-              {/* 좌측: 입고, 출고, 이력관리 버튼 */}
-              <div className="flex flex-wrap items-center gap-2 sm:space-x-2">
-                <Button
-                  size="sm"
-                  onClick={() => setStockInModalOpen(true)}
-                  disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
-                  className={`px-4 py-2 text-white ${
-                    selectedItems.size > 0 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  <ArrowDown className="h-4 w-4 mr-1" />
-                  입고
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setCsvUploadModalOpen(true)}
-                  disabled={selectedItems.size > 0} // 체크박스 선택 시 비활성화
-                  className={`px-4 py-2 text-white ${
-                    selectedItems.size > 0 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
-                >
-                  <Upload className="h-4 w-4 mr-1" />
-                  CSV 업로드
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleBulkStockOut}
-                  disabled={selectedItems.size === 0} // 체크박스 미선택 시 비활성화
-                  className={`px-4 py-2 text-white ${
-                    selectedItems.size === 0 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                >
-                  <ArrowUp className="h-4 w-4 mr-1" />
-                  출고 ({selectedItems.size})
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setHistoryModalOpen(true)}
-                  className="px-4 py-2 text-white bg-gray-600 hover:bg-gray-700"
-                >
-                  <Clock className="h-4 w-4 mr-1" />
-                  이력관리
-                </Button>
-              </div>
-              
-              {/* 우측: 검색창, 검색 버튼 */}
+              {/* 검색창과 검색 버튼만 표시 */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:flex-none">
                   <input
@@ -703,156 +747,85 @@ export default function StockManagementPage() {
                 )}
               </div>
             </div>
-            
-                    {/* 관리자 전용 버튼 그룹 - 별도 줄에 배치 */}
-        {checkUserPermission('user_management') && (
-              <div className="flex items-center space-x-2 mt-3 pt-3 border-t border-gray-200">
-                <span className="text-xs text-gray-500 font-medium">관리자 기능:</span>
-                                  {checkUserPermission('system_management') && (
-                    <Button
-                      size="sm"
-                      onClick={handleDispose}
-                      disabled={selectedItems.size === 0}
-                      variant="outline"
-                      className="px-3 py-2 border-orange-500 text-orange-600 hover:bg-orange-50"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      폐기
-                    </Button>
-                  )}
-                                  {checkUserPermission('system_management') && (
-                    <Button
-                      size="sm"
-                      onClick={handleDelete}
-                      disabled={selectedItems.size === 0}
-                      variant="outline"
-                      className="px-3 py-2 border-red-500 text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      삭제
-                    </Button>
-                  )}
-                                             {checkUserPermission('data_management') && (
-                    <Button
-                      size="sm"
-                      onClick={handleEditBaseData}
-                      variant="outline"
-                      className="px-3 py-2 border-purple-500 text-purple-600 hover:bg-purple-50"
-                    >
-                      <Database className="h-4 w-4 mr-1" />
-                      기초데이터
-                    </Button>
-                  )}
-           <Button
-             size="sm"
-             onClick={() => setPermissionManagementModalOpen(true)}
-             variant="outline"
-             className="px-3 py-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50"
-           >
-             <Shield className="h-4 w-4 mr-1" />
-             권한관리
-           </Button>
-              </div>
-            )}
           </div>
-                      <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
-                      <thead className="bg-gray-800">
-          <tr>
-            <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              <input
-                type="checkbox"
-                checked={selectedItems.size === displayItems.length && displayItems.length > 0}
-                onChange={handleSelectAll}
-                className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('name')}
-            >
-              <span className="hidden sm:inline">품명</span>
-              <span className="sm:hidden">품명</span>
-              {getSortIcon('name')}
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('specification')}
-            >
-              <span className="hidden sm:inline">규격</span>
-              <span className="sm:hidden">규격</span>
-              {getSortIcon('specification')}
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('unit_price')}
-            >
-              <span className="hidden sm:inline">단가</span>
-              <span className="sm:hidden">단가</span>
-              {getSortIcon('unit_price')}
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('current_quantity')}
-            >
-              <span className="hidden sm:inline">수량</span>
-              <span className="sm:hidden">수량</span>
-              {getSortIcon('current_quantity')}
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('total_amount')}
-            >
-              <span className="hidden sm:inline">금액</span>
-              <span className="sm:hidden">금액</span>
-              {getSortIcon('total_amount')}
-            </th>
-            <th 
-              className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-              onClick={() => handleSort('notes')}
-            >
-              <span className="hidden sm:inline">기타</span>
-              <span className="sm:hidden">기타</span>
-              {getSortIcon('notes')}
-            </th>
-            <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-              작업
-            </th>
-          </tr>
-        </thead>
+          
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    품명
+                  </th>
+                  <th 
+                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSort('specification')}
+                  >
+                    <span className="hidden sm:inline">규격</span>
+                    <span className="sm:hidden">규격</span>
+                    {getSortIcon('specification')}
+                  </th>
+                  <th 
+                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSort('unit_price')}
+                  >
+                    <span className="hidden sm:inline">단가</span>
+                    <span className="sm:hidden">단가</span>
+                    {getSortIcon('unit_price')}
+                  </th>
+                  <th 
+                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSort('current_quantity')}
+                  >
+                    <span className="hidden sm:inline">수량</span>
+                    <span className="sm:hidden">수량</span>
+                    {getSortIcon('current_quantity')}
+                  </th>
+                  <th 
+                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSort('total_amount')}
+                  >
+                    <span className="hidden sm:inline">금액</span>
+                    <span className="sm:hidden">금액</span>
+                    {getSortIcon('total_amount')}
+                  </th>
+                  <th 
+                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSort('notes')}
+                  >
+                    <span className="hidden sm:inline">기타</span>
+                    <span className="sm:hidden">기타</span>
+                    {getSortIcon('notes')}
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    작업
+                  </th>
+                </tr>
+              </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {displayItems.length > 0 ? (
                   displayItems.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(item.id)}
-                          onChange={() => handleSelectItem(item.id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">{item.name}</div>
+                        </div>
                       </td>
-                                                          <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-xs sm:text-sm font-medium text-gray-900">{item.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {item.specification || '-'}
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {item.unit_price ? `${item.unit_price.toLocaleString()}원` : '-'}
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {item.current_quantity || 0}개
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {item.total_amount ? `${item.total_amount.toLocaleString()}원` : '-'}
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {item.notes || '-'}
-                  </td>
-                  <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.specification || '-'}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.unit_price ? `${item.unit_price.toLocaleString()}원` : '-'}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.current_quantity || 0}개
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.total_amount ? `${item.total_amount.toLocaleString()}원` : '-'}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.notes || '-'}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <button
                             onClick={() => handleViewHistory(item)}
@@ -867,7 +840,7 @@ export default function StockManagementPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       {searchTerm ? (
                         <div className="space-y-2">
                           <div className="text-lg font-medium text-gray-700">
@@ -892,27 +865,29 @@ export default function StockManagementPage() {
         </div>
       </div>
 
-      {/* 이력 조회 버튼들 */}
-      <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-6 mb-4 px-4">
-        <Button onClick={handleHistory} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          통합 이력
-        </Button>
-        <Button onClick={handleStockInList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          입고 이력
-        </Button>
-        <Button onClick={handleStockOutList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-          <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          출고 이력
-        </Button>
-        {isAdmin && (
-          <Button onClick={handleDisposalList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            폐기 이력
+      {/* 이력 조회 버튼들 - 로그인 후에만 활성화 */}
+      {currentUser && (
+        <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mt-6 mb-4 px-4">
+          <Button onClick={handleHistory} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            통합 이력
           </Button>
-        )}
-      </div>
+          <Button onClick={handleStockInList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            입고 이력
+          </Button>
+          <Button onClick={handleStockOutList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            출고 이력
+          </Button>
+          {isAdmin && (
+            <Button onClick={handleDisposalList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              폐기 이력
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* 모달들 */}
       <StockInModal
