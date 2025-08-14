@@ -729,9 +729,15 @@ export default function StockManagementPage() {
                 <>
                   <Button
                     onClick={() => setStockInModalOpen(true)}
+                    disabled={selectedItems.size > 0}
                     variant="outline"
                     size="sm"
-                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                    className={`h-16 ${
+                      selectedItems.size > 0 
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400'
+                    }`}
+                    title={selectedItems.size > 0 ? '선택된 항목이 있으면 입고할 수 없습니다' : '입고 처리'}
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📥</div>
@@ -741,13 +747,24 @@ export default function StockManagementPage() {
                   
                   <Button
                     onClick={() => setStockOutModalOpen(true)}
+                    disabled={selectedItems.size === 0}
                     variant="outline"
                     size="sm"
-                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                    className={`h-16 ${
+                      selectedItems.size === 0 
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400'
+                    }`}
+                    title={selectedItems.size === 0 ? '출고할 항목을 선택해주세요' : `${selectedItems.size}개 항목 출고`}
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📤</div>
                       <div className="text-xs font-medium">출고</div>
+                      {selectedItems.size > 0 && (
+                        <div className="text-xs text-red-600 font-bold">
+                          ({selectedItems.size})
+                        </div>
+                      )}
                     </div>
                   </Button>
                   
@@ -842,9 +859,15 @@ export default function StockManagementPage() {
                 <>
                   <Button
                     onClick={() => setStockInModalOpen(true)}
+                    disabled={selectedItems.size > 0}
                     variant="outline"
                     size="sm"
-                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                    className={`h-16 ${
+                      selectedItems.size > 0 
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400'
+                    }`}
+                    title={selectedItems.size > 0 ? '선택된 항목이 있으면 입고할 수 없습니다' : '입고 처리'}
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📥</div>
@@ -854,13 +877,24 @@ export default function StockManagementPage() {
                   
                   <Button
                     onClick={() => setStockOutModalOpen(true)}
+                    disabled={selectedItems.size === 0}
                     variant="outline"
                     size="sm"
-                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                    className={`h-16 ${
+                      selectedItems.size === 0 
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400'
+                    }`}
+                    title={selectedItems.size === 0 ? '출고할 항목을 선택해주세요' : `${selectedItems.size}개 항목 출고`}
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📤</div>
                       <div className="text-xs font-medium">출고</div>
+                      {selectedItems.size > 0 && (
+                        <div className="text-xs text-red-600 font-bold">
+                          ({selectedItems.size})
+                        </div>
+                      )}
                     </div>
                   </Button>
                   
@@ -895,13 +929,24 @@ export default function StockManagementPage() {
                 <>
                   <Button
                     onClick={() => setStockOutModalOpen(true)}
+                    disabled={selectedItems.size === 0}
                     variant="outline"
                     size="sm"
-                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                    className={`h-16 ${
+                      selectedItems.size === 0 
+                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400'
+                    }`}
+                    title={selectedItems.size === 0 ? '출고할 항목을 선택해주세요' : `${selectedItems.size}개 항목 출고`}
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📤</div>
                       <div className="text-xs font-medium">출고</div>
+                      {selectedItems.size > 0 && (
+                        <div className="text-xs text-red-600 font-bold">
+                          ({selectedItems.size})
+                        </div>
+                      )}
                     </div>
                   </Button>
                   
@@ -1041,6 +1086,23 @@ export default function StockManagementPage() {
               <thead className="bg-gray-800">
                 <tr>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedItems.size === displayItems.length && displayItems.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedItems(new Set(displayItems.map(item => item.id)))
+                        } else {
+                          setSelectedItems(new Set())
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    Tag NO.
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     위치
                   </th>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
@@ -1056,7 +1118,25 @@ export default function StockManagementPage() {
                     단위
                   </th>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    전분기 재고
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    입고수량
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    불출수량
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     최종재고
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    실수량
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    불출내용
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    비고
                   </th>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     작업
@@ -1067,6 +1147,25 @@ export default function StockManagementPage() {
                 {displayItems.length > 0 ? (
                   displayItems.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.has(item.id)}
+                          onChange={(e) => {
+                            const newSelectedItems = new Set(selectedItems)
+                            if (e.target.checked) {
+                              newSelectedItems.add(item.id)
+                            } else {
+                              newSelectedItems.delete(item.id)
+                            }
+                            setSelectedItems(newSelectedItems)
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.id || '-'}
+                      </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                         <div>
                           <div className="text-xs sm:text-sm font-medium text-gray-900">{item.location || '-'}</div>
@@ -1087,7 +1186,25 @@ export default function StockManagementPage() {
                         {item.unit || '-'}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.previousQuarterQuantity || 0}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.stockInQuantity || 0}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.stockOutQuantity || 0}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         <span className="font-medium text-blue-600">{item.current_quantity || 0}</span>
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.actualQuantity || 0}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.stockOutContent || '-'}
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                        {item.notes || '-'}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         <div className="flex space-x-2">
@@ -1104,7 +1221,7 @@ export default function StockManagementPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={14} className="px-6 py-8 text-center text-gray-500">
                       {searchTerm ? (
                         <div className="space-y-2">
                           <div className="text-lg font-medium text-gray-700">
