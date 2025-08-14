@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, type CurrentStock, type Item, type StockOut, type User as UserType, mockItems, mockCurrentStock } from '@/lib/supabase'
+import { supabase, type CurrentStock, type Item, type StockOut, type User as UserType } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, getStockStatusColor } from '@/lib/utils'
 import { Package, TrendingUp, AlertTriangle, ArrowDown, ArrowUp, Search, History, Clock, User, Trash2, Edit, Database, Settings, Upload, Shield, ArrowLeft, FileText } from 'lucide-react'
