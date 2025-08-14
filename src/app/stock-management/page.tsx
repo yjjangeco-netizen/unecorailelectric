@@ -924,30 +924,6 @@ export default function StockManagementPage() {
                   </Button>
                   
                   <Button
-                    onClick={() => {
-                      if (confirm('⚠️ 경고: 모든 재고 데이터가 영구적으로 삭제됩니다!\n\n정말로 진행하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
-                        if (confirm('마지막 확인: 모든 재고 데이터를 삭제하시겠습니까?')) {
-                          // 전체 재고 삭제
-                          setStockItems([])
-                          setItems([])
-                          setFilteredStockItems([])
-                          setSelectedItems(new Set())
-                          alert('✅ 모든 재고 데이터가 삭제되었습니다.')
-                        }
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="h-16 bg-white border-red-500 text-red-700 hover:bg-red-50 hover:border-red-600"
-                    title="전체 재고 데이터 삭제 (되돌릴 수 없음)"
-                  >
-                    <div className="text-center">
-                      <div className="text-lg mb-1">💥</div>
-                      <div className="text-xs font-medium">전체 삭제</div>
-                    </div>
-                  </Button>
-                  
-                  <Button
                     onClick={() => setStockInListModalOpen(true)}
                     variant="outline"
                     size="sm"
@@ -1055,29 +1031,32 @@ export default function StockManagementPage() {
                 </>
               )}
               
-              {/* 그 외 사용자 권한 - 출고, 현황, 검색 */}
+              {/* 그 외 사용자 권한 - 현황, 검색만 (입고/출고 비활성화) */}
               {currentUser.role !== '관리자' && currentUser.role !== '전기팀' && (
                 <>
                   <Button
-                    onClick={() => setStockOutModalOpen(true)}
-                    disabled={selectedItems.size === 0}
                     variant="outline"
                     size="sm"
-                    className={`h-16 ${
-                      selectedItems.size === 0 
-                        ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
-                        : 'bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400'
-                    }`}
-                    title={selectedItems.size === 0 ? '출고할 항목을 선택해주세요' : `${selectedItems.size}개 항목 출고`}
+                    disabled
+                    className="h-16 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                    title="권한이 없습니다"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📥</div>
+                      <div className="text-xs font-medium">입고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled
+                    className="h-16 bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                    title="권한이 없습니다"
                   >
                     <div className="text-center">
                       <div className="text-lg mb-1">📤</div>
                       <div className="text-xs font-medium">출고</div>
-                      {selectedItems.size > 0 && (
-                        <div className="text-xs text-red-600 font-bold">
-                          ({selectedItems.size})
-                        </div>
-                      )}
                     </div>
                   </Button>
                   
@@ -1408,6 +1387,31 @@ export default function StockManagementPage() {
             <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             업무일지 작성
           </Button>
+          
+          {/* 이력관리 버튼 */}
+          <Button 
+            onClick={() => setHistoryModalOpen(true)} 
+            variant="outline" 
+            size="sm" 
+            className="w-full sm:w-auto text-xs sm:text-sm bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300"
+          >
+            <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            이력관리
+          </Button>
+          
+          {/* 마감 버튼 - 관리자만 */}
+          {isAdmin && (
+            <Button 
+              onClick={() => router.push('/stock-closing')} 
+              variant="outline" 
+              size="sm" 
+              className="w-full sm:w-auto text-xs sm:text-sm bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 hover:border-yellow-300"
+            >
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              마감
+            </Button>
+          )}
+          
           {isAdmin && (
             <Button onClick={handleDisposalList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
