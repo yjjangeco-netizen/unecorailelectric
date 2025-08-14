@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Building2, User, Lock, FileText, Package, BookOpen, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -14,6 +14,22 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<string>('')
   const router = useRouter()
 
+  // 페이지 로드 시 localStorage에서 로그인 상태 확인
+  useEffect(() => {
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        setIsLoggedIn(true)
+        setCurrentUser(userData.username)
+        console.log('메인 페이지에서 로그인 상태 복원:', userData)
+      } catch (error) {
+        console.error('저장된 사용자 정보 파싱 오류:', error)
+        localStorage.removeItem('currentUser')
+      }
+    }
+  }, [])
+
   // 로그인 처리
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
@@ -26,9 +42,20 @@ export default function HomePage() {
         // 여기서 실제 인증 로직을 구현할 수 있습니다
         // 현재는 간단한 예시로 처리
         const userRole = getDefaultRole(username)
+        const userData = {
+          username: username,
+          name: username,
+          role: userRole === 'admin' ? '관리자' : userRole === 'manager' ? '전기팀' : '사용자'
+        }
+        
+        // localStorage에 사용자 정보 저장
+        localStorage.setItem('currentUser', JSON.stringify(userData))
+        
         setIsLoggedIn(true)
         setCurrentUser(username)
-        router.push(`/work-tool?role=${userRole}&user=${username}`)
+        
+        // 재고관리 페이지로 이동 (URL 파라미터 없이)
+        router.push('/stock-management')
       } else {
         setError('사용자명과 비밀번호를 입력해주세요.')
       }
@@ -41,6 +68,9 @@ export default function HomePage() {
 
   // 로그아웃 처리
   const handleLogout = (): void => {
+    // localStorage에서 사용자 정보 제거
+    localStorage.removeItem('currentUser')
+    
     setIsLoggedIn(false)
     setCurrentUser('')
     setUsername('')

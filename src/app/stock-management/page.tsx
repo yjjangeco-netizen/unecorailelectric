@@ -108,34 +108,45 @@ export default function StockManagementPage() {
     
     // 로그인 상태 확인
     const checkLoginStatus = () => {
-      // URL 파라미터에서 로그인 정보 확인
+      // 먼저 localStorage에서 로그인 정보 확인 (우선순위 높음)
+      const savedUser = localStorage.getItem('currentUser')
+      if (savedUser) {
+        try {
+          const userData = JSON.parse(savedUser)
+          setCurrentUser(userData)
+          setIsAdmin(userData.role === '관리자')
+          console.log('localStorage에서 사용자 정보 로드:', userData)
+          return // localStorage에 정보가 있으면 URL 파라미터는 무시
+        } catch (error) {
+          console.error('저장된 사용자 정보 파싱 오류:', error)
+          localStorage.removeItem('currentUser') // 잘못된 데이터 제거
+        }
+      }
+      
+      // localStorage에 정보가 없을 때만 URL 파라미터 확인
       const urlParams = new URLSearchParams(window.location.search)
       const userRole = urlParams.get('role')
       const username = urlParams.get('user')
       
       if (userRole && username) {
+        let userData: { username: string; name: string; role: string }
+        
         if (userRole === 'admin') {
-          setCurrentUser({ username: username, name: '관리자', role: '관리자' })
+          userData = { username: username, name: '관리자', role: '관리자' }
           setIsAdmin(true)
         } else if (userRole === 'electric') {
-          setCurrentUser({ username: username, name: '전기팀', role: '전기팀' })
+          userData = { username: username, name: '전기팀', role: '전기팀' }
           setIsAdmin(false)
         } else {
-          setCurrentUser({ username: username, name: username, role: '사용자' })
+          userData = { username: username, name: username, role: '사용자' }
           setIsAdmin(false)
         }
-      }
-      
-      // 로컬 스토리지에서 로그인 정보 확인
-      const savedUser = localStorage.getItem('currentUser')
-      if (savedUser && !currentUser) {
-        try {
-          const userData = JSON.parse(savedUser)
-          setCurrentUser(userData)
-          setIsAdmin(userData.role === '관리자')
-        } catch (error) {
-          console.error('저장된 사용자 정보 파싱 오류:', error)
-        }
+        
+        setCurrentUser(userData)
+        
+        // URL 파라미터로 받은 정보도 localStorage에 저장
+        localStorage.setItem('currentUser', JSON.stringify(userData))
+        console.log('URL 파라미터에서 사용자 정보 로드:', userData)
       }
     }
     
