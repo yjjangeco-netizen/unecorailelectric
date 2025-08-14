@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Building2, Calendar, ArrowLeft, Plus, Edit, Trash2, User, Clock, ExternalLink, Link, Unlink } from 'lucide-react'
@@ -17,7 +17,7 @@ interface WorkDiaryEntry {
   googleCalendarLink?: string
 }
 
-export default function WorkDiaryPage() {
+function WorkDiaryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -616,5 +616,13 @@ export default function WorkDiaryPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function WorkDiaryPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <WorkDiaryContent />
+    </Suspense>
   )
 } 
