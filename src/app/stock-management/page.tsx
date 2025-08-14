@@ -159,14 +159,121 @@ export default function StockManagementPage() {
     loadItems()
   }
 
-  // 입고 저장 - 비활성화
+  // 입고 저장 - 로그인된 사용자용
   const handleSaveStockIn = async (stockInData: any) => {
-    alert('로그인이 필요한 기능입니다.')
+    if (!currentUser) {
+      alert('로그인이 필요한 기능입니다.')
+      return
+    }
+
+    try {
+      // 새로운 품목 생성 또는 기존 품목 업데이트
+      const newItem = {
+        id: Date.now().toString(), // 임시 ID
+        name: stockInData.itemName,
+        specification: stockInData.itemName, // 기본값
+        maker: '미정',
+        unit_price: parseFloat(stockInData.unitPrice) || 0,
+        purpose: '재고입고',
+        min_stock: 0,
+        category: '일반',
+        description: stockInData.notes || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+
+      // 현재 재고에 추가 또는 업데이트
+      const existingItemIndex = stockItems.findIndex(item => 
+        item.name.toLowerCase() === stockInData.itemName.toLowerCase()
+      )
+
+      if (existingItemIndex >= 0) {
+        // 기존 품목 수량 증가
+        const updatedItems = [...stockItems]
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          current_quantity: (updatedItems[existingItemIndex].current_quantity || 0) + parseInt(stockInData.quantity),
+          total_amount: (updatedItems[existingItemIndex].current_quantity || 0) * (updatedItems[existingItemIndex].unit_price || 0)
+        }
+        setStockItems(updatedItems)
+        alert(`✅ ${stockInData.itemName} 입고 완료!\n기존 수량에 ${stockInData.quantity}개 추가되었습니다.`)
+      } else {
+        // 새 품목 추가
+        const newStockItem = {
+          id: Date.now().toString(),
+          name: stockInData.itemName,
+          specification: stockInData.itemName,
+          unit_price: parseFloat(stockInData.unitPrice) || 0,
+          current_quantity: parseInt(stockInData.quantity) || 0,
+          total_amount: (parseFloat(stockInData.unitPrice) || 0) * (parseInt(stockInData.quantity) || 0),
+          notes: stockInData.notes || '',
+          category: '일반',
+          stock_status: 'normal'
+        }
+        
+        setStockItems([...stockItems, newStockItem])
+        alert(`✅ ${stockInData.itemName} 신규 입고 완료!\n수량: ${stockInData.quantity}개`)
+      }
+
+      // 품목 목록에도 추가
+      setItems([...items, newItem])
+      
+    } catch (error) {
+      console.error('입고 처리 오류:', error)
+      alert('입고 처리 중 오류가 발생했습니다.')
+    }
   }
 
-  // 출고 저장 - 비활성화
+  // 출고 저장 - 로그인된 사용자용
   const handleSaveStockOut = async (stockOutData: any) => {
-    alert('로그인이 필요한 기능입니다.')
+    if (!currentUser) {
+      alert('로그인이 필요한 기능입니다.')
+      return
+    }
+
+    try {
+      // 선택된 항목들 처리
+      if (selectedItems.size === 0) {
+        alert('출고할 항목을 선택해주세요.')
+        return
+      }
+
+      const selectedItemsArray = Array.from(selectedItems)
+      let processedCount = 0
+
+      for (const itemId of selectedItemsArray) {
+        const item = stockItems.find(stock => stock.id === itemId)
+        if (item) {
+          const outQuantity = parseInt(stockOutData.quantity) || 1
+          
+          if (item.current_quantity >= outQuantity) {
+            // 재고 수량 감소
+            const updatedItems = stockItems.map(stock => 
+              stock.id === itemId 
+                ? {
+                    ...stock,
+                    current_quantity: stock.current_quantity - outQuantity,
+                    total_amount: (stock.current_quantity - outQuantity) * (stock.unit_price || 0)
+                  }
+                : stock
+            )
+            setStockItems(updatedItems)
+            processedCount++
+          } else {
+            alert(`⚠️ ${item.name}: 재고 부족 (현재: ${item.current_quantity}개, 요청: ${outQuantity}개)`)
+          }
+        }
+      }
+
+      if (processedCount > 0) {
+        alert(`✅ ${processedCount}개 항목 출고 완료!\n프로젝트: ${stockOutData.project || '미정'}`)
+        setSelectedItems(new Set()) // 선택 해제
+      }
+      
+    } catch (error) {
+      console.error('출고 처리 오류:', error)
+      alert('출고 처리 중 오류가 발생했습니다.')
+    }
   }
 
   // 검색에서 출고 처리 - 비활성화
@@ -1321,8 +1428,15 @@ export default function StockManagementPage() {
       <StockOutModal
         isOpen={stockOutModalOpen}
         onClose={() => setStockOutModalOpen(false)}
-        stockItems={stockItems}
         onSave={handleSaveStockOut}
+        selectedItems={Array.from(selectedItems).map(id => {
+          const item = stockItems.find(stock => stock.id === id)
+          return item ? {
+            id: item.id,
+            name: item.name,
+            current_quantity: item.current_quantity || 0
+          } : null
+        }).filter(Boolean) as Array<{ id: string; name: string; current_quantity: number }>}
       />
 
       <SearchModal
