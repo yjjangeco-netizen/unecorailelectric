@@ -34,3 +34,26 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### 배포 단계
+
+1. **GitHub에 코드 푸시**
+   ```bash
+   git add .
+   git commit -m "Vercel 배포 준비"
+   git push origin main
+   ```
+
+2. **Vercel에서 프로젝트 연결**
+   - [vercel.com](https://vercel.com) 접속
+   - GitHub 계정으로 로그인
+   - "New Project" 클릭
+   - GitHub 저장소 선택
+
+3. **환경 변수 설정**
+   - `NEXT_PUBLIC_SUPABASE_URL`: Supabase 프로젝트 URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase 익명 키
+
+4. **배포 완료**
+   - 자동으로 빌드 및 배포 진행
+   - 배포된 URL 확인
