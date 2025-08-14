@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,7 +15,7 @@ interface MenuItem {
   roles: string[]
 }
 
-export default function WorkToolPage() {
+function WorkToolContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [userRole, setUserRole] = useState<string>('user')
@@ -190,5 +190,13 @@ export default function WorkToolPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function WorkToolPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <WorkToolContent />
+    </Suspense>
   )
 } 

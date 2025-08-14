@@ -1,59 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Uneco Rail Electric Part Management System
 
-## Getting Started
+전기 파트 재고 관리 및 업무 관리 시스템
 
-First, run the development server:
+## 🚀 Vercel 배포 가이드
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. GitHub 저장소 연결
+- GitHub에서 새 저장소 생성: `unecorailelectric`
+- 로컬 프로젝트를 GitHub에 푸시
+
+### 2. Vercel 프로젝트 생성
+- [Vercel](https://vercel.com) 접속
+- "New Project" 클릭
+- GitHub 저장소 선택: `yjjangeco-netizen/unecorailelectric`
+- Framework Preset: Next.js (자동 감지)
+
+### 3. 환경변수 설정
+배포 완료 후 Settings → Environment Variables에서 설정:
+
+```
+NEXT_PUBLIC_SUPABASE_URL = https://pnmyxzgyeipbvvnnwtoi.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubXl4emd5ZWlwYnZ2bm53dG9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjQyMjUsImV4cCI6MjA2OTgwMDIyNX0.-0N6pDO0HjjTZd7WqqXJBwf0eBHvGIP_zPQlKpwealA
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. 재배포
+환경변수 저장 후 "Redeploy" 클릭
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ 기술 스택
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS
+- **Database**: Supabase
+- **Deployment**: Vercel
+- **UI Components**: Radix UI, Shadcn/ui
 
-## Learn More
+## 📱 주요 기능
 
-To learn more about Next.js, take a look at the following resources:
+- 🔐 사용자 인증 및 권한 관리
+- 📦 재고 관리 (입고/출고/이력)
+- 📚 메뉴얼 관리
+- 📅 업무 일지 및 Google Calendar 연동
+- 👥 사용자 관리
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 로컬 실행
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+## �� 라이선스
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-### 배포 단계
-
-1. **GitHub에 코드 푸시**
-   ```bash
-   git add .
-   git commit -m "Vercel 배포 준비"
-   git push origin main
-   ```
-
-2. **Vercel에서 프로젝트 연결**
-   - [vercel.com](https://vercel.com) 접속
-   - GitHub 계정으로 로그인
-   - "New Project" 클릭
-   - GitHub 저장소 선택
-
-3. **환경 변수 설정**
-   - `NEXT_PUBLIC_SUPABASE_URL`: Supabase 프로젝트 URL
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase 익명 키
-
-4. **배포 완료**
-   - 자동으로 빌드 및 배포 진행
-   - 배포된 URL 확인
+MIT License
