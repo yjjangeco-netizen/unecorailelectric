@@ -75,10 +75,10 @@ export default function StockManagementPage() {
       setStockItems(data || [])
     } catch (err) {
       console.error('재고 데이터 로드 오류:', err)
-      // 데이터베이스 연결 실패 시 임시 데이터 사용
-      console.log('임시 재고 데이터를 사용합니다.')
-      setStockItems(mockCurrentStock)
-      setError(null) // 에러 상태 해제
+      // 데이터베이스 연결 실패 시 빈 배열로 설정
+      console.log('데이터베이스 연결 실패. 재고 데이터를 표시할 수 없습니다.')
+      setStockItems([])
+      setError('데이터베이스 연결에 실패했습니다.')
     } finally {
       setLoading(false)
     }
@@ -96,9 +96,9 @@ export default function StockManagementPage() {
       setItems(data || [])
     } catch (err) {
       console.error('품목 데이터 로드 오류:', err)
-      // 데이터베이스 연결 실패 시 임시 데이터 사용
-      console.log('임시 데이터를 사용합니다.')
-      setItems(mockItems)
+      // 데이터베이스 연결 실패 시 빈 배열로 설정
+      console.log('데이터베이스 연결 실패. 품목 데이터를 표시할 수 없습니다.')
+      setItems([])
     }
   }
 
