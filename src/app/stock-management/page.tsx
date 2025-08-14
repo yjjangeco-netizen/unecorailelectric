@@ -817,6 +817,30 @@ export default function StockManagementPage() {
                   </Button>
                   
                   <Button
+                    onClick={() => {
+                      if (confirm('⚠️ 경고: 모든 재고 데이터가 영구적으로 삭제됩니다!\n\n정말로 진행하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
+                        if (confirm('마지막 확인: 모든 재고 데이터를 삭제하시겠습니까?')) {
+                          // 전체 재고 삭제
+                          setStockItems([])
+                          setItems([])
+                          setFilteredStockItems([])
+                          setSelectedItems(new Set())
+                          alert('✅ 모든 재고 데이터가 삭제되었습니다.')
+                        }
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-red-500 text-red-700 hover:bg-red-50 hover:border-red-600"
+                    title="전체 재고 데이터 삭제 (되돌릴 수 없음)"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">💥</div>
+                      <div className="text-xs font-medium">전체 삭제</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
                     onClick={() => setStockInListModalOpen(true)}
                     variant="outline"
                     size="sm"
