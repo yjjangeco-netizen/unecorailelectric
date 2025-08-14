@@ -6,16 +6,16 @@ import { Building2, User, Lock, FileText, Package, BookOpen, LogOut } from 'luci
 import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [currentUser, setCurrentUser] = useState('')
+  const [username, setUsername] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false)
+  const [currentUser, setCurrentUser] = useState<string>('')
   const router = useRouter()
 
   // 로그인 처리
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -40,7 +40,7 @@ export default function HomePage() {
   }
 
   // 로그아웃 처리
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     setIsLoggedIn(false)
     setCurrentUser('')
     setUsername('')
@@ -49,7 +49,7 @@ export default function HomePage() {
   }
 
   // 사용자명에 따른 기본 역할 반환
-  const getDefaultRole = (username: string) => {
+  const getDefaultRole = (username: string): string => {
     if (username.toLowerCase().includes('admin')) return 'admin'
     if (username.toLowerCase().includes('manager')) return 'manager'
     return 'user'
@@ -153,7 +153,7 @@ export default function HomePage() {
           {/* 하단 정보 */}
           <div className="text-center mt-6">
             <p className="text-xs text-gray-500">
-              © 2024 유네코레일 전기파트. All rights reserved.
+              © 2025 JYJ . All rights reserved.
             </p>
           </div>
         </div>
