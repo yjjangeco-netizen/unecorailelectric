@@ -1,11 +1,19 @@
 'use client'
 
+/*
+ * 재고 테이블 전체 구조 (13개 컬럼)
+ * Tag NO. / 위치 / 품명 / 규격 / 재질 / 단위 / 전분기 재고 / 입고수량 / 불출수량 / 최종재고 / 실수량 / 불출내용 / 비고
+ * 
+ * 메인 화면에는 6개 컬럼만 표시
+ * 위치 / 품명 / 규격 / 재질 / 단위 / 최종재고
+ */
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase, type CurrentStock, type Item, type StockOut, type User as UserType, mockItems, mockCurrentStock } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, getStockStatusColor } from '@/lib/utils'
-import { Package, TrendingUp, AlertTriangle, ArrowDown, ArrowUp, Search, History, Clock, User, Trash2, Edit, Database, Settings, Upload, Shield, ArrowLeft } from 'lucide-react'
+import { Package, TrendingUp, AlertTriangle, ArrowDown, ArrowUp, Search, History, Clock, User, Trash2, Edit, Database, Settings, Upload, Shield, ArrowLeft, FileText } from 'lucide-react'
 import StockInModal from '@/components/StockInModal'
 import StockOutModal from '@/components/StockOutModal'
 import SearchModal from '@/components/SearchModal'
@@ -97,6 +105,41 @@ export default function StockManagementPage() {
   useEffect(() => {
     loadStockData()
     loadItems()
+    
+    // 로그인 상태 확인
+    const checkLoginStatus = () => {
+      // URL 파라미터에서 로그인 정보 확인
+      const urlParams = new URLSearchParams(window.location.search)
+      const userRole = urlParams.get('role')
+      const username = urlParams.get('user')
+      
+      if (userRole && username) {
+        if (userRole === 'admin') {
+          setCurrentUser({ username: username, name: '관리자', role: '관리자' })
+          setIsAdmin(true)
+        } else if (userRole === 'electric') {
+          setCurrentUser({ username: username, name: '전기팀', role: '전기팀' })
+          setIsAdmin(false)
+        } else {
+          setCurrentUser({ username: username, name: username, role: '사용자' })
+          setIsAdmin(false)
+        }
+      }
+      
+      // 로컬 스토리지에서 로그인 정보 확인
+      const savedUser = localStorage.getItem('currentUser')
+      if (savedUser && !currentUser) {
+        try {
+          const userData = JSON.parse(savedUser)
+          setCurrentUser(userData)
+          setIsAdmin(userData.role === '관리자')
+        } catch (error) {
+          console.error('저장된 사용자 정보 파싱 오류:', error)
+        }
+      }
+    }
+    
+    checkLoginStatus()
   }, [])
 
   // CSV 업로드 완료
@@ -260,17 +303,23 @@ export default function StockManagementPage() {
     try {
       // 기본 관리자 계정 확인
       if (username === 'admin' && password === 'admin') {
-        setCurrentUser({ username: 'admin', name: '관리자', role: '관리자' })
+        const userData = { username: 'admin', name: '관리자', role: '관리자' }
+        setCurrentUser(userData)
         setIsAdmin(true)
         setShowLoginModal(false)
+        // 로컬 스토리지에 저장
+        localStorage.setItem('currentUser', JSON.stringify(userData))
         return true
       }
 
       // 전기팀 계정 확인
       if (username === 'electric' && password === 'electric') {
-        setCurrentUser({ username: 'electric', name: '전기팀', role: '전기팀' })
+        const userData = { username: 'electric', name: '전기팀', role: '전기팀' }
+        setCurrentUser(userData)
         setIsAdmin(false)
         setShowLoginModal(false)
+        // 로컬 스토리지에 저장
+        localStorage.setItem('currentUser', JSON.stringify(userData))
         return true
       }
 
@@ -298,8 +347,11 @@ export default function StockManagementPage() {
         setIsAdmin(false)
       }
 
-      setCurrentUser({ username: data.username, name: data.name, role: userRole })
+      const userData = { username: data.username, name: data.name, role: userRole }
+      setCurrentUser(userData)
       setShowLoginModal(false)
+      // 로컬 스토리지에 저장
+      localStorage.setItem('currentUser', JSON.stringify(userData))
       return true
     } catch (error) {
       console.error('로그인 오류:', error)
@@ -311,6 +363,8 @@ export default function StockManagementPage() {
     setCurrentUser(null)
     setIsAdmin(false)
     setShowLoginModal(false) // 로그아웃 후 로그인 모달 숨김
+    // 로컬 스토리지 정리
+    localStorage.removeItem('currentUser')
     // 다른 모달들도 모두 닫기
     setStockInModalOpen(false)
     setStockOutModalOpen(false)
@@ -336,6 +390,7 @@ export default function StockManagementPage() {
   const totalItems = stockItems.length
   const totalValue = stockItems.reduce((sum, item) => sum + item.total_amount, 0)
   const lowStockItems = stockItems.filter(item => item.stock_status === 'low_stock').length
+  const totalQuantity = stockItems.reduce((sum, item) => sum + (item.current_quantity || 0), 0)
 
   const handleStockInList = () => {
     alert('로그인이 필요한 기능입니다.')
@@ -463,8 +518,8 @@ export default function StockManagementPage() {
                 <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-600">총 재고 금액</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">총 재고 수량</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalQuantity}</p>
               </div>
             </div>
           </div>
@@ -475,10 +530,8 @@ export default function StockManagementPage() {
                 <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
               </div>
               <div className="ml-3 sm:ml-4">
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">부족 재고</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{lowStockItems}</p>
-                </div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">부족 재고</p>
+                <p className="text-xl sm:text-2xl font-bold text-gray-900">{lowStockItems}</p>
               </div>
             </div>
           </div>
@@ -489,7 +542,7 @@ export default function StockManagementPage() {
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
             <div className="text-center mb-4">
               <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                🚀 업무 메뉴
+                🚀 바로가기
               </h3>
               <p className="text-sm text-blue-700">
                 {currentUser.name}님의 권한에 맞는 메뉴입니다
@@ -647,6 +700,229 @@ export default function StockManagementPage() {
           </div>
         )}
 
+        {/* 재고 관리 기능 버튼들 */}
+        {currentUser && (
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                📦 바로가기
+              </h3>
+              <p className="text-sm text-gray-600">
+                {currentUser.name}님의 권한에 맞는 기능입니다
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* 관리자 권한 - 모든 버튼 */}
+              {currentUser.role === '관리자' && (
+                <>
+                  <Button
+                    onClick={() => setStockInModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📥</div>
+                      <div className="text-xs font-medium">입고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setStockOutModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📤</div>
+                      <div className="text-xs font-medium">출고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setCsvUploadModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📊</div>
+                      <div className="text-xs font-medium">CSV 업로드</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setSearchModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">🔍</div>
+                      <div className="text-xs font-medium">검색</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setHistoryModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📋</div>
+                      <div className="text-xs font-medium">이력관리</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setDisposalModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">🗑️</div>
+                      <div className="text-xs font-medium">폐기</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setStockInListModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📥📋</div>
+                      <div className="text-xs font-medium">입고이력</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setStockOutListModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-pink-300 text-pink-700 hover:bg-pink-50 hover:border-pink-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📤📋</div>
+                      <div className="text-xs font-medium">출고이력</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => router.push('/stock-closing')}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-yellow-300 text-yellow-700 hover:bg-yellow-50 hover:border-yellow-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📅</div>
+                      <div className="text-xs font-medium">마감</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+              
+              {/* 전기팀 권한 - 입고, 출고, 현황, 검색 */}
+              {currentUser.role === '전기팀' && (
+                <>
+                  <Button
+                    onClick={() => setStockInModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📥</div>
+                      <div className="text-xs font-medium">입고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setStockOutModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📤</div>
+                      <div className="text-xs font-medium">출고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setHistoryModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📋</div>
+                      <div className="text-xs font-medium">현황</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setSearchModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">🔍</div>
+                      <div className="text-xs font-medium">검색</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+              
+              {/* 그 외 사용자 권한 - 출고, 현황, 검색 */}
+              {currentUser.role !== '관리자' && currentUser.role !== '전기팀' && (
+                <>
+                  <Button
+                    onClick={() => setStockOutModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📤</div>
+                      <div className="text-xs font-medium">출고</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setHistoryModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">📋</div>
+                      <div className="text-xs font-medium">현황</div>
+                    </div>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setSearchModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-16 bg-white border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400"
+                  >
+                    <div className="text-center">
+                      <div className="text-lg mb-1">🔍</div>
+                      <div className="text-xs font-medium">검색</div>
+                    </div>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 로그인 안내 메시지 */}
         {!currentUser && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
@@ -754,47 +1030,22 @@ export default function StockManagementPage() {
               <thead className="bg-gray-800">
                 <tr>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    위치
+                  </th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     품명
                   </th>
-                  <th 
-                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('specification')}
-                  >
-                    <span className="hidden sm:inline">규격</span>
-                    <span className="sm:hidden">규격</span>
-                    {getSortIcon('specification')}
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    규격
                   </th>
-                  <th 
-                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('unit_price')}
-                  >
-                    <span className="hidden sm:inline">단가</span>
-                    <span className="sm:hidden">단가</span>
-                    {getSortIcon('unit_price')}
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    재질
                   </th>
-                  <th 
-                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('current_quantity')}
-                  >
-                    <span className="hidden sm:inline">수량</span>
-                    <span className="sm:hidden">수량</span>
-                    {getSortIcon('current_quantity')}
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    단위
                   </th>
-                  <th 
-                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('total_amount')}
-                  >
-                    <span className="hidden sm:inline">금액</span>
-                    <span className="sm:hidden">금액</span>
-                    {getSortIcon('total_amount')}
-                  </th>
-                  <th 
-                    className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider cursor-pointer hover:bg-gray-700"
-                    onClick={() => handleSort('notes')}
-                  >
-                    <span className="hidden sm:inline">기타</span>
-                    <span className="sm:hidden">기타</span>
-                    {getSortIcon('notes')}
+                  <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
+                    최종재고
                   </th>
                   <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     작업
@@ -807,6 +1058,11 @@ export default function StockManagementPage() {
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                         <div>
+                          <div className="text-xs sm:text-sm font-medium text-gray-900">{item.location || '-'}</div>
+                        </div>
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                        <div>
                           <div className="text-xs sm:text-sm font-medium text-gray-900">{item.name}</div>
                         </div>
                       </td>
@@ -814,16 +1070,13 @@ export default function StockManagementPage() {
                         {item.specification || '-'}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.unit_price ? `${item.unit_price.toLocaleString()}원` : '-'}
+                        {item.material || '-'}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.current_quantity || 0}개
+                        {item.unit || '-'}
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.total_amount ? `${item.total_amount.toLocaleString()}원` : '-'}
-                      </td>
-                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                        {item.notes || '-'}
+                        <span className="font-medium text-blue-600">{item.current_quantity || 0}</span>
                       </td>
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                         <div className="flex space-x-2">
@@ -850,11 +1103,18 @@ export default function StockManagementPage() {
                             검색어: <span className="font-medium text-gray-700">"{searchTerm}"</span>
                           </div>
                           <div className="text-xs text-gray-400">
-                            품명, 규격, 분류에서 검색됩니다
+                            위치, 품명, 규격, 재질에서 검색됩니다
                           </div>
                         </div>
                       ) : (
-                        '재고 데이터가 없습니다.'
+                        <div className="space-y-2">
+                          <div className="text-lg font-medium text-gray-700">
+                            재고 데이터가 없습니다
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            입고 데이터를 추가해주세요
+                          </div>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -879,6 +1139,15 @@ export default function StockManagementPage() {
           <Button onClick={handleStockOutList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
             <Package className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             출고 이력
+          </Button>
+          <Button 
+            onClick={() => router.push('/work-diary')} 
+            variant="outline" 
+            size="sm" 
+            className="w-full sm:w-auto text-xs sm:text-sm bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300"
+          >
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            업무일지 작성
           </Button>
           {isAdmin && (
             <Button onClick={handleDisposalList} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">

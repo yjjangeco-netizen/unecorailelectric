@@ -86,28 +86,29 @@ function WorkToolContent() {
       {/* 헤더 */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between h-auto sm:h-16 py-4 sm:py-0">
+            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
               <Building2 className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">유네코레일 전기파트</h1>
-                <p className="text-sm text-gray-600">업무 관리 시스템</p>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">유네코레일 전기파트</h1>
+                <p className="text-xs sm:text-sm text-gray-600">업무 관리 시스템</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="text-center sm:text-right">
                 <p className="text-sm font-medium text-gray-900">{username}님</p>
-                <p className="text-xs text-gray-500">{getRoleDisplayName(userRole)}</p>
+                <p className="text-xs text-gray-600">({getRoleDisplayName(userRole)})</p>
               </div>
+              
               <Button
                 onClick={handleLogout}
                 variant="outline"
                 size="sm"
-                className="flex items-center space-x-2"
+                className="w-full sm:w-auto"
               >
-                <LogOut className="h-4 w-4" />
-                <span>로그아웃</span>
+                <LogOut className="h-4 w-4 mr-2" />
+                로그아웃
               </Button>
             </div>
           </div>
@@ -115,76 +116,69 @@ function WorkToolContent() {
       </header>
 
       {/* 메인 콘텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">업무툴</h2>
-          <p className="text-lg text-gray-600">
-            {username}님의 권한에 맞는 메뉴를 선택하세요
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">업무 도구</h2>
+          <p className="text-sm sm:text-lg text-gray-600">
+            {username}님의 권한에 맞는 업무 도구를 선택하세요
           </p>
         </div>
 
         {/* 메뉴 그리드 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {accessibleMenus.map((item) => (
-            <Card
-              key={item.id}
-              className="hover:shadow-lg transition-shadow duration-200 cursor-pointer border-2 hover:border-blue-300"
+            <Card 
+              key={item.id} 
+              className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 border-2 hover:border-blue-300"
               onClick={() => handleMenuClick(item.path)}
             >
-              <CardHeader className="text-center pb-4">
+              <CardHeader className="text-center pb-3">
                 <div className="flex justify-center mb-3">
                   {item.icon}
                 </div>
-                <CardTitle className="text-xl font-semibold text-gray-900">
-                  {item.name}
-                </CardTitle>
+                <CardTitle className="text-lg sm:text-xl text-gray-900">{item.name}</CardTitle>
               </CardHeader>
               <CardContent className="text-center">
-                <p className="text-gray-600 mb-4">{item.description}</p>
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  size="lg"
-                >
-                  {item.name} 바로가기
-                </Button>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* 접근 불가 메뉴 안내 */}
-        {accessibleMenus.length < menuItems.length && (
-          <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-yellow-800 mb-2">
-                추가 메뉴 접근 안내
-              </h3>
+        {accessibleMenus.length === 0 && (
+          <div className="text-center py-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md mx-auto">
+              <User className="h-12 w-12 text-yellow-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">접근 가능한 메뉴가 없습니다</h3>
               <p className="text-sm text-yellow-700">
-                현재 {getRoleDisplayName(userRole)} 권한으로는 일부 메뉴에만 접근할 수 있습니다.
+                현재 권한으로는 접근할 수 있는 업무 도구가 없습니다.
                 <br />
-                추가 메뉴 접근이 필요하시면 관리자에게 문의하세요.
+                관리자에게 권한 요청을 해주세요.
               </p>
             </div>
           </div>
         )}
 
-        {/* 권한별 메뉴 정보 */}
-        <div className="mt-8 p-6 bg-gray-50 border border-gray-200 rounded-lg">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">
-            권한별 메뉴 접근 정보
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="text-center">
-              <h4 className="font-medium text-gray-800 mb-2">일반 사용자</h4>
-              <p className="text-gray-600">재고 관리</p>
-            </div>
-            <div className="text-center">
-              <h4 className="font-medium text-gray-800 mb-2">매니저</h4>
-              <p className="text-gray-600">재고 관리, 메뉴얼 관리, SOP</p>
-            </div>
-            <div className="text-center">
-              <h4 className="font-medium text-gray-800 mb-2">관리자</h4>
-              <p className="text-gray-600">모든 메뉴 접근 가능</p>
+        {/* 권한 정보 */}
+        <div className="mt-8 text-center">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6 max-w-2xl mx-auto">
+            <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-2">
+              🔐 현재 권한 정보
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-blue-700">
+              <div>
+                <strong>사용자:</strong> {username}
+              </div>
+              <div>
+                <strong>권한:</strong> {getRoleDisplayName(userRole)}
+              </div>
+              <div>
+                <strong>접근 가능 메뉴:</strong> {accessibleMenus.length}개
+              </div>
+              <div>
+                <strong>전체 메뉴:</strong> {menuItems.length}개
+              </div>
             </div>
           </div>
         </div>
