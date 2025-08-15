@@ -82,7 +82,7 @@ export default function StockAdjustmentModal({
   }
 
   const handleSaveEdit = () => {
-    if (!selectedItem) return
+    if (!selectedItem) {return}
 
     setItems(prev => prev.map(item => 
       item.id === selectedItem.id 
@@ -115,12 +115,12 @@ export default function StockAdjustmentModal({
 
   const getAdjustmentColor = (item: StockAdjustmentItem) => {
     const diff = getAdjustmentDifference(item)
-    if (diff > 0) return 'text-green-600'
-    if (diff < 0) return 'text-red-600'
+    if (diff > 0) {return 'text-green-600'}
+    if (diff < 0) {return 'text-red-600'}
     return 'text-gray-600'
   }
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

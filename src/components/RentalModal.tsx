@@ -116,7 +116,7 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   }
 
   const handleSave = async () => {
-    if (!selectedItem) return
+    if (!selectedItem) {return}
 
     try {
       const { error } = await supabase
@@ -130,7 +130,7 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
         })
         .eq('id', selectedItem.id)
 
-      if (error) throw error
+      if (error) {throw error}
       
       alert('수정이 완료되었습니다.')
       setIsEditing(false)

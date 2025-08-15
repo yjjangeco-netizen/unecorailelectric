@@ -127,7 +127,7 @@ export const useSearchStockQuery = (searchTerm: string) => {
     queryKey: ['stock', 'search', searchTerm],
     queryFn: async () => {
       return measureAsyncPerformance('재고 검색', async () => {
-        if (!searchTerm.trim()) return []
+        if (!searchTerm.trim()) {return []}
 
         const { data, error } = await supabase
           .from('current_stock')

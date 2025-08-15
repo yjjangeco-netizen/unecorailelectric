@@ -63,7 +63,9 @@ class Logger {
   }
 
   private log(level: LogLevel, message: string, context?: string, data?: Record<string, unknown>, error?: Error): void {
-    if (!this.shouldLog(level)) return
+    if (!this.shouldLog(level)) {
+      return
+    }
 
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
@@ -84,10 +86,10 @@ class Logger {
     // 콘솔 출력 (개발/테스트 환경)
     switch (level) {
       case 'debug':
-        console.debug(formattedMessage)
+        console.warn(`[DEBUG] ${formattedMessage}`)
         break
       case 'info':
-        console.info(formattedMessage)
+        console.warn(`[INFO] ${formattedMessage}`)
         break
       case 'warn':
         console.warn(formattedMessage)

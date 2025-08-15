@@ -135,7 +135,7 @@ export default function StockTestPanel() {
     
     // 각 테스트를 순차적으로 실행
     for (let i = 0; i < testResults.length; i++) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       setCurrentTest(testResults[i]?.testName || '')
       await runTest(i)
@@ -169,7 +169,7 @@ export default function StockTestPanel() {
   // 개별 테스트 실행
   const runTest = useCallback(async (testIndex: number) => {
     const test = testResults[testIndex]
-    if (!test) return
+    if (!test) {return}
     
     test.status = 'running'
     test.startTime = Date.now()
@@ -218,7 +218,7 @@ export default function StockTestPanel() {
     const batchSize = 10000 // 한 번에 처리할 테스트 수
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       
@@ -257,7 +257,7 @@ export default function StockTestPanel() {
     const batchSize = 10000
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       
@@ -292,7 +292,7 @@ export default function StockTestPanel() {
     const batchSize = 10000
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       
@@ -327,7 +327,7 @@ export default function StockTestPanel() {
     const batchSize = 10000
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       
@@ -362,7 +362,7 @@ export default function StockTestPanel() {
     const batchSize = 10000
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       
@@ -397,7 +397,7 @@ export default function StockTestPanel() {
     const batchSize = 10000
     
     for (let i = 0; i < test.totalTests; i += batchSize) {
-      if (!isRunning) break
+      if (!isRunning) {break}
       
       const currentBatch = Math.min(batchSize, test.totalTests - i)
       

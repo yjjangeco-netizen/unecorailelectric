@@ -108,7 +108,7 @@ export default function CSVUploadModal({ isOpen, onClose, onUploadComplete }: CS
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || previewData.length === 0) return
+    if (!selectedFile || previewData.length === 0) {return}
 
     setLoading(true)
     setUploadStatus('uploading')
@@ -156,7 +156,7 @@ export default function CSVUploadModal({ isOpen, onClose, onUploadComplete }: CS
              .select()
              .single()
 
-           if (itemError) throw itemError
+           if (itemError) {throw itemError}
 
            // 입고 기록 생성
            await supabase

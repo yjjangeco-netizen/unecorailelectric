@@ -71,7 +71,7 @@ export default function StockManagementPage() {
         .select('*')
         .order('name')
 
-      if (error) throw error
+      if (error) {throw error}
       setStockItems(data || [])
     } catch (err) {
       console.error('재고 데이터 로드 오류:', err)
@@ -92,7 +92,7 @@ export default function StockManagementPage() {
         .select('*')
         .order('name')
 
-      if (error) throw error
+      if (error) {throw error}
       setItems(data || [])
     } catch (err) {
       console.error('품목 데이터 로드 오류:', err)
@@ -324,8 +324,8 @@ export default function StockManagementPage() {
       let bValue: any = b[sortField as keyof CurrentStock]
       
       // null/undefined 처리
-      if (aValue === null || aValue === undefined) aValue = ''
-      if (bValue === null || bValue === undefined) bValue = ''
+      if (aValue === null || aValue === undefined) {aValue = ''}
+      if (bValue === null || bValue === undefined) {bValue = ''}
       
       // 문자열 비교
       if (typeof aValue === 'string' && typeof bValue === 'string') {

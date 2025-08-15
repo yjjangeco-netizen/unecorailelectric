@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Package, Plus, Minus, Search, Trash2, Save, Upload, Download } from 'lucide-react'
+import { Package, Plus, Search, Trash2, Save, Download } from 'lucide-react'
 import { CurrentStock } from '@/lib/supabase'
 import { log } from '@/lib/logger'
 
@@ -38,8 +38,6 @@ export default function BulkStockOutModal({
   const [rows, setRows] = useState<BulkStockOutRow[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isProcessing, setSaving] = useState(false)
-  const [selectedItems, setSelectedItems] = useState<CurrentStock[]>([])
-
   // 검색된 재고 아이템
   const filteredStockItems = stockItems.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

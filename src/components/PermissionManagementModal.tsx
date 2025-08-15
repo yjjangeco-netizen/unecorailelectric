@@ -118,7 +118,7 @@ export default function PermissionManagementModal({ isOpen, onClose }: Permissio
   }
 
   const handleSavePermissions = async () => {
-    if (!selectedUser) return
+    if (!selectedUser) {return}
 
     try {
       setSaving(true)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
-import { validateStockIn, validateStockOut, validateStockAdjustment, StockIn, StockOut, StockAdjustment } from '@/lib/schemas'
+import { validateStockIn, validateStockOut } from '@/lib/schemas'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger } from '@/lib/audit'
 

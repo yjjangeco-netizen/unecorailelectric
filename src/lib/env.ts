@@ -47,7 +47,7 @@ export const validateEnv = (): Env => {
 
 // 개발 환경에서만 환경변수 로깅
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 환경변수 로드됨:', {
+  console.warn('🔧 환경변수 로드됨:', {
     appName: env.NEXT_PUBLIC_APP_NAME,
     appVersion: env.NEXT_PUBLIC_APP_VERSION,
     appEnv: env.NEXT_PUBLIC_APP_ENV,

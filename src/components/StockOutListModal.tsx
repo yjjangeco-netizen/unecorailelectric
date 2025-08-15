@@ -82,7 +82,7 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
         `)
         .order('issued_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {throw error}
       setStockOuts(data || [])
     } catch (error) {
       console.error('출고 이력 로드 오류:', error)

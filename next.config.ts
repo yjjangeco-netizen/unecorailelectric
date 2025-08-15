@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  // ESLint 설정
+  eslint: {
+    ignoreDuringBuilds: false, // ESLint 오류를 제대로 수정하자
+  },
+  
   // 보안 헤더 설정
   async headers() {
     return [

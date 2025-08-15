@@ -92,7 +92,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   // 모든 행의 오류 상태 계산
   const getRowErrors = (index: number) => {
     const row = rows[index]
-    if (!row) return {}
+    if (!row) {return {}}
     return validateRow(row)
   }
 
@@ -144,7 +144,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
   const duplicateRow = (index: number) => {
     const originalRow = rows[index]
-    if (!originalRow) return
+    if (!originalRow) {return}
     
     const newRow = { 
       ...originalRow,
@@ -166,15 +166,15 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   }
 
   const moveRow = (fromIndex: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && fromIndex === 0) return
-    if (direction === 'down' && fromIndex === rows.length - 1) return
+    if (direction === 'up' && fromIndex === 0) {return}
+    if (direction === 'down' && fromIndex === rows.length - 1) {return}
 
     const newRows = [...rows]
     const targetIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
     const sourceRow = newRows[fromIndex]
     const targetRow = newRows[targetIndex]
     
-    if (!sourceRow || !targetRow) return
+    if (!sourceRow || !targetRow) {return}
     
     newRows[fromIndex] = targetRow
     newRows[targetIndex] = sourceRow
@@ -201,7 +201,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   }
 
   const deleteSelectedRows = () => {
-    if (selectedRows.size === 0) return
+    if (selectedRows.size === 0) {return}
     if (rows.length - selectedRows.size < 1) {
       alert('최소 하나의 행은 남겨두어야 합니다.')
       return
@@ -213,7 +213,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   const updateRow = (index: number, field: keyof BulkStockInRow, value: any) => {
     const newRows = [...rows]
     const currentRow = newRows[index]
-    if (!currentRow) return
+    if (!currentRow) {return}
     
     newRows[index] = { ...currentRow, [field]: value }
     setRows(newRows)
@@ -369,7 +369,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {return}
 
     const reader = new FileReader()
     reader.onload = (e) => {
@@ -395,7 +395,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         
         // 날짜 검증 함수
         const isValidDate = (dateStr: string) => {
-          if (!dateStr) return false
+          if (!dateStr) {return false}
           const date = new Date(dateStr)
           return !isNaN(date.getTime()) && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)
         }
@@ -454,10 +454,10 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   }
 
   const mapConditionType = (value: string): 'new' | 'used_good' | 'used_defective' | 'unknown' => {
-    if (value === '신품') return 'new'
-    if (value === '중고(양품)') return 'used_good'
-    if (value === '중고(불량)') return 'used_defective'
-    if (value === '모름') return 'unknown'
+    if (value === '신품') {return 'new'}
+    if (value === '중고(양품)') {return 'used_good'}
+    if (value === '중고(불량)') {return 'used_defective'}
+    if (value === '모름') {return 'unknown'}
     return 'new' // 기본값
   }
 

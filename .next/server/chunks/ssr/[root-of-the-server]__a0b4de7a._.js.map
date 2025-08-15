@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///C:/CSHOP/unecorailelectric/src/app/simple/page.tsx"],"sourcesContent":["export default function SimplePage() {\r\n  return (\r\n    <div className=\"p-8\">\r\n      <h1 className=\"text-2xl font-bold mb-4\">🧪 Simple Main Page</h1>\r\n      <p className=\"text-gray-600\">This is a simplified main page for testing.</p>\r\n      <div className=\"mt-4 p-4 bg-blue-100 border border-blue-300 rounded\">\r\n        <p className=\"text-blue-800\">✅ Basic page rendering is working!</p>\r\n      </div>\r\n      <div className=\"mt-4\">\r\n        <a href=\"/test-simple\" className=\"text-blue-600 hover:underline\">Go to Test Page</a>\r\n      </div>\r\n    </div>\r\n  )\r\n}\r\n"],"names":[],"mappings":";;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;QAAI,WAAU;;0BACb,8OAAC;gBAAG,WAAU;0BAA0B;;;;;;0BACxC,8OAAC;gBAAE,WAAU;0BAAgB;;;;;;0BAC7B,8OAAC;gBAAI,WAAU;0BACb,cAAA,8OAAC;oBAAE,WAAU;8BAAgB;;;;;;;;;;;0BAE/B,8OAAC;gBAAI,WAAU;0BACb,cAAA,8OAAC;oBAAE,MAAK;oBAAe,WAAU;8BAAgC;;;;;;;;;;;;;;;;;AAIzE","debugId":null}}]
-}

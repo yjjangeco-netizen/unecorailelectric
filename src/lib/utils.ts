@@ -96,7 +96,9 @@ export const formatDateTime = (dateString: string): string => {
  */
 export const safeParseInt = (value: string | number, defaultValue: number = 0): number => {
   try {
-    if (typeof value === 'number') return value
+    if (typeof value === 'number') {
+      return value
+    }
     const parsed = parseInt(value, 10)
     return isNaN(parsed) ? defaultValue : parsed
   } catch (error) {
@@ -110,7 +112,9 @@ export const safeParseInt = (value: string | number, defaultValue: number = 0): 
  */
 export const safeParseFloat = (value: string | number, defaultValue: number = 0): number => {
   try {
-    if (typeof value === 'number') return value
+    if (typeof value === 'number') {
+      return value
+    }
     const parsed = parseFloat(value)
     return isNaN(parsed) ? defaultValue : parsed
   } catch (error) {
@@ -204,7 +208,7 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
   let timeout: NodeJS.Timeout | null = null
   
   return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout)
+    if (timeout) {clearTimeout(timeout)}
     timeout = setTimeout(() => func(...args), wait)
   }
 }

@@ -82,10 +82,10 @@ export default function StockClosingPage() {
     const year = now.getFullYear()
     
     let quarter = 1
-    if (month >= 4 && month <= 6) quarter = 1
-    else if (month >= 7 && month <= 9) quarter = 2
-    else if (month >= 10 && month <= 12) quarter = 3
-    else quarter = 4
+    if (month >= 4 && month <= 6) {quarter = 1}
+    else if (month >= 7 && month <= 9) {quarter = 2}
+    else if (month >= 10 && month <= 12) {quarter = 3}
+    else {quarter = 4}
     
     setCurrentQuarter(quarter)
     setCurrentYear(year)
@@ -210,7 +210,7 @@ export default function StockClosingPage() {
   // 분기별 입출고 현황 조회
   const getQuarterlyReport = (quarter: number, year: number) => {
     const closing = closingHistory.find(c => c.quarter === quarter && c.year === year)
-    if (!closing) return null
+    if (!closing) {return null}
 
     return {
       quarter,
@@ -236,7 +236,7 @@ export default function StockClosingPage() {
 
   const generateCSVReport = (quarter: number, year: number): string => {
     const closing = closingHistory.find(c => c.quarter === quarter && c.year === year)
-    if (!closing) return ''
+    if (!closing) {return ''}
 
     const headers = ['Tag NO.', '위치', '품명', '규격', '재질', '단위', '전분기 재고', '입고수량', '불출수량', '최종재고', '실수량', '불출내용', '비고']
     const rows = closing.items.map((item, index) => [

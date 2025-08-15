@@ -45,8 +45,8 @@ export default function HomePage() {
 
   // 사용자명에 따른 기본 역할 반환
   const getDefaultRole = (username: string) => {
-    if (username.toLowerCase().includes('admin')) return 'admin'
-    if (username.toLowerCase().includes('manager')) return 'manager'
+    if (username.toLowerCase().includes('admin')) {return 'admin'}
+    if (username.toLowerCase().includes('manager')) {return 'manager'}
     return 'user'
   }
 

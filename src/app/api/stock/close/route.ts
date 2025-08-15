@@ -22,13 +22,7 @@ const rollbackRequestSchema = z.object({
   reason: z.string().min(1).max(500)
 })
 
-interface AuthenticatedUser {
-  id: string
-  email?: string
-  role?: string
-}
-
-type SupabaseClient = ReturnType<typeof createServerSupabaseClient>
+// Note: AuthenticatedUser and SupabaseClient types are used implicitly
 
 // 마감 처리 API
 export async function POST(request: NextRequest) {

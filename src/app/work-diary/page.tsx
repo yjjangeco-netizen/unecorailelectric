@@ -117,7 +117,7 @@ function WorkDiaryContent() {
 
   // 일지 저장
   const handleSaveDiary = () => {
-    if (!selectedDate || !formContent.trim()) return
+    if (!selectedDate || !formContent.trim()) {return}
 
     if (editingEntry) {
       // 기존 일지 수정
@@ -201,7 +201,7 @@ function WorkDiaryContent() {
 
   // Google Calendar에서 일지 동기화 해제
   const unsyncFromGoogleCalendar = async (entry: WorkDiaryEntry) => {
-    if (!entry.googleCalendarEventId) return
+    if (!entry.googleCalendarEventId) {return}
 
     try {
       // 실제 구현에서는 Google Calendar API를 호출하여 이벤트를 삭제합니다
