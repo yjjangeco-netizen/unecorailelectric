@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { StockIn, Item, supabase } from '@/lib/supabase'
@@ -40,14 +40,14 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       reason: '',
       ordered_by: '',
       received_by: '',
-      received_date: new Date().toISOString().split('T')[0]
+      received_date: new Date().toISOString().split('T')[0] || ''
     }
   ])
   const [loading, setLoading] = useState(false)
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
 
   // 데이터 형식 검증 함수
-  const validateRow = (row: BulkStockInRow, index: number) => {
+  const validateRow = (row: BulkStockInRow) => {
     const errors: { [key: string]: string } = {}
     
     // 필수 필드 검증
@@ -91,12 +91,14 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
   // 모든 행의 오류 상태 계산
   const getRowErrors = (index: number) => {
-    return validateRow(rows[index], index)
+    const row = rows[index]
+    if (!row) return {}
+    return validateRow(row)
   }
 
   // 오류가 있는 행이 있는지 확인
   const hasErrors = () => {
-    return rows.some((row, index) => Object.keys(validateRow(row, index)).length > 0)
+    return rows.some((row) => Object.keys(validateRow(row)).length > 0)
   }
 
   // 오류가 있는 필드의 스타일 클래스
@@ -117,7 +119,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       reason: '',
       ordered_by: '',
       received_by: '',
-      received_date: new Date().toISOString().split('T')[0]
+      received_date: new Date().toISOString().split('T')[0] || ''
     }])
   }
 
@@ -141,7 +143,23 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   }
 
   const duplicateRow = (index: number) => {
-    const newRow = { ...rows[index] }
+    const originalRow = rows[index]
+    if (!originalRow) return
+    
+    const newRow = { 
+      ...originalRow,
+      name: originalRow.name || '',
+      specification: originalRow.specification || '',
+      maker: originalRow.maker || '',
+      unit_price: originalRow.unit_price || 0,
+      purpose: originalRow.purpose || '',
+      quantity: originalRow.quantity || 0,
+      condition_type: originalRow.condition_type || 'new',
+      reason: originalRow.reason || '',
+      ordered_by: originalRow.ordered_by || '',
+      received_by: originalRow.received_by || '',
+      received_date: originalRow.received_date || new Date().toISOString().split('T')[0] || ''
+    }
     const newRows = [...rows]
     newRows.splice(index + 1, 0, newRow)
     setRows(newRows)
@@ -153,9 +171,13 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
     const newRows = [...rows]
     const targetIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
-    const temp = newRows[fromIndex]
-    newRows[fromIndex] = newRows[targetIndex]
-    newRows[targetIndex] = temp
+    const sourceRow = newRows[fromIndex]
+    const targetRow = newRows[targetIndex]
+    
+    if (!sourceRow || !targetRow) return
+    
+    newRows[fromIndex] = targetRow
+    newRows[targetIndex] = sourceRow
     setRows(newRows)
   }
 
@@ -190,7 +212,10 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
   const updateRow = (index: number, field: keyof BulkStockInRow, value: any) => {
     const newRows = [...rows]
-    newRows[index] = { ...newRows[index], [field]: value }
+    const currentRow = newRows[index]
+    if (!currentRow) return
+    
+    newRows[index] = { ...currentRow, [field]: value }
     setRows(newRows)
   }
 
@@ -227,9 +252,9 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         console.log(`처리 중인 행 ${i + 1}:`, row)
         
         // 기존 품목이 있는지 확인
-        let existingItem = items.find(item => 
-          item.name.toLowerCase() === row.name.toLowerCase() &&
-          item.specification.toLowerCase() === row.specification.toLowerCase()
+        const existingItem = items.find(item => 
+          item.name.toLowerCase() === (row?.name || '').toLowerCase() &&
+          item.specification.toLowerCase() === (row?.specification || '').toLowerCase()
         )
         
         console.log('기존 품목 찾기 결과:', existingItem)
@@ -247,11 +272,11 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
             const { data: newItem, error: itemError } = await supabase
               .from('items')
               .insert([{
-                name: row.name,
-                specification: row.specification,
-                maker: row.maker || '',
-                unit_price: row.unit_price || 0,
-                purpose: row.purpose || '',
+                name: row?.name || '',
+                specification: row?.specification || '',
+                maker: row?.maker || '',
+                unit_price: row?.unit_price || 0,
+                purpose: row?.purpose || '',
                 min_stock: 0,
                 category: '',
                 description: ''
@@ -280,13 +305,13 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         console.log('입고 기록 생성 중...')
         const stockInData = {
           item_id: itemId,
-          quantity: row.quantity,
-          unit_price: row.unit_price,
-          condition_type: row.condition_type,
-          reason: row.reason,
-          ordered_by: row.ordered_by,
-          received_by: row.received_by,
-          received_at: new Date(row.received_date).toISOString()
+          quantity: row?.quantity || 0,
+          unit_price: row?.unit_price || 0,
+          condition_type: row?.condition_type || 'new',
+          reason: row?.reason || '',
+          ordered_by: row?.ordered_by || '',
+          received_by: row?.received_by || '',
+          received_at: new Date(row?.received_date || new Date().toISOString().split('T')[0] || '').toISOString()
         }
         console.log('입고 데이터:', stockInData)
         
@@ -312,7 +337,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         reason: '',
         ordered_by: '',
         received_by: '',
-        received_date: new Date().toISOString().split('T')[0]
+        received_date: new Date().toISOString().split('T')[0] || ''
       }])
     } catch (error: any) {
       console.error('대량 입고 저장 오류:', error)
@@ -358,7 +383,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         return
       }
 
-      const headers = lines[0].split(',').map(h => h.trim())
+      const headers = (lines[0] || '').split(',').map(h => h.trim())
       console.log('헤더:', headers) // 디버깅용
       
       const dataRows = lines.slice(1).filter(line => line.trim())
@@ -376,20 +401,20 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         }
         
         // 기본 날짜 설정
-        let receivedDate = values[9] || new Date().toISOString().split('T')[0]
+        let receivedDate = values[9] || new Date().toISOString().split('T')[0] || ''
         if (!isValidDate(receivedDate)) {
           console.warn(`행 ${index + 1}: 잘못된 날짜 형식 "${receivedDate}", 오늘 날짜로 설정`)
-          receivedDate = new Date().toISOString().split('T')[0]
+          receivedDate = new Date().toISOString().split('T')[0] || ''
         }
         
         const row = {
           name: values[0] || '',
           specification: values[1] || '',
           maker: values[2] || '',
-          unit_price: parseFloat(values[3]) || 0,
+          unit_price: parseFloat(values[3] || '0') || 0,
           purpose: values[4] || '',
-          quantity: parseInt(values[5]) || 0,
-          condition_type: mapConditionType(values[6]) || 'new',
+          quantity: parseInt(values[5] || '0') || 0,
+          condition_type: mapConditionType(values[6] || '') || 'new',
           reason: values[7] || '',
           ordered_by: values[8] || '',
           received_by: values[9] || '',
@@ -407,9 +432,9 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         setRows(prevRows => {
           // 기존에 빈 행이 하나만 있고 모든 필드가 비어있으면 새 행으로 교체
           if (prevRows.length === 1 && 
-              prevRows[0].name === '' && 
-              prevRows[0].specification === '' && 
-              prevRows[0].quantity === 0) {
+              prevRows[0]?.name === '' && 
+              prevRows[0]?.specification === '' && 
+              (prevRows[0]?.quantity || 0) === 0) {
             return newRows
           }
           // 그렇지 않으면 기존 행에 새 행 추가

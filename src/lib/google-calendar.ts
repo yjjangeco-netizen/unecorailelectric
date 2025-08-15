@@ -1,7 +1,38 @@
 import { google } from 'googleapis'
 
+// 업무일지 항목을 구글 캘린더 이벤트 형식으로 변환
+export function transformWorkDiaryEntry(entry: {
+  id: string
+  date: string
+  content: string
+  user_id: string
+  created_at: string
+}) {
+  // 날짜 유효성 검증
+  const dateObj = new Date(entry.date)
+  if (isNaN(dateObj.getTime())) {
+    throw new Error(`Invalid date: ${entry.date}`)
+  }
+
+  // 제목 생성 (길이 제한)
+  const maxTitleLength = 100
+  const contentPreview = entry.content || '(내용 없음)'
+  const title = `업무일지: ${contentPreview}`.slice(0, maxTitleLength)
+
+  return {
+    summary: title,
+    description: entry.content,
+    start: {
+      date: entry.date
+    },
+    end: {
+      date: entry.date
+    }
+  }
+}
+
 // Google Calendar API 설정
-const SCOPES = ['https://www.googleapis.com/auth/calendar']
+// const SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 // Google Calendar API 클라이언트 생성
 export const createGoogleCalendarClient = (accessToken: string) => {
@@ -12,7 +43,30 @@ export const createGoogleCalendarClient = (accessToken: string) => {
 }
 
 // 업무일지를 Google Calendar 이벤트로 변환
-export const convertDiaryToCalendarEvent = (diaryEntry: any) => {
+import { WorkDiaryEntry } from '@/lib/supabase'
+
+interface CalendarEvent {
+  summary: string
+  description: string
+  start: {
+    date: string
+    timeZone: string
+  }
+  end: {
+    date: string
+    timeZone: string
+  }
+  colorId: string
+  reminders: {
+    useDefault: boolean
+    overrides: Array<{
+      method: string
+      minutes: number
+    }>
+  }
+}
+
+export const convertDiaryToCalendarEvent = (diaryEntry: WorkDiaryEntry): CalendarEvent => {
   return {
     summary: `업무일지: ${diaryEntry.userName}`,
     description: diaryEntry.content,
@@ -37,9 +91,9 @@ export const convertDiaryToCalendarEvent = (diaryEntry: any) => {
 
 // Google Calendar에 이벤트 추가
 export const addEventToGoogleCalendar = async (
-  calendarClient: any,
+  calendarClient: any, // Google Calendar API 클라이언트
   calendarId: string,
-  event: any
+  event: CalendarEvent
 ) => {
   try {
     const response = await calendarClient.events.insert({
@@ -56,17 +110,17 @@ export const addEventToGoogleCalendar = async (
     console.error('Google Calendar 이벤트 추가 실패:', error)
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
 
 // Google Calendar에서 이벤트 업데이트
 export const updateEventInGoogleCalendar = async (
-  calendarClient: any,
+  calendarClient: any, // Google Calendar API 클라이언트
   calendarId: string,
   eventId: string,
-  event: any
+  event: CalendarEvent
 ) => {
   try {
     const response = await calendarClient.events.update({
@@ -84,14 +138,14 @@ export const updateEventInGoogleCalendar = async (
     console.error('Google Calendar 이벤트 업데이트 실패:', error)
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
 
 // Google Calendar에서 이벤트 삭제
 export const deleteEventFromGoogleCalendar = async (
-  calendarClient: any,
+  calendarClient: any, // Google Calendar API 클라이언트
   calendarId: string,
   eventId: string
 ) => {
@@ -106,14 +160,14 @@ export const deleteEventFromGoogleCalendar = async (
     console.error('Google Calendar 이벤트 삭제 실패:', error)
     return {
       success: false,
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     }
   }
 }
 
 // Google Calendar에서 특정 날짜의 이벤트 조회
 export const getEventsFromGoogleCalendar = async (
-  calendarClient: any,
+  calendarClient: any, // Google Calendar API 클라이언트
   calendarId: string,
   date: string
 ) => {
@@ -134,7 +188,7 @@ export const getEventsFromGoogleCalendar = async (
     console.error('Google Calendar 이벤트 조회 실패:', error)
     return {
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       events: []
     }
   }

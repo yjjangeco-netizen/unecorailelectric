@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "es6"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,6 +16,15 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "verbatimModuleSyntax": true,
     "plugins": [
       {
         "name": "next"
@@ -19,9 +32,19 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "target": "ES2017"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

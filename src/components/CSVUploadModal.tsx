@@ -70,7 +70,7 @@ export default function CSVUploadModal({ isOpen, onClose, onUploadComplete }: CS
     reader.onload = (e) => {
       const text = e.target?.result as string
       const lines = text.split('\n')
-      const headers = lines[0].split(',').map(h => h.trim())
+      const headers = (lines[0] || '').split(',').map(h => h.trim())
       
              // CSV 헤더 검증
        const requiredHeaders = ['item_number', 'item_name', 'specification', 'maker', 'note', 'rack_location', 'barcode']
@@ -85,9 +85,9 @@ export default function CSVUploadModal({ isOpen, onClose, onUploadComplete }: CS
        }
 
              const data: CSVItem[] = []
-       for (let i = 1; i < lines.length; i++) {
-         if (lines[i].trim()) {
-           const values = lines[i].split(',').map(v => v.trim())
+             for (let i = 1; i < lines.length; i++) {
+        if (lines[i]?.trim()) {
+          const values = (lines[i] || '').split(',').map(v => v.trim())
            if (values.length >= 7) {
              data.push({
                item_number: values[0] || '',

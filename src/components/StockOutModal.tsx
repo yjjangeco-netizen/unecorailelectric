@@ -5,15 +5,28 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Package, ArrowUp, AlertTriangle } from 'lucide-react'
 
+// 엄격한 타입 정의
+interface StockOutFormData {
+  quantity: string
+  project: string
+  notes: string
+}
+
+interface StockOutItem {
+  id: string
+  name: string
+  current_quantity: number
+}
+
 interface StockOutModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: any) => void
-  selectedItems?: Array<{ id: string; name: string; current_quantity: number }>
+  onSave: (data: StockOutFormData) => void
+  selectedItems: StockOutItem[]
 }
 
 export default function StockOutModal({ isOpen, onClose, onSave, selectedItems = [] }: StockOutModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StockOutFormData>({
     quantity: '',
     project: '',
     notes: ''
@@ -43,12 +56,32 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
       return
     }
 
+    // 선택된 항목들의 재고 수량 검증
+    const outQuantity = parseInt(formData.quantity)
+    const insufficientItems = selectedItems.filter(item => item.current_quantity < outQuantity)
+    
+    if (insufficientItems.length > 0) {
+      const itemNames = insufficientItems.map(item => item.name).join(', ')
+      alert(`재고 부족: ${itemNames}\n출고 수량을 재고 수량 이하로 조정해주세요.`)
+      return
+    }
+
     onSave(formData)
     onClose()
   }
 
+  // 폼 초기화 및 모달 닫기
+  const handleClose = () => {
+    setFormData({
+      quantity: '',
+      project: '',
+      notes: ''
+    })
+    onClose()
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
@@ -67,8 +100,8 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
               <div className="space-y-1">
                 {selectedItems.map((item) => (
                   <div key={item.id} className="text-xs text-blue-700 flex justify-between">
-                    <span>{item.name}</span>
-                    <span>현재: {item.current_quantity}개</span>
+                    <span className="truncate flex-1">{item.name}</span>
+                    <span className="ml-2 text-blue-600 font-medium">현재: {item.current_quantity}개</span>
                   </div>
                 ))}
               </div>
@@ -86,7 +119,7 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              출고 수량
+              출고 수량 <span className="text-red-500">*</span>
             </label>
             <input
               type="number"
@@ -95,8 +128,14 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="출고할 수량을 입력하세요"
               min="1"
+              max="999999"
               required
             />
+            {selectedItems.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                최대 출고 가능: {Math.min(...selectedItems.map(item => item.current_quantity))}개
+              </p>
+            )}
           </div>
 
           <div>
@@ -109,6 +148,7 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
               onChange={(e) => setFormData({...formData, project: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="프로젝트명 또는 용도를 입력하세요"
+              maxLength={100}
             />
           </div>
 
@@ -122,6 +162,7 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
               placeholder="추가 메모를 입력하세요"
+              maxLength={500}
             />
           </div>
 
@@ -134,7 +175,7 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
               <ArrowUp className="h-4 w-4 mr-2" />
               출고 처리
             </Button>
-            <Button type="button" onClick={onClose} variant="outline" className="flex-1">
+            <Button type="button" onClick={handleClose} variant="outline" className="flex-1">
               취소
             </Button>
           </div>

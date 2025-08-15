@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, FileText, ArrowLeft, Plus, Search, Download, Edit, Trash2 } from 'lucide-react'
+import { Building2, FileText, ArrowLeft, Plus, Search, Download, Edit } from 'lucide-react'
 
 interface ManualItem {
   id: string

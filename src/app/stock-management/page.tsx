@@ -10,10 +10,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, type CurrentStock, type Item, type StockOut, type User as UserType } from '@/lib/supabase'
+import { supabase, type CurrentStock, type Item } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, getStockStatusColor } from '@/lib/utils'
-import { Package, TrendingUp, AlertTriangle, ArrowDown, ArrowUp, Search, History, Clock, User, Trash2, Edit, Database, Settings, Upload, Shield, ArrowLeft, FileText } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { Package, TrendingUp, AlertTriangle, Search, History, User, Trash2, ArrowLeft, FileText, Settings } from 'lucide-react'
 import StockInModal from '@/components/StockInModal'
 import StockOutModal from '@/components/StockOutModal'
 import SearchModal from '@/components/SearchModal'
@@ -44,13 +44,13 @@ export default function StockManagementPage() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false)
   const [rentalModalOpen, setRentalModalOpen] = useState(false)
   const [bulkStockOutModalOpen, setBulkStockOutModalOpen] = useState(false)
-  const [selectedStockOutItem, setSelectedStockOutItem] = useState<string | null>(null)
+
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<CurrentStock | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filteredStockItems, setFilteredStockItems] = useState<CurrentStock[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
-  const [sortField, setSortField] = useState<string>('name')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [sortField] = useState<string>('name')
+  const [sortDirection] = useState<'asc' | 'desc'>('asc')
   const [isAdmin, setIsAdmin] = useState(false) // 관리자 권한 상태
   const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false) // 초기에는 로그인 모달을 숨김
@@ -190,16 +190,20 @@ export default function StockManagementPage() {
       if (existingItemIndex >= 0) {
         // 기존 품목 수량 증가
         const updatedItems = [...stockItems]
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          current_quantity: (updatedItems[existingItemIndex].current_quantity || 0) + parseInt(stockInData.quantity),
-          total_amount: (updatedItems[existingItemIndex].current_quantity || 0) * (updatedItems[existingItemIndex].unit_price || 0)
+        const existingItem = updatedItems[existingItemIndex]
+        if (existingItem) {
+          const newQuantity = (existingItem.current_quantity || 0) + parseInt(stockInData.quantity)
+          updatedItems[existingItemIndex] = {
+            ...existingItem,
+            current_quantity: newQuantity,
+            total_amount: newQuantity * (existingItem.unit_price || 0)
+          }
         }
         setStockItems(updatedItems)
         alert(`✅ ${stockInData.itemName} 입고 완료!\n기존 수량에 ${stockInData.quantity}개 추가되었습니다.`)
       } else {
         // 새 품목 추가
-        const newStockItem = {
+        const newStockItem: CurrentStock = {
           id: Date.now().toString(),
           name: stockInData.itemName,
           specification: stockInData.itemName,
@@ -208,7 +212,7 @@ export default function StockManagementPage() {
           total_amount: (parseFloat(stockInData.unitPrice) || 0) * (parseInt(stockInData.quantity) || 0),
           notes: stockInData.notes || '',
           category: '일반',
-          stock_status: 'normal'
+          stock_status: 'normal' as const
         }
         
         setStockItems([...stockItems, newStockItem])
@@ -277,9 +281,9 @@ export default function StockManagementPage() {
   }
 
   // 검색에서 출고 처리 - 비활성화
-  const handleSearchStockOut = (itemId: string) => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleSearchStockOut = (itemId: string) => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
   // 이력 보기
   const handleViewHistory = (item: CurrentStock) => {
@@ -287,9 +291,9 @@ export default function StockManagementPage() {
     setHistoryModalOpen(true)
   }
 
-  const handleRental = (itemId: string) => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleRental = (itemId: string) => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
   // 검색 기능 - 품명, 규격, 분류에서만 검색
   const handleSearch = () => {
@@ -343,78 +347,78 @@ export default function StockManagementPage() {
   const displayItems = sortItems(baseItems)
 
   // 체크박스 관련 함수들 - 비활성화
-  const handleSelectItem = (itemId: string) => {
-    // 체크박스 선택 비활성화
-  }
+  // const handleSelectItem = (itemId: string) => {
+  //   // 체크박스 선택 비활성화
+  // }
 
-  const handleSelectAll = () => {
-    // 전체 선택 비활성화
-  }
+  // const handleSelectAll = () => {
+  //   // 전체 선택 비활성화
+  // }
 
-  const handleBulkStockOut = () => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleBulkStockOut = () => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
-  const handleBulkStockOutSave = async (stockOuts: Omit<StockOut, 'id' | 'issued_at'>[]) => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleBulkStockOutSave = async (stockOuts: Omit<StockOut, 'id' | 'issued_at'>[]) => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
   // 정렬 처리 함수
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
-    }
-  }
+  // const handleSort = (field: string) => {
+  //   if (sortField === field) {
+  //     setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortField(field)
+  //     setSortDirection('asc')
+  //   }
+  // }
 
   // 정렬 아이콘 표시 함수
-  const getSortIcon = (field: string) => {
-    if (sortField !== field) return null
-    return sortDirection === 'asc' ? '↑' : '↓'
-  }
+  // const getSortIcon = (field: string) => {
+  //   if (sortField !== field) return null
+  //   return sortDirection === 'asc' ? '↑' : '↓'
+  // }
 
   // 관리자 전용 기능들 - 비활성화
-  const handleDispose = () => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleDispose = () => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
-  const handleDisposalComplete = () => {
-    // 비활성화
-  }
+  // const handleDisposalComplete = () => {
+  //   // 비활성화
+  // }
 
   const handleDisposalList = () => {
     alert('로그인이 필요한 기능입니다.')
   }
 
-  const handleDelete = () => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleDelete = () => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
-  const handleEditBaseData = () => {
-    alert('로그인이 필요한 기능입니다.')
-  }
+  // const handleEditBaseData = () => {
+  //   alert('로그인이 필요한 기능입니다.')
+  // }
 
   // 사용자 권한 체크 함수
-  const checkUserPermission = (menuKey: string): boolean => {
-    if (!currentUser) return false
-    if (currentUser.role === '관리자') return true
+  // const checkUserPermission = (menuKey: string): boolean => {
+  //   if (!currentUser) return false
+  //   if (currentUser.role === '관리자') return true
+  //   
+  //   // 일반 사용자 권한 설정 (예시)
+  //   const userPermissions = {
+  //     'dashboard': true,
+  //     'stock_status': true,
+  //     'inbound_management': true,
+  //     'outbound_management_1': true,
+  //     'outbound_management_2': false,
+  //     'permission_management': false,
+  //     'system_management': false,
+  //     'user_management': false
+  //   }
     
-    // 일반 사용자 권한 설정 (예시)
-    const userPermissions = {
-      'dashboard': true,
-      'stock_status': true,
-      'inbound_management': true,
-      'outbound_management_1': true,
-      'outbound_management_2': false,
-      'permission_management': false,
-      'system_management': false,
-      'user_management': false
-    }
-    
-    return userPermissions[menuKey as keyof typeof userPermissions] || false
-  }
+  //   return userPermissions[menuKey as keyof typeof userPermissions] || false
+  // }
 
   // 로그인 처리
   const handleLogin = async (username: string, password: string): Promise<boolean> => {
@@ -506,7 +510,7 @@ export default function StockManagementPage() {
 
   // 통계 계산
   const totalItems = stockItems.length
-  const totalValue = stockItems.reduce((sum, item) => sum + item.total_amount, 0)
+  // const totalValue = stockItems.reduce((sum, item) => sum + item.total_amount, 0)
   const lowStockItems = stockItems.filter(item => item.stock_status === 'low_stock').length
   const totalQuantity = stockItems.reduce((sum, item) => sum + (item.current_quantity || 0), 0)
 
@@ -1425,7 +1429,6 @@ export default function StockManagementPage() {
       <StockInModal
         isOpen={stockInModalOpen}
         onClose={() => setStockInModalOpen(false)}
-        items={items}
         onSave={handleSaveStockIn}
       />
       
@@ -1446,28 +1449,29 @@ export default function StockManagementPage() {
       <SearchModal
         isOpen={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
-        stockItems={stockItems}
-        onStockOut={handleSearchStockOut}
+        onSearch={(query) => {
+          setSearchTerm(query)
+          setSearchModalOpen(false)
+        }}
       />
 
       <StockHistoryModal
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
-        itemId={selectedHistoryItem?.id || ''}
+        item={selectedHistoryItem}
       />
 
       <RentalModal
         isOpen={rentalModalOpen}
         onClose={() => setRentalModalOpen(false)}
         stockItems={stockItems}
-        onRental={handleRental}
+        onRental={() => alert('로그인이 필요한 기능입니다.')}
       />
 
       <BulkStockOutModal
         isOpen={bulkStockOutModalOpen}
         onClose={() => setBulkStockOutModalOpen(false)}
-        selectedItems={displayItems.filter(item => selectedItems.has(item.id))}
-        onSave={handleBulkStockOutSave}
+
       />
       
       {/* 로그인 모달 */}
@@ -1487,8 +1491,7 @@ export default function StockManagementPage() {
       <DisposalModal
         isOpen={disposalModalOpen}
         onClose={() => setDisposalModalOpen(false)}
-        selectedItemIds={Array.from(selectedItems)}
-        onDisposalComplete={handleDisposalComplete}
+
       />
 
       {/* 폐기 리스트 모달 */}

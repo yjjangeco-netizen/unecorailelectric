@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Building2, Calendar, ArrowLeft, Plus, Edit, Trash2, User, Clock, ExternalLink, Link, Unlink } from 'lucide-react'
+import { Building2, Calendar, ArrowLeft, Edit, Trash2, ExternalLink, Link, Unlink } from 'lucide-react'
 
 interface WorkDiaryEntry {
   id: string
@@ -102,7 +102,7 @@ function WorkDiaryContent() {
   // 날짜 더블클릭 처리
   const handleDateDoubleClick = (date: Date) => {
     const dateString = date.toISOString().split('T')[0]
-    setSelectedDate(dateString)
+    setSelectedDate(dateString || null)
     setShowDiaryForm(true)
     setFormContent('')
     setEditingEntry(null)
@@ -209,12 +209,12 @@ function WorkDiaryContent() {
         ...entry,
         googleCalendarEventId: undefined,
         googleCalendarLink: undefined
-      }
+      } as unknown as WorkDiaryEntry
       
       const updatedEntries = diaryEntries.map(e => 
         e.id === entry.id ? updatedEntry : e
       )
-      setDiaryEntries(updatedEntries)
+      setDiaryEntries(updatedEntries as WorkDiaryEntry[])
       
       alert('Google Calendar 동기화가 해제되었습니다.')
     } catch (error) {

@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Search, Save, User, Shield } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Save, User, Shield } from 'lucide-react'
 
 interface PermissionManagementModalProps {
   isOpen: boolean
@@ -46,7 +45,7 @@ export default function PermissionManagementModal({ isOpen, onClose }: Permissio
   const [userPermissions, setUserPermissions] = useState<MenuPermission[]>([])
   const [searchName, setSearchName] = useState('')
   const [searchId, setSearchId] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // 사용자 목록 로드
@@ -91,10 +90,10 @@ export default function PermissionManagementModal({ isOpen, onClose }: Permissio
   const handleUserSelect = async (user: User) => {
     setSelectedUser(user)
     // 사용자 권한 로드
-    await loadUserPermissions(user.id)
+    await loadUserPermissions()
   }
 
-  const loadUserPermissions = async (userId: string) => {
+  const loadUserPermissions = async () => {
     try {
       // 실제 데이터베이스에서 사용자 권한을 가져오는 로직
       // 임시로 mock 데이터 사용
@@ -193,7 +192,7 @@ export default function PermissionManagementModal({ isOpen, onClose }: Permissio
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user, index) => (
+                  {filteredUsers.map((user) => (
                     <tr 
                       key={user.id} 
                       className={`hover:bg-gray-50 cursor-pointer ${

@@ -1,10 +1,43 @@
 import { createClient } from '@supabase/supabase-js'
 
 // 환경 변수에서 Supabase 설정 가져오기
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://pnmyxzgyeipbvvnnwtoi.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBubXl4emd5ZWlwYnZ2bm53dG9pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQyMjQyMjUsImV4cCI6MjA2OTgwMDIyNX0.-0N6pDO0HjjTZd7WqqXJBwf0eBHvGIP_zPQlKpwealA'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-key'
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// 개발 환경에서는 기본값 사용, 프로덕션에서는 환경변수 필수
+if (process.env.NODE_ENV === 'production' && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+  throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
+}
+
+// 브라우저용 클라이언트 (SSR 지원)
+export const createBrowserSupabaseClient = () => {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
+}
+
+// 서버용 클라이언트 (SSR 지원)
+export const createServerSupabaseClient = () => {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
+
+// 기존 클라이언트 (하위 호환성)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 // 품목 타입 정의
 export interface Item {
@@ -46,17 +79,51 @@ export interface StockOut {
   issued_at: string
 }
 
+// 출고와 품목 정보를 결합한 타입
+export interface StockOutWithItem extends StockOut {
+  item: Item
+  reason?: string
+  notes?: string
+  unit_price?: number
+  total_amount?: number
+}
+
 // 현재 재고 타입 정의
 export interface CurrentStock {
   id: string
   name: string
   specification: string
+  maker?: string
   unit_price: number
   current_quantity: number
   total_amount: number
   notes?: string
   category?: string
   stock_status: 'normal' | 'low_stock'
+  purpose?: string
+  location?: string
+  material?: string
+  unit?: string
+  previousQuarterQuantity?: number
+  stockInQuantity?: number
+  stockOutQuantity?: number
+  actualQuantity?: number
+  stockOutContent?: string
+}
+
+// 대량 입고 행 타입 정의
+export interface BulkStockInRow {
+  name: string
+  specification: string
+  maker: string
+  unit_price: number
+  purpose: string
+  quantity: number
+  condition_type: 'new' | 'used_good' | 'used_defective' | 'unknown'
+  reason: string
+  ordered_by: string
+  received_by: string
+  received_date: string
 }
 
 export interface User {
@@ -96,4 +163,17 @@ export interface Disposal {
   reason: string
   notes: string
   created_at: string
+}
+
+// 업무일지 항목 타입 정의
+export interface WorkDiaryEntry {
+  id: string
+  date: string
+  userId: string
+  userName: string
+  content: string
+  createdAt: string
+  updatedAt: string
+  googleCalendarEventId?: string | undefined
+  googleCalendarLink?: string | undefined
 } 

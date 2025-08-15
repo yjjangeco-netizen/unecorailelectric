@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileText, Search, Plus, Edit, Trash2, Download, Upload, BookOpen, Settings, User } from 'lucide-react'
+import { ArrowLeft, FileText, Search, Plus, Edit, Download, BookOpen } from 'lucide-react'
 
 export default function SOPPage() {
   const router = useRouter()

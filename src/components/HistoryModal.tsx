@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Calendar, Clock, Package, ArrowUp, ArrowDown } from 'lucide-react'
+import { Clock, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface HistoryModalProps {
   isOpen: boolean
@@ -35,8 +35,8 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     const today = new Date()
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
     
-    setEndDate(today.toISOString().split('T')[0])
-    setStartDate(thirtyDaysAgo.toISOString().split('T')[0])
+    setEndDate(today.toISOString().split('T')[0] || '')
+    setStartDate(thirtyDaysAgo.toISOString().split('T')[0] || '')
   }, [])
 
   // 이력 데이터 로드

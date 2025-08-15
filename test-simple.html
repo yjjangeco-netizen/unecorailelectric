@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Inventory Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="test-panel">
+        <h1>🧪 Inventory Management System Test</h1>
+        <p>Simple test interface for testing the inventory management system</p>
+        
+        <div>
+            <button class="btn btn-primary" onclick="testConnection()">Test Connection</button>
+            <button class="btn btn-success" onclick="testSetup()">Test Setup</button>
+            <button class="btn btn-primary" onclick="testSearch()">Test Search</button>
+            <button class="btn btn-success" onclick="testStockIn()">Test Stock In</button>
+            <button class="btn btn-danger" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'http://localhost:3000';
+        const resultsDiv = document.getElementById('results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testConnection() {
+            try {
+                addResult('Testing server connection...', 'info');
+                const response = await fetch(baseUrl);
+                if (response.ok) {
+                    addResult(`✅ Connection successful: ${response.status}`, 'success');
+                } else {
+                    addResult(`❌ Connection failed: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSetup() {
+            try {
+                addResult('Testing data setup...', 'info');
+                const response = await fetch(`${baseUrl}/api/test/setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ Setup successful: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    addResult(`❌ Setup failed: ${response.status} - ${errorText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Setup error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSearch() {
+            try {
+                addResult('Testing search function...', 'info');
+                const response = await fetch(`${baseUrl}/api/test/search?q=test`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ Search successful: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    addResult(`❌ Search failed: ${response.status} - ${errorText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Search error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testStockIn() {
+            try {
+                addResult('Testing stock in function...', 'info');
+                const stockInData = {
+                    itemName: `Test Item ${Date.now()}`,
+                    quantity: 100,
+                    unitPrice: 5000,
+                    notes: 'Simple test stock in',
+                    conditionType: 'new',
+                    reason: 'Test',
+                    orderedBy: 'Test Orderer',
+                    receivedBy: 'Test Receiver'
+                };
+
+                const response = await fetch(`${baseUrl}/api/test/stock-in`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(stockInData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ Stock in successful: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    addResult(`❌ Stock in failed: ${response.status} - ${errorText}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Stock in error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            addResult('Page loaded, starting auto-test...', 'info');
+            setTimeout(() => testConnection(), 1000);
+        });
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, User, Lock, Search, FileText, Package, BookOpen } from 'lucide-react'
+import { Building2, User, Lock, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function HomePage() {

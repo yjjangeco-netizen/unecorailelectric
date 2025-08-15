@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { supabase, CurrentStock } from '@/lib/supabase'
-import { Search, ArrowUp, Calendar, Clock, Edit, Check, X } from 'lucide-react'
+import { Search, Clock, Edit, Check, X } from 'lucide-react'
 
 interface RentalModalProps {
   isOpen: boolean

@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Trash2 } from 'lucide-react'
 
-interface DisposalModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSave: (data: any) => void
-}
+// interface DisposalModalProps {
+//   isOpen: boolean
+//   onClose: () => void
+//   onSave: (data: any) => void
+// }
 
-export default function DisposalModal({ isOpen, onClose, onSave }: DisposalModalProps) {
+export default function DisposalModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
