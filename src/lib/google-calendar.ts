@@ -91,7 +91,7 @@ export const convertDiaryToCalendarEvent = (diaryEntry: WorkDiaryEntry): Calenda
 
 // Google Calendar에 이벤트 추가
 export const addEventToGoogleCalendar = async (
-  calendarClient: any, // Google Calendar API 클라이언트
+  calendarClient: unknown, // Google Calendar API 클라이언트
   calendarId: string,
   event: CalendarEvent
 ) => {
@@ -117,7 +117,7 @@ export const addEventToGoogleCalendar = async (
 
 // Google Calendar에서 이벤트 업데이트
 export const updateEventInGoogleCalendar = async (
-  calendarClient: any, // Google Calendar API 클라이언트
+  calendarClient: unknown, // Google Calendar API 클라이언트
   calendarId: string,
   eventId: string,
   event: CalendarEvent
@@ -145,7 +145,7 @@ export const updateEventInGoogleCalendar = async (
 
 // Google Calendar에서 이벤트 삭제
 export const deleteEventFromGoogleCalendar = async (
-  calendarClient: any, // Google Calendar API 클라이언트
+  calendarClient: unknown, // Google Calendar API 클라이언트
   calendarId: string,
   eventId: string
 ) => {
@@ -167,7 +167,7 @@ export const deleteEventFromGoogleCalendar = async (
 
 // Google Calendar에서 특정 날짜의 이벤트 조회
 export const getEventsFromGoogleCalendar = async (
-  calendarClient: any, // Google Calendar API 클라이언트
+  calendarClient: unknown, // Google Calendar API 클라이언트
   calendarId: string,
   date: string
 ) => {

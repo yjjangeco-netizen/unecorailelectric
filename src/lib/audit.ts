@@ -53,7 +53,9 @@ export enum AuditAction {
   BACKUP_CREATED = 'backup_created',
   SYSTEM_MAINTENANCE = 'system_maintenance',
   CONFIGURATION_CHANGED = 'configuration_changed',
-  ERROR_OCCURRED = 'error_occurred'
+  ERROR_OCCURRED = 'error_occurred',
+  CLOSING_COMPLETE = 'closing_complete',
+  CLOSING_ROLLBACK = 'closing_rollback'
 }
 
 // 감사 로그 인터페이스

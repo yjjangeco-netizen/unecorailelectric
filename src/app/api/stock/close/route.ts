@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
-import { serverAuditLogger } from '@/lib/audit'
+import { serverAuditLogger, AuditAction } from '@/lib/audit'
 import { z } from 'zod'
 
 // 마감 요청 스키마
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
       // 감사 로그 기록
       await serverAuditLogger.logSystemOperation(
-        'CLOSING_COMPLETE',
+        AuditAction.CLOSING_COMPLETE,
         user.id,
         user.email || 'unknown',
         'admin',
@@ -186,7 +186,7 @@ export async function DELETE(request: NextRequest) {
 
       // 감사 로그 기록
       await serverAuditLogger.logSystemOperation(
-        'CLOSING_ROLLBACK',
+        AuditAction.CLOSING_ROLLBACK,
         user.id,
         user.email || 'unknown',
         'admin',

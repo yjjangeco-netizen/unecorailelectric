@@ -288,7 +288,7 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
               <div className="text-center py-8 text-gray-500">
                 <Search className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                 <p>품명, 규격, 메이커, 용도로 검색해보세요</p>
-                <p className="text-sm mt-2">예: "볼트", "M8", "삼성", "전기"</p>
+                <p className="text-sm mt-2">예: &quot;볼트&quot;, &quot;M8&quot;, &quot;삼성&quot;, &quot;전기&quot;</p>
               </div>
             )}
           </div>

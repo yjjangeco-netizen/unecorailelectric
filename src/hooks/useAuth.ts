@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { CookieAuthManager, RBACManager } from '@/lib/auth'
 
 export function useAuth() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

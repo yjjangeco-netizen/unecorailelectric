@@ -6,7 +6,7 @@ export async function POST() {
     const startTime = Date.now()
 
     // 1. 테스트 데이터 생성 (더미)
-    console.log('🧪 1. 테스트 데이터 생성 시작...')
+    console.warn('🧪 1. 테스트 데이터 생성 시작...')
     testResults.push({
       test: '데이터 생성',
       status: 'success',
@@ -15,7 +15,7 @@ export async function POST() {
     })
 
     // 2. 입고 기능 테스트 (더미)
-    console.log('📥 2. 입고 기능 테스트 시작...')
+    console.warn('📥 2. 입고 기능 테스트 시작...')
     testResults.push({
       test: '입고 기능',
       status: 'success',
@@ -29,7 +29,7 @@ export async function POST() {
     })
 
     // 3. 출고 기능 테스트 (더미)
-    console.log('📤 3. 출고 기능 테스트 시작...')
+    console.warn('📤 3. 출고 기능 테스트 시작...')
     testResults.push({
       test: '출고 기능',
       status: 'success',
@@ -44,7 +44,7 @@ export async function POST() {
     })
 
     // 4. 폐기 기능 테스트 (더미)
-    console.log('🗑️ 4. 폐기 기능 테스트 시작...')
+    console.warn('🗑️ 4. 폐기 기능 테스트 시작...')
     testResults.push({
       test: '폐기 기능',
       status: 'success',
@@ -59,7 +59,7 @@ export async function POST() {
     })
 
     // 5. 검색 기능 테스트 (더미)
-    console.log('🔍 5. 검색 기능 테스트 시작...')
+    console.warn('🔍 5. 검색 기능 테스트 시작...')
     testResults.push({
       test: '검색 기능',
       status: 'success',
@@ -73,7 +73,7 @@ export async function POST() {
     })
 
     // 6. 재고 계산 테스트 (더미)
-    console.log('🧮 6. 재고 계산 테스트 시작...')
+    console.warn('🧮 6. 재고 계산 테스트 시작...')
     testResults.push({
       test: '재고 계산',
       status: 'success',
@@ -86,7 +86,7 @@ export async function POST() {
     })
 
     // 7. 데이터 무결성 테스트 (더미)
-    console.log('🔒 7. 데이터 무결성 테스트 시작...')
+    console.warn('🔒 7. 데이터 무결성 테스트 시작...')
     testResults.push({
       test: '데이터 무결성',
       status: 'success',

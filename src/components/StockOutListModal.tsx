@@ -41,8 +41,8 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
         stockOut.item.maker?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         stockOut.issued_by?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         stockOut.project?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (stockOut as any).reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (stockOut as any).notes?.toLowerCase().includes(searchTerm.toLowerCase())
+        stockOut.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        stockOut.notes?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -190,10 +190,10 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
                       <span className="font-medium text-blue-600">{stockOut.quantity}</span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(stockOut as any).unit_price ? `₩${(stockOut as any).unit_price.toLocaleString()}` : '-'}
+                      {stockOut.unit_price ? `₩${stockOut.unit_price.toLocaleString()}` : '-'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(stockOut as any).total_amount ? `₩${(stockOut as any).total_amount.toLocaleString()}` : '-'}
+                      {stockOut.total_amount ? `₩${stockOut.total_amount.toLocaleString()}` : '-'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -222,7 +222,7 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
                         <FileText className="h-4 w-4 mr-1 text-gray-400" />
-                        {(stockOut as any).reason || '-'}
+                        {stockOut.reason || '-'}
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -234,7 +234,7 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
                       ) : '-'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(stockOut as any).notes || '-'}
+                      {stockOut.notes || '-'}
                     </td>
                   </tr>
                 ))}
@@ -270,7 +270,7 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
               <div>
                 <span className="text-gray-500">총 출고 금액:</span>
                 <span className="ml-2 font-medium text-blue-600">
-                  ₩{stockOuts.reduce((sum, s) => sum + ((s as any).total_amount || 0), 0).toLocaleString()}
+                  ₩{stockOuts.reduce((sum, s) => sum + (s.total_amount || 0), 0).toLocaleString()}
                 </span>
               </div>
               <div>

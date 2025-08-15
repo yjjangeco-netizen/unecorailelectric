@@ -76,7 +76,7 @@ export default function StockManagementPage() {
     } catch (err) {
       console.error('재고 데이터 로드 오류:', err)
       // 데이터베이스 연결 실패 시 빈 배열로 설정
-      console.log('데이터베이스 연결 실패. 재고 데이터를 표시할 수 없습니다.')
+      console.error('데이터베이스 연결 실패. 재고 데이터를 표시할 수 없습니다.')
       setStockItems([])
       setError('데이터베이스 연결에 실패했습니다.')
     } finally {
@@ -97,7 +97,7 @@ export default function StockManagementPage() {
     } catch (err) {
       console.error('품목 데이터 로드 오류:', err)
       // 데이터베이스 연결 실패 시 빈 배열로 설정
-      console.log('데이터베이스 연결 실패. 품목 데이터를 표시할 수 없습니다.')
+      console.error('데이터베이스 연결 실패. 품목 데이터를 표시할 수 없습니다.')
       setItems([])
     }
   }
@@ -115,7 +115,7 @@ export default function StockManagementPage() {
           const userData = JSON.parse(savedUser)
           setCurrentUser(userData)
           setIsAdmin(userData.role === '관리자')
-          console.log('localStorage에서 사용자 정보 로드:', userData)
+          // localStorage에서 사용자 정보 로드
           return // localStorage에 정보가 있으면 URL 파라미터는 무시
         } catch (error) {
           console.error('저장된 사용자 정보 파싱 오류:', error)
@@ -146,7 +146,7 @@ export default function StockManagementPage() {
         
         // URL 파라미터로 받은 정보도 localStorage에 저장
         localStorage.setItem('currentUser', JSON.stringify(userData))
-        console.log('URL 파라미터에서 사용자 정보 로드:', userData)
+        // URL 파라미터에서 사용자 정보 로드
       }
     }
     
@@ -160,7 +160,7 @@ export default function StockManagementPage() {
   }
 
   // 입고 저장 - 로그인된 사용자용
-  const handleSaveStockIn = async (stockInData: any) => {
+  const handleSaveStockIn = async (stockInData: StockIn) => {
     if (!currentUser) {
       alert('로그인이 필요한 기능입니다.')
       return
@@ -229,7 +229,7 @@ export default function StockManagementPage() {
   }
 
   // 출고 저장 - 로그인된 사용자용
-  const handleSaveStockOut = async (stockOutData: any) => {
+  const handleSaveStockOut = async (stockOutData: StockOut) => {
     if (!currentUser) {
       alert('로그인이 필요한 기능입니다.')
       return
@@ -320,8 +320,8 @@ export default function StockManagementPage() {
   // 정렬 함수
   const sortItems = (items: CurrentStock[]) => {
     return [...items].sort((a, b) => {
-      let aValue: any = a[sortField as keyof CurrentStock]
-      let bValue: any = b[sortField as keyof CurrentStock]
+      let aValue: unknown = a[sortField as keyof CurrentStock]
+      let bValue: unknown = b[sortField as keyof CurrentStock]
       
       // null/undefined 처리
       if (aValue === null || aValue === undefined) {aValue = ''}
@@ -1129,7 +1129,7 @@ export default function StockManagementPage() {
                     검색 결과: <span className="font-bold">{filteredStockItems.length}</span>개
                   </p>
                   <p className="text-xs text-blue-700">
-                    검색어: <span className="font-medium">"{searchTerm}"</span> 
+                    검색어: <span className="font-medium">&quot;{searchTerm}&quot;</span> 
                     (품명, 규격, 분류에서 검색)
                   </p>
                   {filteredStockItems.length > 0 && (
@@ -1342,7 +1342,7 @@ export default function StockManagementPage() {
                             검색 결과가 없습니다
                           </div>
                           <div className="text-sm text-gray-500">
-                            검색어: <span className="font-medium text-gray-700">"{searchTerm}"</span>
+                            검색어: <span className="font-medium text-gray-700">&quot;{searchTerm}&quot;</span>
                           </div>
                           <div className="text-xs text-gray-400">
                             위치, 품명, 규격, 재질에서 검색됩니다

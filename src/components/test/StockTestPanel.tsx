@@ -131,7 +131,7 @@ export default function StockTestPanel() {
   // 테스트 시작
   const startTests = useCallback(async () => {
     setIsRunning(true)
-    setOverallStats((prev: any) => ({ ...prev, startTime: Date.now() }))
+    setOverallStats((prev: unknown) => ({ ...prev, startTime: Date.now() }))
     
     // 각 테스트를 순차적으로 실행
     for (let i = 0; i < testResults.length; i++) {
@@ -144,8 +144,8 @@ export default function StockTestPanel() {
     
     setIsRunning(false)
     setCurrentTest('')
-    setOverallStats((prev: any) => ({ ...prev, endTime: Date.now() }))
-  }, [testResults, isRunning])
+    setOverallStats((prev: unknown) => ({ ...prev, endTime: Date.now() }))
+  }, [testResults, isRunning, runTest])
 
   // 테스트 중지
   const stopTests = useCallback(() => {
@@ -211,7 +211,7 @@ export default function StockTestPanel() {
     
     setTestResults([...testResults])
     updateOverallStats()
-  }, [testResults])
+  }, [testResults, runCalculationTest, runDisposalTest, runIntegrityTest, runSearchTest, runStockInTest, runStockOutTest, updateOverallStats])
 
   // 입고 기능 테스트
   const runStockInTest = useCallback(async (test: TestResult) => {
@@ -433,7 +433,7 @@ export default function StockTestPanel() {
     quantity: Math.floor(Math.random() * 1000) + 1,
     unitPrice: Math.floor(Math.random() * 100000) + 1000,
     notes: `테스트 입고 ${index}`,
-    conditionType: ['new', 'used_good', 'used_defective', 'unknown'][Math.floor(Math.random() * 4)] as any,
+    conditionType: ['new', 'used_good', 'used_defective', 'unknown'][Math.floor(Math.random() * 4)] as unknown,
     reason: `테스트 사유 ${index}`,
     orderedBy: `주문자_${index}`,
     receivedBy: `입고자_${index}`
@@ -483,11 +483,11 @@ export default function StockTestPanel() {
     currentQuantity: Math.floor(Math.random() * 1000),
     totalAmount: 0,
     category: `카테고리_${index}`,
-    stockStatus: ['normal', 'low_stock'][Math.floor(Math.random() * 2)] as any
+    stockStatus: ['normal', 'low_stock'][Math.floor(Math.random() * 2)] as unknown
   })
 
   // 시뮬레이션 함수들
-  const simulateStockIn = (data: any) => {
+  const simulateStockIn = (data: unknown) => {
     try {
       // 입력값 검증
       if (!data.itemName || data.itemName.length < 1) {
@@ -516,7 +516,7 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateStockOut = (data: any) => {
+  const simulateStockOut = (data: unknown) => {
     try {
       if (!data.itemId) {
         return { success: false, error: '품목 ID가 없습니다' }
@@ -540,7 +540,7 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateDisposal = (data: any) => {
+  const simulateDisposal = (data: unknown) => {
     try {
       if (!data.itemId) {
         return { success: false, error: '품목 ID가 없습니다' }
@@ -561,7 +561,7 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateSearch = (data: any) => {
+  const simulateSearch = (data: unknown) => {
     try {
       if (!data.query || data.query.length < 1) {
         return { success: false, error: '검색어가 비어있습니다' }
@@ -581,7 +581,7 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateCalculation = (data: any) => {
+  const simulateCalculation = (data: unknown) => {
     try {
       // 재고 계산 시뮬레이션
       const finalQuantity = data.currentQuantity + data.stockInQuantity - data.stockOutQuantity + data.adjustmentQuantity
@@ -602,7 +602,7 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateIntegrityCheck = (data: any) => {
+  const simulateIntegrityCheck = (data: unknown) => {
     try {
       // 데이터 무결성 검증
       if (!data.name || data.name.length < 1) {
@@ -637,7 +637,7 @@ export default function StockTestPanel() {
     const failed = testResults.reduce((sum: number, test: TestResult) => sum + test.failedTests, 0)
     const error = testResults.reduce((sum: number, test: TestResult) => sum + test.errorTests, 0)
     
-    setOverallStats((prev: any) => ({
+    setOverallStats((prev: unknown) => ({
       ...prev,
       totalTests: total,
       passedTests: passed,

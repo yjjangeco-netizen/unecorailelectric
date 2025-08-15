@@ -19,7 +19,7 @@ interface TestResult {
   test: string
   status: 'success' | 'error' | 'warning'
   message: string
-  details: any
+  details: Record<string, unknown>
 }
 
 interface TestSummary {

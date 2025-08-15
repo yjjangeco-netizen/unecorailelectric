@@ -17,6 +17,6 @@ describe('schemas', () => {
       itemName: '',
       quantity: -1,
       unitPrice: -5
-    } as any)).toThrow();
+    } as unknown)).toThrow();
   });
 });

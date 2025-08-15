@@ -67,7 +67,7 @@ export function createRateLimiter(config: RateLimitConfig) {
       
       return NextResponse.json(
         {
-          error: 'Too Many Requests',
+          error: 'Too Munknown Requests',
           message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.',
           retryAfter: Math.ceil(config.windowMs / 1000)
         },
@@ -108,7 +108,7 @@ function getClientIP(request: NextRequest): string {
   }
   
   // 기본 IP (개발 환경)
-  return (request as any).ip || '127.0.0.1'
+  return (request as unknown).ip || '127.0.0.1'
 }
 
 // 로그인 전용 Rate Limiter

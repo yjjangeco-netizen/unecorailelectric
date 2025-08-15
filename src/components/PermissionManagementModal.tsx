@@ -123,7 +123,7 @@ export default function PermissionManagementModal({ isOpen, onClose }: Permissio
     try {
       setSaving(true)
       // 실제 데이터베이스에 권한 저장하는 로직
-      console.log('권한 저장:', selectedUser.username, userPermissions)
+      // 권한 저장 처리
       
       // 성공 메시지 표시
       alert('권한이 성공적으로 저장되었습니다.')

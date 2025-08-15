@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Clock, ArrowUp, ArrowDown } from 'lucide-react'
@@ -40,7 +40,7 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
   }, [])
 
   // 이력 데이터 로드
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoading(true)
     try {
       // 실제 데이터베이스 연결 시 여기서 데이터를 가져옴
@@ -93,13 +93,13 @@ export default function HistoryModal({ isOpen, onClose }: HistoryModalProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [historyType, startDate, endDate])
 
   useEffect(() => {
     if (isOpen && startDate && endDate) {
       loadHistory()
     }
-  }, [isOpen, startDate, endDate, historyType])
+  }, [isOpen, startDate, endDate, historyType, loadHistory])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ko-KR')

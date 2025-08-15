@@ -23,7 +23,10 @@ jest.mock('@/lib/audit', () => ({
 }))
 
 describe('Stock Transaction API', () => {
-  let mockSupabase: any
+  let mockSupabase: {
+    from: jest.Mock
+    rpc: jest.Mock
+  }
   let mockRequest: Partial<NextRequest>
 
   beforeEach(() => {

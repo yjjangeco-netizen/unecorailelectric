@@ -210,7 +210,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     setSelectedRows(new Set())
   }
 
-  const updateRow = (index: number, field: keyof BulkStockInRow, value: any) => {
+  const updateRow = (index: number, field: keyof BulkStockInRow, value: string | number) => {
     const newRows = [...rows]
     const currentRow = newRows[index]
     if (!currentRow) {return}
@@ -224,8 +224,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     setLoading(true)
     
     try {
-      console.log('입고 처리 시작...')
-      console.log('전체 행 데이터:', rows)
+      // 입고 처리 시작
       
       // 유효한 행만 필터링
       const validRows = rows.filter(row => 
@@ -238,8 +237,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         row.received_date
       )
       
-      console.log('유효한 행 수:', validRows.length)
-      console.log('유효한 행 데이터:', validRows)
+      // 유효한 행들 필터링 완료
 
       if (validRows.length === 0) {
         alert('최소 하나의 유효한 항목을 입력해주세요.')
@@ -249,7 +247,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       // 각 행을 처리
       for (let i = 0; i < validRows.length; i++) {
         const row = validRows[i]
-        console.log(`처리 중인 행 ${i + 1}:`, row)
+        // 행 처리 중
         
         // 기존 품목이 있는지 확인
         const existingItem = items.find(item => 
@@ -257,17 +255,17 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
           item.specification.toLowerCase() === (row?.specification || '').toLowerCase()
         )
         
-        console.log('기존 품목 찾기 결과:', existingItem)
+        // 기존 품목 검색 완료
 
         let itemId: string
 
         if (existingItem) {
           // 기존 품목이 있으면 해당 품목 사용
           itemId = existingItem.id
-          console.log('기존 품목 사용:', itemId)
+          // 기존 품목 사용
         } else {
           // 새 품목 생성
-          console.log('새 품목 생성 중...')
+          // 새 품목 생성
           try {
             const { data: newItem, error: itemError } = await supabase
               .from('items')
@@ -294,15 +292,16 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
             }
             
             itemId = newItem.id
-            console.log('새 품목 생성 완료:', itemId)
-          } catch (itemCreateError: any) {
+            // 새 품목 생성 완료
+          } catch (itemCreateError: unknown) {
             console.error('품목 생성 중 예외 발생:', itemCreateError)
-            throw new Error(`품목 생성 중 오류: ${itemCreateError.message}`)
+            const errorMessage = itemCreateError instanceof Error ? itemCreateError.message : '알 수 없는 오류'
+            throw new Error(`품목 생성 중 오류: ${errorMessage}`)
           }
         }
 
         // 입고 기록 생성
-        console.log('입고 기록 생성 중...')
+        // 입고 기록 생성
         const stockInData = {
           item_id: itemId,
           quantity: row?.quantity || 0,
@@ -313,18 +312,19 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
           received_by: row?.received_by || '',
           received_at: new Date(row?.received_date || new Date().toISOString().split('T')[0] || '').toISOString()
         }
-        console.log('입고 데이터:', stockInData)
+        // 입고 데이터 준비 완료
         
         try {
           await onSave(stockInData)
-          console.log(`행 ${i + 1} 처리 완료`)
-        } catch (saveError: any) {
+          // 행 처리 완료
+        } catch (saveError: unknown) {
           console.error(`행 ${i + 1} 저장 오류:`, saveError)
-          throw new Error(`입고 기록 저장 실패: ${saveError.message}`)
+          const errorMessage = saveError instanceof Error ? saveError.message : '알 수 없는 오류'
+          throw new Error(`입고 기록 저장 실패: ${errorMessage}`)
         }
       }
 
-      console.log('모든 입고 처리 완료')
+      // 모든 입고 처리 완료
       onClose()
       setRows([{
         name: '',
@@ -339,15 +339,14 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         received_by: '',
         received_date: new Date().toISOString().split('T')[0] || ''
       }])
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('대량 입고 저장 오류:', error)
       console.error('오류 상세 정보:', {
-        message: error?.message || '알 수 없는 오류',
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
+        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        error: error,
       })
-      alert(`입고 처리 중 오류가 발생했습니다.\n오류: ${error?.message || '알 수 없는 오류'}`)
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
+      alert(`입고 처리 중 오류가 발생했습니다.\n오류: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
@@ -374,7 +373,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     const reader = new FileReader()
     reader.onload = (e) => {
       const text = e.target?.result as string
-      console.log('업로드된 파일 내용:', text) // 디버깅용
+      // 업로드된 파일 처리
       
       const lines = text.split('\n').filter(line => line.trim())
       
@@ -383,15 +382,15 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         return
       }
 
-      const headers = (lines[0] || '').split(',').map(h => h.trim())
-      console.log('헤더:', headers) // 디버깅용
+      const _headers = (lines[0] || '').split(',').map(h => h.trim())
+      // 헤더 파싱 완료
       
       const dataRows = lines.slice(1).filter(line => line.trim())
-      console.log('데이터 행 수:', dataRows.length) // 디버깅용
+      // 데이터 행 추출 완료
 
       const newRows: BulkStockInRow[] = dataRows.map((line, index) => {
         const values = line.split(',').map(v => v.trim())
-        console.log(`행 ${index + 1} 값:`, values) // 디버깅용
+        // 행 데이터 파싱
         
         // 날짜 검증 함수
         const isValidDate = (dateStr: string) => {
@@ -421,11 +420,11 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
           received_date: receivedDate
         }
         
-        console.log(`파싱된 행 ${index + 1}:`, row) // 디버깅용
+        // 행 파싱 완료
         return row
       })
 
-      console.log('최종 파싱 결과:', newRows) // 디버깅용
+      // CSV 파싱 완료
 
       if (newRows.length > 0) {
         // 기존 행을 유지하면서 새 행 추가

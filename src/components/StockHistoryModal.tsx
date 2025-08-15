@@ -7,7 +7,7 @@ import { History, Package } from 'lucide-react'
 interface StockHistoryModalProps {
   isOpen: boolean
   onClose: () => void
-  item?: any
+  item?: { id: string; name: string; specification?: string }
 }
 
 export default function StockHistoryModal({ isOpen, onClose, item }: StockHistoryModalProps) {
