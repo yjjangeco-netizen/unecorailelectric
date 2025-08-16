@@ -1,210 +1,322 @@
-# 유네코레일 전기파트 업무관리 시스템
+# 🚄 유네코레일 전기파트 업무관리 시스템
 
-전기파트의 재고관리, 업무일지, SOP 등을 통합 관리하는 웹 애플리케이션입니다.
+전기파트의 재고관리, 업무일지, SOP 등을 통합 관리하는 현대적인 웹 애플리케이션입니다.
 
-## 🚀 주요 기능
+## 📸 스크린샷
 
-- **재고관리**: 입고/출고, 재고 현황, 이력 관리
-- **업무일지**: 캘린더 기반 일지 작성 및 관리
-- **메뉴얼 관리**: 업무 매뉴얼 및 가이드 문서 관리
-- **SOP**: 표준작업절차 관리
-- **재고 마감**: 분기별 마감 및 보고서 생성
+### 🏠 메인 대시보드
+![메인 대시보드](public/screenshots/main-dashboard.png)
+*전체 시스템 현황을 한눈에 파악할 수 있는 메인 대시보드*
 
-## 🛠️ 기술 스택
+### 📦 재고 관리
+![재고 관리](public/screenshots/stock-management.png)
+*품목별 재고 현황, 입출고 이력, 재고 조정 기능*
 
-- **Frontend**: Next.js 15.4.5, React 19.1.0, TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth + Local Storage
-- **UI Components**: Radix UI + Custom Components
+### 📊 재고 통계
+![재고 통계](public/screenshots/stock-statistics.png)
+*재고 가치, 품목별 분포, 트렌드 분석*
 
-## 📋 설치 및 실행
+### 🔐 사용자 관리
+![사용자 관리](public/screenshots/user-management.png)
+*권한별 사용자 관리, 역할 기반 접근 제어*
 
-### 1. 의존성 설치
+## ✨ 주요 기능
+
+- **📦 재고 관리**: 실시간 재고 현황, 입출고 처리, 재고 조정
+- **📝 업무일지**: 일일 작업 기록, 프로젝트별 이력 관리
+- **📋 SOP 관리**: 표준작업절차 문서화 및 관리
+- **🔐 권한 관리**: RBAC 기반 사용자 권한 제어
+- **📊 감사 로그**: 모든 작업의 상세한 추적 기록
+- **📱 반응형 UI**: 모바일/태블릿/데스크톱 최적화
+
+## 🚀 빠른 시작
+
+### 필수 요구사항
+
+- Node.js 18.0.0 이상
+- npm 9.0.0 이상
+- Supabase 계정 및 프로젝트
+
+### 1. 저장소 클론
+
+```bash
+git clone https://github.com/yjjangeco-netizen/unecorailelectric.git
+cd unecorailelectric
+```
+
+### 2. 의존성 설치
+
 ```bash
 npm install
 ```
 
-### 2. 환경변수 설정
+### 3. 환경변수 설정
 
-#### 개발 환경
-`.env.example`을 복사하여 `.env.local` 파일을 생성하세요:
+`.env.local` 파일을 생성하고 다음 내용을 추가하세요:
 
 ```bash
-cp .env.example .env.local
-```
+# Supabase 설정
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-그리고 실제 값으로 업데이트하세요:
+# 로깅 레벨
+NEXT_PUBLIC_LOG_LEVEL=info
 
-```env
-# Supabase 설정 (필수)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
-# Google OAuth / Calendar (선택)
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback
-
-# Node 환경
+# 환경
 NODE_ENV=development
 ```
 
-#### 🗄️ **데이터베이스 환경별 설정**
+**⚠️ 보안 주의사항**: 
+- 절대 실제 프로덕션 계정 정보를 코드에 하드코딩하지 마세요
+- `.env.local` 파일은 `.gitignore`에 포함되어 있어야 합니다
+- 프로덕션 환경에서는 환경변수 관리 서비스를 사용하세요
 
-**🔧 프로토타입/학습용 (빠른 테스트):**
-- **허용**: SQLite 또는 MS Access - 로컬 개발, 빠른 검증
-- **제약**: 단일 사용자, 데이터 지속성 제한
+### 4. 데이터베이스 설정
 
-**🚀 개발/프로덕션 환경 (권장/필수):**
-- **필수**: Supabase (PostgreSQL) + RLS 정책 + 인덱스
-- **보안**: `.env` 파일로 비밀키 관리, RLS 정책 적용
-- **설정**: `database/rls-policies.sql` 스크립트 실행 필요
-- **확장성**: 다중 사용자, 실시간 동기화, 백업/복구
+#### Supabase 프로젝트 생성
+1. [Supabase](https://supabase.com)에서 새 프로젝트 생성
+2. 프로젝트 URL과 anon key를 환경변수에 설정
 
-**💡 현재 프로젝트**: Supabase 기반으로 구성됨 (프로덕션 레디)
+#### 스키마 적용
+```bash
+# 데이터베이스 스키마 적용
+npm run db:migrate
 
-### 3. 개발 서버 실행
+# 또는 수동으로 SQL 실행
+psql -h your_host -U your_user -d your_db -f database/tables/closing_tables.sql
+```
+
+### 5. 개발 서버 실행
+
 ```bash
 npm run dev
 ```
 
-### 4. 품질 체크 (배포 전 필수)
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 확인하세요.
+
+## 🗄️ 데이터베이스 관리
+
+### Migration 스크립트
+
 ```bash
-npm run check
+# 개발 환경 마이그레이션
+npm run db:migrate:dev
+
+# 프로덕션 환경 마이그레이션
+npm run db:migrate:prod
+
+# 마이그레이션 롤백
+npm run db:rollback
+
+# 스키마 상태 확인
+npm run db:status
 ```
 
-이 명령어는 다음을 순차적으로 실행합니다:
-- TypeScript 타입 체크
-- ESLint 검사 (경고=에러)
-- 단위 테스트 (커버리지 포함)
+### RLS 정책
 
-### 5. 프로덕션 빌드
-```bash
-npm run build
-npm start
-```
+Row Level Security가 활성화되어 있어 데이터 접근을 사용자 권한에 따라 제한합니다:
 
-## 🔐 보안 설정
-
-### 사용자 권한 체계
-- **관리자 (admin)**: 모든 기능 접근 가능
-- **전기팀 (electric)**: 입고/출고/현황/검색
-- **일반사용자 (user)**: 현황/검색만 가능
-
-### 기본 계정 (개발용)
-- **관리자**: admin / admin
-- **전기팀**: electric / electric
-
-⚠️ **주의**: 프로덕션 환경에서는 반드시 기본 계정을 변경하세요!
-
-## 📁 프로젝트 구조
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── page.tsx          # 메인 페이지
-│   ├── stock-management/ # 재고관리
-│   ├── work-diary/      # 업무일지
-│   ├── manual-management/# 메뉴얼관리
-│   ├── sop/             # SOP 관리
-│   └── work-tool/       # 업무도구
-├── components/           # 재사용 컴포넌트
-│   ├── ui/              # 기본 UI 컴포넌트
-│   ├── StockInModal.tsx # 입고 모달
-│   ├── StockOutModal.tsx# 출고 모달
-│   └── ...
-├── lib/                  # 유틸리티 및 설정
-│   ├── supabase.ts      # Supabase 클라이언트
-│   └── utils.ts         # 공통 유틸리티
-└── types/               # TypeScript 타입 정의
+```sql
+-- 예시: 사용자는 자신의 부서 데이터만 접근 가능
+CREATE POLICY "Users can only access their department data" ON items
+FOR ALL USING (department = current_setting('app.department'));
 ```
 
 ## 🧪 테스트
 
-### 단위 테스트
+### 테스트 실행
+
 ```bash
+# 단위 테스트
 npm run test
-```
 
-### E2E 테스트
-```bash
+# E2E 테스트
 npm run test:e2e
+
+# 타입 체크
+npm run type-check
+
+# 린트 검사
+npm run lint
+
+# 전체 테스트 스위트
+npm run test:all
 ```
 
-### 테스트 커버리지
+### 성능 테스트
+
 ```bash
-npm run test:coverage
+# 부하 테스트
+npm run test:load
+
+# 메모리 누수 테스트
+npm run test:memory
+
+# 응답 시간 테스트
+npm run test:performance
 ```
 
-## 📊 성능 최적화
+### 보안 테스트
 
-- React.memo를 사용한 컴포넌트 최적화
-- useCallback/useMemo를 사용한 함수/값 메모이제이션
-- 가상화 스크롤 (대용량 데이터)
-- 이미지 최적화 및 지연 로딩
-
-## 🚨 에러 처리
-
-- 전역 에러 바운더리
-- 사용자 친화적 에러 메시지
-- 에러 로깅 및 추적
-- 성능 모니터링
-
-## 📝 코딩 컨벤션
-
-### TypeScript
-- 엄격한 타입 체크 사용
-- any 타입 사용 금지
-- 인터페이스 우선 설계
-
-### React
-- 함수형 컴포넌트 사용
-- Hooks 규칙 준수
-- Props 인터페이스 정의
-
-### CSS
-- Tailwind CSS 클래스 우선
-- 컴포넌트별 스타일 모듈화
-- 반응형 디자인 원칙
-
-## 🔄 배포
-
-### Vercel (권장)
 ```bash
+# 취약점 스캔
+npm run test:security
+
+# 권한 테스트
+npm run test:auth
+
+# SQL 인젝션 테스트
+npm run test:sql-injection
+```
+
+## 🔒 보안
+
+### 인증 및 권한
+
+- **JWT 기반 인증**: Supabase Auth 사용
+- **RBAC**: 역할 기반 접근 제어
+- **세션 관리**: 자동 세션 만료 및 갱신
+- **API 보안**: Rate limiting 및 입력 검증
+
+### 데이터 보호
+
+- **암호화**: 저장 시 AES-256, 전송 시 TLS 1.3
+- **감사 로그**: 모든 데이터 접근 및 변경 기록
+- **백업**: 자동 데이터베이스 백업 (일 1회)
+
+### 보안 체크리스트
+
+- [ ] 환경변수에 민감한 정보 포함 금지
+- [ ] 정기적인 의존성 보안 업데이트
+- [ ] 로그에 개인정보 노출 금지
+- [ ] HTTPS 강제 적용
+- [ ] CORS 정책 적절히 설정
+
+## 🚀 배포
+
+### 프로덕션 빌드
+
+```bash
+# 프로덕션 빌드
 npm run build
-vercel --prod
+
+# 프로덕션 서버 실행
+npm start
 ```
 
-### Docker
+### Docker 배포
+
 ```bash
+# Docker 이미지 빌드
 docker build -t unecorailelectric .
+
+# 컨테이너 실행
 docker run -p 3000:3000 unecorailelectric
 ```
 
-## 📞 지원
+### Vercel 배포
 
-- **개발팀**: JYJ
-- **문의**: [이메일 또는 연락처]
-- **이슈**: GitHub Issues
+```bash
+# Vercel CLI 설치
+npm i -g vercel
+
+# 배포
+vercel --prod
+```
+
+## 🔧 개발 가이드
+
+### 코드 구조
+
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── api/            # API 라우트
+│   ├── components/     # 재사용 가능한 컴포넌트
+│   └── pages/          # 페이지 컴포넌트
+├── lib/                # 유틸리티 및 헬퍼
+├── hooks/              # 커스텀 React 훅
+└── types/              # TypeScript 타입 정의
+```
+
+### 코딩 컨벤션
+
+- **TypeScript**: 엄격 모드 사용
+- **ESLint**: 코드 품질 강제
+- **Prettier**: 코드 포맷팅 자동화
+- **Husky**: Git 훅으로 품질 검사
+
+### 커밋 메시지
+
+```
+feat: 새로운 기능 추가
+fix: 버그 수정
+docs: 문서 업데이트
+style: 코드 스타일 변경
+refactor: 코드 리팩토링
+test: 테스트 추가/수정
+chore: 빌드 프로세스 변경
+```
+
+## 📊 모니터링
+
+### 로그 관리
+
+```bash
+# 로그 레벨 설정
+NEXT_PUBLIC_LOG_LEVEL=debug  # 개발
+NEXT_PUBLIC_LOG_LEVEL=info   # 프로덕션
+NEXT_PUBLIC_LOG_LEVEL=warn   # 경고만
+NEXT_PUBLIC_LOG_LEVEL=error  # 에러만
+```
+
+### 성능 모니터링
+
+- **Core Web Vitals**: Lighthouse 점수 모니터링
+- **API 응답 시간**: 평균 응답 시간 추적
+- **메모리 사용량**: 메모리 누수 감지
+- **에러율**: 4xx, 5xx 에러 비율 모니터링
+
+## 🤝 기여하기
+
+### 개발 환경 설정
+
+1. Fork 저장소
+2. 기능 브랜치 생성 (`git checkout -b feature/amazing-feature`)
+3. 변경사항 커밋 (`git commit -m 'feat: Add amazing feature'`)
+4. 브랜치 푸시 (`git push origin feature/amazing-feature`)
+5. Pull Request 생성
+
+### 이슈 리포트
+
+버그 발견 시 다음 정보를 포함하여 이슈를 생성해주세요:
+
+- **환경**: OS, Node.js 버전, 브라우저
+- **재현 단계**: 버그 발생 과정
+- **예상 동작**: 정상적인 동작
+- **실제 동작**: 버그 발생 시 동작
+- **스크린샷**: 가능한 경우 첨부
 
 ## 📄 라이선스
 
-© 2025 JYJ. All rights reserved.
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+## 📞 지원
+
+### 공식 채널
+
+- **GitHub Issues**: [이슈 리포트](https://github.com/yjjangeco-netizen/unecorailelectric/issues)
+- **GitHub Discussions**: [토론 및 질문](https://github.com/yjjangeco-netizen/unecorailelectric/discussions)
+- **Wiki**: [상세 문서](https://github.com/yjjangeco-netizen/unecorailelectric/wiki)
+
+### 커뮤니티
+
+- **개발자 모임**: 월 1회 온라인 모임
+- **기술 블로그**: [개발 노트](https://blog.unecorail.com)
+- **Slack**: [커뮤니티 채널](https://unecorail.slack.com)
 
 ---
 
-## 🚀 빠른 시작
+**🚀 유네코레일 전기파트와 함께 더 나은 업무 환경을 만들어가세요!**
 
-1. 저장소 클론
-2. 의존성 설치: `npm install`
-3. 환경변수 설정: `.env.local` 생성
-4. 개발 서버 실행: `npm run dev`
-5. 브라우저에서 `http://localhost:3000` 접속
-
-## 🔧 개발 팁
-
-- **Hot Reload**: 코드 변경 시 자동 새로고침
-- **TypeScript**: 컴파일 오류 실시간 확인
-- **ESLint**: 코드 품질 자동 검사
-- **Prettier**: 코드 포맷팅 자동화
+*마지막 업데이트: 2024년 8월*
