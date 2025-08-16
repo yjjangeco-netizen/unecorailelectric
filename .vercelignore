@@ -14,9 +14,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# 의존성 폴더
-node_modules/
-
 # 테스트 커버리지
 coverage/
 
