@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "types": ["node", "jest"],
+    "types": ["jest", "node", "@playwright/test"],
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
