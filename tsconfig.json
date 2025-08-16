@@ -3,18 +3,16 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "es2022",
-      "es2023",
-      "esnext"
+      "es2022"
     ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "types": ["node", "jest"],
+
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
