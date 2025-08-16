@@ -1,0 +1,5 @@
+[33m7573422[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m docs: README 완전 개선 및 개발 환경 강화
+[33m032a114[m feat: TypeScript 타입 오류 대폭 개선 및 시스템 안정성 향상
+[33m7aa3c6c[m fix: complete React 19 dependency conflict resolution
+[33me0b668b[m fix: resolve React 19 dependency conflict
+[33m986ca02[m fix: ESLint 오류 수정 및 Vercel 배포 최적화

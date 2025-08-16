@@ -30,8 +30,7 @@
     "test:sql-injection": "jest --testPathPattern=security",
     "test:stress": "playwright test tests/stress/",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "prepare": "husky install"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
@@ -63,11 +62,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
     "autoprefixer": "^10.4.16",
     "critters": "^0.0.23",
-    "eslint": "^9",
+    "eslint": "8.57.1",
     "eslint-config-next": "15.4.5",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

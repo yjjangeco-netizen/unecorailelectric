@@ -295,3 +295,7 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+// 정적 생성을 위한 설정
+export const dynamic = 'force-static'
+export const revalidate = false

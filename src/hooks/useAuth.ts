@@ -1,15 +1,34 @@
 import { useState, useEffect } from 'react'
 import { CookieAuthManager, RBACManager } from '@/lib/auth'
 
+// 사용자 타입 정의
+interface User {
+  id: string
+  name: string
+  email: string
+  role: string
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<{ id: string; name: string; email: string; role: string } | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const { isValid, user: authUser } = await CookieAuthManager.validateSession()
-        setUser(isValid ? authUser : null)
+        if (isValid && authUser) {
+          // authUser의 타입을 User 타입에 맞게 변환
+          const user: User = {
+            id: authUser.id,
+            name: authUser.username || authUser.email || 'Unknown',
+            email: authUser.email || '',
+            role: authUser.role
+          }
+          setUser(user)
+        } else {
+          setUser(null)
+        }
       } catch (error) {
         console.error('인증 상태 확인 오류:', error)
         setUser(null)
@@ -24,8 +43,15 @@ export function useAuth() {
   const login = async (username: string, password: string) => {
     try {
       const result = await CookieAuthManager.login(username, password)
-      if (result.success) {
-        setUser(result.user)
+      if (result.success && result.user) {
+        // result.user의 타입을 User 타입에 맞게 변환
+        const user: User = {
+          id: result.user.id,
+          name: result.user.username || result.user.email || 'Unknown',
+          email: result.user.email || '',
+          role: result.user.role
+        }
+        setUser(user)
         return { success: true }
       }
       return { success: false, error: '로그인 실패' }

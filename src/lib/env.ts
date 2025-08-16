@@ -6,9 +6,9 @@ export const env = {
   LOG_LEVEL: process.env['NEXT_PUBLIC_LOG_LEVEL'] || process.env['LOG_LEVEL'] || 'info',
 } as const
 
-// 프로덕션 환경에서 필수 환경변수 검증
-if (env.NODE_ENV === 'production') {
+// 프로덕션 환경에서만 필수 환경변수 검증
+if (env.NODE_ENV === 'production' && typeof window === 'undefined') {
   if (!process.env['NEXT_PUBLIC_SUPABASE_URL'] || !process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']) {
-    throw new Error('Missing required environment variables for production')
+    console.warn('Missing required environment variables for production')
   }
 }

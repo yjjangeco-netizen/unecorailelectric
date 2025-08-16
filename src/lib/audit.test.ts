@@ -16,16 +16,16 @@ describe('audit', () => {
   })
 
   test('AuditAction stock operations', () => {
-    expect(AuditAction.STOCK_IN).toBe('stock_in')
-    expect(AuditAction.STOCK_OUT).toBe('stock_out')
-    expect(AuditAction.STOCK_ADJUSTMENT).toBe('stock_adjustment')
-    expect(AuditAction.STOCK_DISPOSAL).toBe('stock_disposal')
+    expect(AuditAction.STOCK_IN).toBe('STOCK_IN')
+    expect(AuditAction.STOCK_OUT).toBe('STOCK_OUT')
+    expect(AuditAction.STOCK_ADJUSTMENT).toBe('STOCK_ADJUSTMENT')
+    expect(AuditAction.STOCK_DISPOSAL).toBe('STOCK_DISPOSAL')
   })
 
   test('AuditAction authentication operations', () => {
-    expect(AuditAction.LOGIN).toBe('login')
-    expect(AuditAction.LOGOUT).toBe('logout')
-    expect(AuditAction.LOGIN_FAILED).toBe('login_failed')
-    expect(AuditAction.PERMISSION_DENIED).toBe('permission_denied')
+    expect(AuditAction.LOGIN).toBe('LOGIN')
+    expect(AuditAction.LOGOUT).toBe('LOGOUT')
+    expect(AuditAction.LOGIN_FAILED).toBe('LOGIN_FAILED')
+    expect(AuditAction.PERMISSION_DENIED).toBe('PERMISSION_DENIED')
   })
 });

@@ -103,12 +103,12 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   const getRowErrors = (index: number) => {
     const row = rows[index]
     if (!row) {return {}}
-    return validateRow(row)
+    return validateRow(row as unknown as Record<string, unknown>)
   }
 
   // 오류가 있는 행이 있는지 확인
   const hasErrors = () => {
-    return rows.some((row) => Object.keys(validateRow(row)).length > 0)
+    return rows.some((row) => Object.keys(validateRow(row as unknown as Record<string, unknown>)).length > 0)
   }
 
   // 오류가 있는 필드의 스타일 클래스
@@ -392,7 +392,6 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         return
       }
 
-      const _headers = (lines[0] || '').split(',').map(h => h.trim())
       // 헤더 파싱 완료
       
       const dataRows = lines.slice(1).filter(line => line.trim())

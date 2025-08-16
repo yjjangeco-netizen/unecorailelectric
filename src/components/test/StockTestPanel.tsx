@@ -32,6 +32,16 @@ interface TestResult {
   details: string[]
 }
 
+// 전체 통계 인터페이스
+interface OverallStats {
+  totalTests: number
+  passedTests: number
+  failedTests: number
+  errorTests: number
+  startTime: number
+  endTime: number
+}
+
 // 재고 테스트 데이터 인터페이스
 // interface StockTestData {
 //   id: string
@@ -49,7 +59,7 @@ export default function StockTestPanel() {
   const [currentTest, setCurrentTest] = useState<string>('')
   const [progress, setProgress] = useState(0)
   const [testResults, setTestResults] = useState<TestResult[]>([])
-  const [overallStats, setOverallStats] = useState({
+  const [overallStats, setOverallStats] = useState<OverallStats>({
     totalTests: 0,
     passedTests: 0,
     failedTests: 0,
@@ -98,7 +108,7 @@ export default function StockTestPanel() {
         details: []
       },
       {
-        testName: '재고 계산 테스트',
+        testName: '계산 기능 테스트',
         status: 'pending',
         totalTests: 1000000,
         passedTests: 0,
@@ -107,7 +117,7 @@ export default function StockTestPanel() {
         details: []
       },
       {
-        testName: '데이터 무결성 테스트',
+        testName: '무결성 검사 테스트',
         status: 'pending',
         totalTests: 1000000,
         passedTests: 0,
@@ -119,7 +129,7 @@ export default function StockTestPanel() {
     
     setTestResults(tests)
     setOverallStats({
-      totalTests: tests.length * 1000000,
+      totalTests: tests.reduce((sum, test) => sum + test.totalTests, 0),
       passedTests: 0,
       failedTests: 0,
       errorTests: 0,
@@ -127,91 +137,6 @@ export default function StockTestPanel() {
       endTime: 0
     })
   }, [])
-
-  // 테스트 시작
-  const startTests = useCallback(async () => {
-    setIsRunning(true)
-    setOverallStats((prev: unknown) => ({ ...prev, startTime: Date.now() }))
-    
-    // 각 테스트를 순차적으로 실행
-    for (let i = 0; i < testResults.length; i++) {
-      if (!isRunning) {break}
-      
-      setCurrentTest(testResults[i]?.testName || '')
-      await runTest(i)
-      setProgress(((i + 1) / testResults.length) * 100)
-    }
-    
-    setIsRunning(false)
-    setCurrentTest('')
-    setOverallStats((prev: unknown) => ({ ...prev, endTime: Date.now() }))
-  }, [testResults, isRunning, runTest])
-
-  // 테스트 중지
-  const stopTests = useCallback(() => {
-    setIsRunning(false)
-    setCurrentTest('')
-  }, [])
-
-  // 테스트 일시정지
-  const pauseTests = useCallback(() => {
-    setIsRunning(false)
-  }, [])
-
-  // 테스트 재설정
-  const resetTests = useCallback(() => {
-    setIsRunning(false)
-    setCurrentTest('')
-    setProgress(0)
-    initializeTests()
-  }, [initializeTests])
-
-  // 개별 테스트 실행
-  const runTest = useCallback(async (testIndex: number) => {
-    const test = testResults[testIndex]
-    if (!test) {return}
-    
-    test.status = 'running'
-    test.startTime = Date.now()
-    
-    setTestResults([...testResults])
-    
-    try {
-      switch (testIndex) {
-        case 0:
-          await runStockInTest(test)
-          break
-        case 1:
-          await runStockOutTest(test)
-          break
-        case 2:
-          await runDisposalTest(test)
-          break
-        case 3:
-          await runSearchTest(test)
-          break
-        case 4:
-          await runCalculationTest(test)
-          break
-        case 5:
-          await runIntegrityTest(test)
-          break
-      }
-      
-      test.status = 'passed'
-      test.endTime = Date.now()
-      test.duration = test.endTime - test.startTime
-      
-    } catch (error) {
-      test.status = 'error'
-      test.endTime = Date.now()
-      test.duration = test.endTime - test.startTime
-      test.details.push(`오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
-    }
-    
-    setTestResults([...testResults])
-    updateOverallStats()
-  }, [testResults, runCalculationTest, runDisposalTest, runIntegrityTest, runSearchTest, runStockInTest, runStockOutTest, updateOverallStats])
 
   // 입고 기능 테스트
   const runStockInTest = useCallback(async (test: TestResult) => {
@@ -239,16 +164,12 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
       // 진행률 업데이트
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      // UI 업데이트를 위한 지연
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
 
@@ -276,14 +197,11 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
 
@@ -311,14 +229,11 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
 
@@ -346,18 +261,15 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
 
-  // 재고 계산 테스트
+  // 계산 기능 테스트
   const runCalculationTest = useCallback(async (test: TestResult) => {
     const batchSize = 10000
     
@@ -381,18 +293,15 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
 
-  // 데이터 무결성 테스트
+  // 무결성 검사 테스트
   const runIntegrityTest = useCallback(async (test: TestResult) => {
     const batchSize = 10000
     
@@ -405,7 +314,7 @@ export default function StockTestPanel() {
         const testData = generateIntegrityTestData(i + j)
         
         try {
-          const result = simulateIntegrityCheck(testData)
+          const result = simulateIntegrity(testData)
           
           if (result.success) {
             test.passedTests++
@@ -416,16 +325,112 @@ export default function StockTestPanel() {
           
         } catch (error) {
           test.errorTests++
-          test.details.push(`테스트 ${i + j + 1}: ${error instanceof Error ? error.message : '오류'}`)
+          test.details.push(`테스트 ${i + j + 1}: 오류 - ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
         }
       }
       
-      const progress = ((i + currentBatch) / test.totalTests) * 100
-      setProgress(progress)
-      
-      await new Promise(resolve => setTimeout(resolve, 1))
+      setProgress((i / test.totalTests) * 100)
     }
   }, [isRunning])
+
+  // 전체 통계 업데이트
+  const updateOverallStats = useCallback(() => {
+    const total = testResults.reduce((sum: number, test: TestResult) => sum + test.totalTests, 0)
+    const passed = testResults.reduce((sum: number, test: TestResult) => sum + test.passedTests, 0)
+    const failed = testResults.reduce((sum: number, test: TestResult) => sum + test.failedTests, 0)
+    const error = testResults.reduce((sum: number, test: TestResult) => sum + test.errorTests, 0)
+    
+    setOverallStats((prev: OverallStats) => ({
+      ...prev,
+      totalTests: total,
+      passedTests: passed,
+      failedTests: failed,
+      errorTests: error
+    }))
+  }, [testResults])
+
+  // 테스트 시작
+  const startTests = useCallback(async () => {
+    setIsRunning(true)
+    setOverallStats((prev: OverallStats) => ({ ...prev, startTime: Date.now() }))
+    
+    // 각 테스트를 순차적으로 실행
+    for (let i = 0; i < testResults.length; i++) {
+      if (!isRunning) {break}
+      
+      setCurrentTest(testResults[i]?.testName || '')
+      // runTest 함수를 직접 호출하지 않고 인라인으로 처리
+      const test = testResults[i]
+      if (!test) {
+        continue
+      }
+      
+      test.status = 'running'
+      test.startTime = Date.now()
+      
+      setTestResults([...testResults])
+      
+      try {
+        switch (i) {
+          case 0:
+            await runStockInTest(test)
+            break
+          case 1:
+            await runStockOutTest(test)
+            break
+          case 2:
+            await runDisposalTest(test)
+            break
+          case 3:
+            await runSearchTest(test)
+            break
+          case 4:
+            await runCalculationTest(test)
+            break
+          case 5:
+            await runIntegrityTest(test)
+            break
+        }
+        
+        test.status = 'passed'
+        test.endTime = Date.now()
+        test.duration = test.endTime - test.startTime
+        
+      } catch (error) {
+        test.status = 'error'
+        test.endTime = Date.now()
+        test.duration = test.endTime - test.startTime
+        test.details.push(`오류: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+      }
+      
+      setTestResults([...testResults])
+      updateOverallStats()
+      setProgress(((i + 1) / testResults.length) * 100)
+    }
+    
+    setIsRunning(false)
+    setCurrentTest('')
+    setOverallStats((prev: OverallStats) => ({ ...prev, endTime: Date.now() }))
+  }, [testResults, isRunning, runStockInTest, runStockOutTest, runDisposalTest, runSearchTest, runCalculationTest, runIntegrityTest, updateOverallStats])
+
+  // 테스트 중지
+  const stopTests = useCallback(() => {
+    setIsRunning(false)
+    setCurrentTest('')
+  }, [])
+
+  // 테스트 일시정지
+  const pauseTests = useCallback(() => {
+    setIsRunning(false)
+  }, [])
+
+  // 테스트 재설정
+  const resetTests = useCallback(() => {
+    setIsRunning(false)
+    setCurrentTest('')
+    setProgress(0)
+    initializeTests()
+  }, [initializeTests])
 
   // 테스트 데이터 생성 함수들
   const generateStockInTestData = (index: number) => ({
@@ -489,21 +494,28 @@ export default function StockTestPanel() {
   // 시뮬레이션 함수들
   const simulateStockIn = (data: unknown) => {
     try {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const stockInData = data as { itemName?: string; quantity?: number; unitPrice?: number }
+      
       // 입력값 검증
-      if (!data.itemName || data.itemName.length < 1) {
+      if (!stockInData.itemName || stockInData.itemName.length < 1) {
         return { success: false, error: '품목명이 비어있습니다' }
       }
       
-      if (data.quantity <= 0 || data.quantity > 999999) {
+      if (!stockInData.quantity || stockInData.quantity <= 0 || stockInData.quantity > 999999) {
         return { success: false, error: '수량이 유효하지 않습니다' }
       }
       
-      if (data.unitPrice < 0 || data.unitPrice > 999999999) {
+      if (!stockInData.unitPrice || stockInData.unitPrice < 0 || stockInData.unitPrice > 999999999) {
         return { success: false, error: '단가가 유효하지 않습니다' }
       }
       
       // 재고 계산 시뮬레이션
-      const totalAmount = data.quantity * data.unitPrice
+      const totalAmount = stockInData.quantity * stockInData.unitPrice
       
       if (totalAmount > 999999999999) {
         return { success: false, error: '총 금액이 너무 큽니다' }
@@ -518,22 +530,29 @@ export default function StockTestPanel() {
 
   const simulateStockOut = (data: unknown) => {
     try {
-      if (!data.itemId) {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const stockOutData = data as { itemId?: string; quantity?: number }
+      
+      if (!stockOutData.itemId) {
         return { success: false, error: '품목 ID가 없습니다' }
       }
       
-      if (data.quantity <= 0 || data.quantity > 999999) {
+      if (!stockOutData.quantity || stockOutData.quantity <= 0 || stockOutData.quantity > 999999) {
         return { success: false, error: '수량이 유효하지 않습니다' }
       }
       
       // 재고 부족 체크 시뮬레이션
       const currentStock = Math.floor(Math.random() * 1000) + 100
       
-      if (data.quantity > currentStock) {
+      if (stockOutData.quantity > currentStock) {
         return { success: false, error: '재고가 부족합니다' }
       }
       
-      return { success: true, remainingStock: currentStock - data.quantity }
+      return { success: true, remainingStock: currentStock - stockOutData.quantity }
       
     } catch (error) {
       return { success: false, error: '출고 처리 중 오류 발생' }
@@ -542,19 +561,26 @@ export default function StockTestPanel() {
 
   const simulateDisposal = (data: unknown) => {
     try {
-      if (!data.itemId) {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const disposalData = data as { itemId?: string; quantity?: number; reason?: string; disposedAt?: string }
+      
+      if (!disposalData.itemId) {
         return { success: false, error: '품목 ID가 없습니다' }
       }
       
-      if (data.quantity <= 0) {
+      if (!disposalData.quantity || disposalData.quantity <= 0) {
         return { success: false, error: '폐기 수량이 유효하지 않습니다' }
       }
       
-      if (!data.reason || data.reason.length < 1) {
+      if (!disposalData.reason || disposalData.reason.length < 1) {
         return { success: false, error: '폐기 사유가 필요합니다' }
       }
       
-      return { success: true, disposedAt: data.disposedAt }
+      return { success: true, disposedAt: disposalData.disposedAt }
       
     } catch (error) {
       return { success: false, error: '폐기 처리 중 오류 발생' }
@@ -563,11 +589,18 @@ export default function StockTestPanel() {
 
   const simulateSearch = (data: unknown) => {
     try {
-      if (!data.query || data.query.length < 1) {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const searchData = data as { query?: string }
+      
+      if (!searchData.query || searchData.query.length < 1) {
         return { success: false, error: '검색어가 비어있습니다' }
       }
       
-      if (data.query.length > 200) {
+      if (searchData.query.length > 200) {
         return { success: false, error: '검색어가 너무 깁니다' }
       }
       
@@ -583,9 +616,22 @@ export default function StockTestPanel() {
 
   const simulateCalculation = (data: unknown) => {
     try {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const calcData = data as { 
+        currentQuantity?: number; 
+        stockInQuantity?: number; 
+        stockOutQuantity?: number; 
+        adjustmentQuantity?: number; 
+        unitPrice?: number 
+      }
+      
       // 재고 계산 시뮬레이션
-      const finalQuantity = data.currentQuantity + data.stockInQuantity - data.stockOutQuantity + data.adjustmentQuantity
-      const totalAmount = finalQuantity * data.unitPrice
+      const finalQuantity = (calcData.currentQuantity || 0) + (calcData.stockInQuantity || 0) - (calcData.stockOutQuantity || 0) + (calcData.adjustmentQuantity || 0)
+      const totalAmount = finalQuantity * (calcData.unitPrice || 0)
       
       if (finalQuantity < 0) {
         return { success: false, error: '재고가 음수가 될 수 없습니다' }
@@ -602,24 +648,36 @@ export default function StockTestPanel() {
     }
   }
 
-  const simulateIntegrityCheck = (data: unknown) => {
+  const simulateIntegrity = (data: unknown) => {
     try {
+      // 타입 가드 추가
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: '유효하지 않은 데이터입니다' }
+      }
+      
+      const integrityData = data as { 
+        name?: string; 
+        unitPrice?: number; 
+        currentQuantity?: number; 
+        totalAmount?: number 
+      }
+      
       // 데이터 무결성 검증
-      if (!data.name || data.name.length < 1) {
+      if (!integrityData.name || integrityData.name.length < 1) {
         return { success: false, error: '품목명이 비어있습니다' }
       }
       
-      if (data.unitPrice < 0) {
+      if (!integrityData.unitPrice || integrityData.unitPrice < 0) {
         return { success: false, error: '단가가 음수일 수 없습니다' }
       }
       
-      if (data.currentQuantity < 0) {
+      if (!integrityData.currentQuantity || integrityData.currentQuantity < 0) {
         return { success: false, error: '재고 수량이 음수일 수 없습니다' }
       }
       
       // 계산된 총액과 실제 총액 비교
-      const calculatedAmount = data.currentQuantity * data.unitPrice
-      if (Math.abs(calculatedAmount - data.totalAmount) > 0.01) {
+      const calculatedAmount = integrityData.currentQuantity * integrityData.unitPrice
+      if (Math.abs(calculatedAmount - (integrityData.totalAmount || 0)) > 0.01) {
         return { success: false, error: '총액 계산이 일치하지 않습니다' }
       }
       
@@ -629,22 +687,6 @@ export default function StockTestPanel() {
       return { success: false, error: '무결성 검증 중 오류 발생' }
     }
   }
-
-  // 전체 통계 업데이트
-  const updateOverallStats = useCallback(() => {
-    const total = testResults.reduce((sum: number, test: TestResult) => sum + test.totalTests, 0)
-    const passed = testResults.reduce((sum: number, test: TestResult) => sum + test.passedTests, 0)
-    const failed = testResults.reduce((sum: number, test: TestResult) => sum + test.failedTests, 0)
-    const error = testResults.reduce((sum: number, test: TestResult) => sum + test.errorTests, 0)
-    
-    setOverallStats((prev: unknown) => ({
-      ...prev,
-      totalTests: total,
-      passedTests: passed,
-      failedTests: failed,
-      errorTests: error
-    }))
-  }, [testResults])
 
   // 컴포넌트 마운트 시 테스트 초기화
   useEffect(() => {
@@ -913,3 +955,4 @@ export default function StockTestPanel() {
     </div>
   )
 }
+

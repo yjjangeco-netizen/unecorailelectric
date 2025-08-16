@@ -14,6 +14,6 @@ describe('utils', () => {
 
   test('safeParseInt handles invalid inputs with default', () => {
     expect(safeParseInt('42', 0)).toBe(42);
-    expect(safeParseInt('abc' as unknown, 7)).toBe(7);
+    expect(safeParseInt('abc' as string, 7)).toBe(7);
   });
 });

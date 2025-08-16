@@ -3,6 +3,14 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 import { validateStockIn } from '@/lib/schemas'
 import { logError } from '@/lib/utils'
 
+// 정적 생성을 위한 설정
+export const dynamic = 'force-static'
+export const revalidate = false
+
+export async function GET() {
+  return NextResponse.json({ message: 'Stock In API' })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
@@ -137,71 +145,6 @@ export async function POST(request: NextRequest) {
       { 
         ok: false, 
         error: error instanceof Error ? error.message : '입고 처리 중 오류가 발생했습니다',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    )
-  }
-}
-
-// GET 요청 처리 (입고 이력 조회)
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = createServerSupabaseClient()
-    
-    // 사용자 인증 확인
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { ok: false, error: '인증이 필요합니다' },
-        { status: 401 }
-      )
-    }
-
-    // URL 파라미터 파싱
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = parseInt(searchParams.get('offset') || '0')
-    const itemId = searchParams.get('itemId')
-
-    // 쿼리 구성
-    let query = supabase
-      .from('stock_in')
-      .select(`
-        *,
-        items(name, specification, maker)
-      `)
-      .order('received_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (itemId) {
-      query = query.eq('item_id', itemId)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      throw new Error(`입고 이력 조회 오류: ${error.message}`)
-    }
-
-    return NextResponse.json({
-      ok: true,
-      data,
-      pagination: {
-        limit,
-        offset,
-        total: data.length
-      },
-      timestamp: new Date().toISOString()
-    })
-
-  } catch (error) {
-    logError('입고 이력 조회 API 오류', error)
-    
-    return NextResponse.json(
-      { 
-        ok: false, 
-        error: error instanceof Error ? error.message : '입고 이력 조회 중 오류가 발생했습니다',
         timestamp: new Date().toISOString()
       },
       { status: 500 }

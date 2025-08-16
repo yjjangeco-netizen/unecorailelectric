@@ -123,7 +123,10 @@ test.describe('재고관리 스트레스 테스트', () => {
     } finally {
       // 추가 생성한 페이지 정리
       for (let i = 1; i < pages.length; i++) {
-        await pages[i].close()
+        const page = pages[i]
+        if (page) {
+          await page.close()
+        }
       }
     }
   })
@@ -215,16 +218,19 @@ test.describe('재고관리 스트레스 테스트', () => {
     if (performanceEntries.length > 0) {
       const firstMemory = performanceEntries[0]
       const lastMemory = performanceEntries[performanceEntries.length - 1]
-      const memoryGrowth = lastMemory - firstMemory
-      const memoryGrowthPercent = (memoryGrowth / firstMemory) * 100
+      
+      if (firstMemory !== undefined && lastMemory !== undefined) {
+        const memoryGrowth = lastMemory - firstMemory
+        const memoryGrowthPercent = (memoryGrowth / firstMemory) * 100
 
-      console.log('\n🧠 메모리 사용량 분석:')
-      console.log(`초기 메모리: ${(firstMemory / 1024 / 1024).toFixed(1)}MB`)
-      console.log(`최종 메모리: ${(lastMemory / 1024 / 1024).toFixed(1)}MB`)
-      console.log(`메모리 증가: ${(memoryGrowth / 1024 / 1024).toFixed(1)}MB (${memoryGrowthPercent.toFixed(1)}%)`)
+        console.log('\n🧠 메모리 사용량 분석:')
+        console.log(`초기 메모리: ${(firstMemory / 1024 / 1024).toFixed(1)}MB`)
+        console.log(`최종 메모리: ${(lastMemory / 1024 / 1024).toFixed(1)}MB`)
+        console.log(`메모리 증가: ${(memoryGrowth / 1024 / 1024).toFixed(1)}MB (${memoryGrowthPercent.toFixed(1)}%)`)
 
-      // 메모리 누수 기준: 50% 이상 증가하면 의심
-      expect(memoryGrowthPercent).toBeLessThan(50)
+        // 메모리 누수 기준: 50% 이상 증가하면 의심
+        expect(memoryGrowthPercent).toBeLessThan(50)
+      }
     }
   })
 

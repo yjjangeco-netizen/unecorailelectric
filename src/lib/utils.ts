@@ -156,7 +156,7 @@ export const logError = (context: string, error: unknown, additionalInfo?: Recor
     url: typeof window !== 'undefined' ? window.location.href : 'Unknown'
   }
   
-  log.error(context, 'ErrorLogger', error instanceof Error ? error : new Error(String(error)), {
+  log.error(context, error instanceof Error ? error : new Error(String(error)), {
     ...additionalInfo,
     timestamp: errorInfo.timestamp,
     userAgent: errorInfo.userAgent,
@@ -176,7 +176,7 @@ export const measurePerformance = <T>(name: string, fn: () => T): T => {
     return result
   } catch (error) {
     const end = performance.now()
-    log.error(`${name} 실행 실패`, 'Performance', error instanceof Error ? error : new Error(String(error)), { executionTime: `${(end - start).toFixed(2)}ms` })
+    log.error(`${name} 실행 실패`, error instanceof Error ? error : new Error(String(error)), { executionTime: `${(end - start).toFixed(2)}ms` })
     throw error
   }
 }
@@ -193,7 +193,7 @@ export const measureAsyncPerformance = async <T>(name: string, fn: () => Promise
     return result
   } catch (error) {
     const end = performance.now()
-    log.error(`${name} 실행 실패`, 'AsyncPerformance', error instanceof Error ? error : new Error(String(error)), { executionTime: `${(end - start).toFixed(2)}ms` })
+    log.error(`${name} 실행 실패`, error instanceof Error ? error : new Error(String(error)), { executionTime: `${(end - start).toFixed(2)}ms` })
     throw error
   }
 }

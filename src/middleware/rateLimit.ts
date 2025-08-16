@@ -108,7 +108,8 @@ function getClientIP(request: NextRequest): string {
   }
   
   // 기본 IP (개발 환경)
-  return (request as unknown).ip || '127.0.0.1'
+  const requestWithIP = request as NextRequest & { ip?: string }
+  return requestWithIP.ip || '127.0.0.1'
 }
 
 // 로그인 전용 Rate Limiter

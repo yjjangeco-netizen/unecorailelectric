@@ -85,8 +85,8 @@ export interface AuditLogEntry {
   resource_id?: string
   details: Record<string, unknown>
   metadata?: Record<string, unknown>
-  session_id?: string
-  request_id?: string
+  session_id?: string | undefined
+  request_id?: string | undefined
 }
 
 // 감사 로그 매니저
@@ -158,8 +158,8 @@ export class AuditLogger {
       action,
       level,
       details,
-      session_id: details.sessionId,
-      request_id: details.requestId
+      session_id: details['sessionId'] as string | undefined,
+      request_id: details['requestId'] as string | undefined
     })
   }
   
@@ -186,8 +186,8 @@ export class AuditLogger {
       resource_type: resourceType,
       resource_id: resourceId,
       details,
-      session_id: details.sessionId,
-      request_id: details.requestId
+      session_id: details['sessionId'] as string | undefined,
+      request_id: details['requestId'] as string | undefined
     })
   }
   
@@ -210,8 +210,8 @@ export class AuditLogger {
       action,
       level,
       details,
-      session_id: details.sessionId,
-      request_id: details.requestId
+      session_id: details['sessionId'] as string | undefined,
+      request_id: details['requestId'] as string | undefined
     })
   }
   
@@ -234,8 +234,8 @@ export class AuditLogger {
       action,
       level,
       details,
-      session_id: details.sessionId,
-      request_id: details.requestId
+      session_id: details['sessionId'] as string | undefined,
+      request_id: details['requestId'] as string | undefined
     })
   }
   

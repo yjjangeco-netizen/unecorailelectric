@@ -43,7 +43,7 @@ export const createGoogleCalendarClient = (accessToken: string) => {
 }
 
 // 업무일지를 Google Calendar 이벤트로 변환
-import { WorkDiaryEntry } from '@/lib/supabase'
+import type { WorkDiaryEntry } from '@/lib/supabase'
 
 interface CalendarEvent {
   summary: string
@@ -64,6 +64,29 @@ interface CalendarEvent {
       minutes: number
     }>
   }
+}
+
+// Google Calendar API 클라이언트 타입 가드
+interface GoogleCalendarClient {
+  events: {
+    insert: (params: { calendarId?: string; resource: CalendarEvent }) => Promise<{ data: { id: string; htmlLink: string } }>
+    update: (params: { calendarId?: string; eventId: string; resource: CalendarEvent }) => Promise<{ data: { id: string; htmlLink: string } }>
+    delete: (params: { calendarId?: string; eventId: string }) => Promise<{ data: { id: string; htmlLink: string } }>
+    list: (params: { 
+      calendarId?: string; 
+      timeMin?: string; 
+      timeMax?: string; 
+      singleEvents?: boolean;
+      orderBy?: string;
+    }) => Promise<{ data: { items: CalendarEvent[] } }>
+  }
+}
+
+function isGoogleCalendarClient(client: unknown): client is GoogleCalendarClient {
+  return client !== null && 
+         typeof client === 'object' && 
+         'events' in client &&
+         typeof (client as Record<string, unknown>)['events'] === 'object'
 }
 
 export const convertDiaryToCalendarEvent = (diaryEntry: WorkDiaryEntry): CalendarEvent => {
@@ -96,6 +119,10 @@ export const addEventToGoogleCalendar = async (
   event: CalendarEvent
 ) => {
   try {
+    if (!isGoogleCalendarClient(calendarClient)) {
+      throw new Error('Invalid Google Calendar client')
+    }
+    
     const response = await calendarClient.events.insert({
       calendarId: calendarId || 'primary',
       resource: event
@@ -123,6 +150,10 @@ export const updateEventInGoogleCalendar = async (
   event: CalendarEvent
 ) => {
   try {
+    if (!isGoogleCalendarClient(calendarClient)) {
+      throw new Error('Invalid Google Calendar client')
+    }
+    
     const response = await calendarClient.events.update({
       calendarId: calendarId || 'primary',
       eventId: eventId,
@@ -150,6 +181,10 @@ export const deleteEventFromGoogleCalendar = async (
   eventId: string
 ) => {
   try {
+    if (!isGoogleCalendarClient(calendarClient)) {
+      throw new Error('Invalid Google Calendar client')
+    }
+    
     await calendarClient.events.delete({
       calendarId: calendarId || 'primary',
       eventId: eventId
@@ -172,6 +207,10 @@ export const getEventsFromGoogleCalendar = async (
   date: string
 ) => {
   try {
+    if (!isGoogleCalendarClient(calendarClient)) {
+      throw new Error('Invalid Google Calendar client')
+    }
+    
     const response = await calendarClient.events.list({
       calendarId: calendarId || 'primary',
       timeMin: new Date(date).toISOString(),

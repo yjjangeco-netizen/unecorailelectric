@@ -69,11 +69,13 @@ export default function BulkStockOutModal({
 
   const updateRow = (index: number, field: keyof BulkStockOutRow, value: string | number | boolean) => {
     const newRows = [...rows]
-    newRows[index] = { ...newRows[index], [field]: value }
-    
-    // 수량 변경 시 총액 재계산
-    if (field === 'requestQuantity') {
-      newRows[index].totalAmount = newRows[index].unitPrice * (value as number)
+    if (newRows[index]) {
+      newRows[index] = { ...newRows[index], [field]: value } as BulkStockOutRow
+      
+      // 수량 변경 시 총액 재계산
+      if (field === 'requestQuantity' && newRows[index]?.unitPrice !== undefined) {
+        newRows[index].totalAmount = newRows[index].unitPrice * (value as number)
+      }
     }
     
     setRows(newRows)
@@ -105,7 +107,9 @@ export default function BulkStockOutModal({
       setRows([])
       
     } catch (error) {
-      log.error('대량 출고 저장 실패', 'BulkStockOutModal', error instanceof Error ? error : new Error(String(error)))
+      log.error('대량 출고 저장 실패', error instanceof Error ? error : new Error(String(error)), {
+        context: 'BulkStockOutModal'
+      })
       alert(error instanceof Error ? error.message : '저장 중 오류가 발생했습니다')
     } finally {
       setSaving(false)

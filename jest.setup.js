@@ -78,7 +78,16 @@ jest.mock('@/lib/supabase', () => ({
   })),
   createServerSupabaseClient: jest.fn(() => ({
     auth: {
-      getUser: jest.fn()
+      getUser: jest.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            role: 'admin'
+          }
+        },
+        error: null
+      })
     },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),

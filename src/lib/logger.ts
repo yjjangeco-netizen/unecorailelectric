@@ -8,17 +8,17 @@ export enum LogLevel {
   ERROR = 'error'
 }
 
-interface LogEntry {
+export interface LogEntry {
   timestamp: string
   level: LogLevel
   message: string
-  context?: string
-  data?: Record<string, unknown>
-  error?: Error
+  context: string
+  data: Record<string, unknown>
+  error: Error | undefined
 }
 
 class Logger {
-  private logLevel: LogLevel = 'info'
+  private logLevel: LogLevel = LogLevel.INFO
 
   constructor() {
     this.logLevel = this.getLogLevel()
@@ -37,10 +37,10 @@ class Logger {
 
   private shouldLog(level: LogLevel): boolean {
     const levels: Record<LogLevel, number> = {
-      debug: 0,
-      info: 1,
-      warn: 2,
-      error: 3
+      [LogLevel.DEBUG]: 0,
+      [LogLevel.INFO]: 1,
+      [LogLevel.WARN]: 2,
+      [LogLevel.ERROR]: 3
     }
     
     return levels[level] >= levels[this.logLevel]
@@ -94,16 +94,16 @@ class Logger {
 
     // 콘솔 출력 (개발/테스트 환경)
     switch (level) {
-      case 'debug':
+      case LogLevel.DEBUG:
         console.warn(`[DEBUG] ${formattedMessage}`)
         break
-      case 'info':
+      case LogLevel.INFO:
         console.warn(`[INFO] ${formattedMessage}`)
         break
-      case 'warn':
+      case LogLevel.WARN:
         console.warn(formattedMessage)
         break
-      case 'error':
+      case LogLevel.ERROR:
         console.error(formattedMessage)
         break
     }
@@ -119,19 +119,19 @@ class Logger {
   }
 
   debug(message: string, context?: string, data?: Record<string, unknown>): void {
-    this.log('debug', message, context, data)
+    this.log(LogLevel.DEBUG, message, context, data)
   }
 
   info(message: string, context?: string, data?: Record<string, unknown>): void {
-    this.log('info', message, context, data)
+    this.log(LogLevel.INFO, message, context, data)
   }
 
   warn(message: string, context?: string, data?: Record<string, unknown>): void {
-    this.log('warn', message, context, data)
+    this.log(LogLevel.WARN, message, context, data)
   }
 
-  error(message: string, context?: string, error?: Error, data?: Record<string, unknown>): void {
-    this.log('error', message, context, data, error)
+  error(message: string, error?: Error, data?: Record<string, unknown>): void {
+    this.log(LogLevel.ERROR, message, undefined, data, error)
   }
 
   // 특정 컨텍스트용 로거 생성
@@ -144,7 +144,7 @@ class Logger {
       warn: (message: string, data?: Record<string, unknown>) => 
         this.warn(message, contextName, data),
       error: (message: string, error?: Error, data?: Record<string, unknown>) => 
-        this.error(message, contextName, error, data)
+        this.error(message, error, data)
     }
   }
 }
@@ -164,5 +164,5 @@ export const log = {
 // 기존 logError 함수와의 호환성
 export const logError = (context: string, error: unknown, additionalInfo?: Record<string, unknown>): void => {
   const errorObj = error instanceof Error ? error : new Error(String(error))
-  logger.error(`${context}: ${errorObj.message}`, 'ErrorHandler', errorObj, additionalInfo)
+  logger.error(`${context}: ${errorObj.message}`, errorObj, additionalInfo)
 }

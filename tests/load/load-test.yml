@@ -19,9 +19,6 @@ config:
     timeout: 30
     pool: 10
   
-  # 결과 저장
-  processor: "./load-test-processor.js"
-  
   # 환경별 설정
   environments:
     development:

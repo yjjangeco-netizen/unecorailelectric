@@ -357,7 +357,7 @@ export function requirePermission(_permission: Permission) {
   return function <T extends (...args: unknown[]) => unknown>(target: T): T {
     return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       // 권한 검증 로직은 컴포넌트 레벨에서 처리
-      return target(...args)
+      return target(...args) as ReturnType<T>
     }) as T
   }
 }
@@ -367,7 +367,7 @@ export function requireRole(_role: Role) {
   return function <T extends (...args: unknown[]) => unknown>(target: T): T {
     return (async (...args: Parameters<T>): Promise<ReturnType<T>> => {
       // 역할 검증 로직은 컴포넌트 레벨에서 처리
-      return target(...args)
+      return target(...args) as ReturnType<T>
     }) as T
   }
 }
