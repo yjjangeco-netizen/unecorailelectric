@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 import { validateStockIn, validateStockOut } from '@/lib/schemas'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger } from '@/lib/audit'
+import { AuditAction } from '@/lib/audit'
 
 interface AuthenticatedUser {
   id: string
@@ -83,22 +84,23 @@ async function handleStockIn(supabase: SupabaseClient, data: unknown, user: Auth
     throw new Error(`입고 처리 실패: ${error.message}`)
   }
 
-  // 감사 로그 기록
-  await serverAuditLogger.logStockOperation(
-    'STOCK_IN',
-    user.id,
-    user.email || 'unknown',
-    'admin', // TODO: get actual user role
-    'stock_in',
-    result.item_id,
-    {
-      quantity: validatedData.quantity,
-      unit_price: validatedData.unitPrice,
-      reason: validatedData.reason,
-      total_value: validatedData.quantity * validatedData.unitPrice,
-      transaction_id: result.transaction_id
-    }
-  )
+        // 감사 로그 기록
+      await serverAuditLogger.logStockOperation(
+        AuditAction.STOCK_IN,
+        user.id,
+        user.email || 'unknown',
+        'admin', // TODO: get actual user role
+        'stock_in',
+        validatedData.itemName, // itemName 사용
+        {
+          quantity: validatedData.quantity,
+          unit_price: validatedData.unitPrice,
+          condition_type: validatedData.conditionType,
+          reason: validatedData.reason,
+          ordered_by: validatedData.orderedBy,
+          transaction_id: result.transaction_id
+        }
+      )
 
   return NextResponse.json({
     ok: true,
@@ -121,7 +123,7 @@ async function handleStockOut(supabase: SupabaseClient, data: unknown, user: Aut
   const { data: currentStock, error: stockError } = await supabase
     .from('current_stock')
     .select('current_quantity, unit_price')
-    .eq('id', data.itemId)
+    .eq('id', validatedData.itemId)
     .single()
 
   if (stockError || !currentStock) {
@@ -134,7 +136,7 @@ async function handleStockOut(supabase: SupabaseClient, data: unknown, user: Aut
 
   // 트랜잭션 처리
   const { data: result, error } = await supabase.rpc('process_stock_out', {
-    p_item_id: data.itemId,
+    p_item_id: validatedData.itemId,
     p_quantity: validatedData.quantity,
     p_project: validatedData.project,
     p_is_rental: validatedData.isRental,
@@ -147,22 +149,22 @@ async function handleStockOut(supabase: SupabaseClient, data: unknown, user: Aut
     throw new Error(`출고 처리 실패: ${error.message}`)
   }
 
-  // 감사 로그 기록
-  await serverAuditLogger.logStockOperation(
-    'STOCK_OUT',
-    user.id,
-    user.email || 'unknown',
-    'admin', // TODO: get actual user role
-    'stock_out',
-    data.itemId,
-    {
-      quantity: validatedData.quantity,
-      project: validatedData.project,
-      is_rental: validatedData.isRental,
-      rental_flag: validatedData.isRental,
-      transaction_id: result.transaction_id
-    }
-  )
+        // 감사 로그 기록
+      await serverAuditLogger.logStockOperation(
+        AuditAction.STOCK_OUT,
+        user.id,
+        user.email || 'unknown',
+        'admin', // TODO: get actual user role
+        'stock_out',
+        validatedData.itemId,
+        {
+          quantity: validatedData.quantity,
+          project: validatedData.project,
+          is_rental: validatedData.isRental,
+          rental_flag: validatedData.isRental,
+          transaction_id: result.transaction_id
+        }
+      )
 
   return NextResponse.json({
     ok: true,
@@ -177,7 +179,19 @@ async function handleStockOut(supabase: SupabaseClient, data: unknown, user: Aut
 
 // 재고 조정 처리 (트랜잭션)
 async function handleStockAdjustment(supabase: SupabaseClient, data: unknown, user: AuthenticatedUser) {
-  const { itemId, adjustedQuantity, adjustmentReason, notes } = data
+  // 타입 가드로 데이터 검증
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid adjustment data')
+  }
+  
+  const adjustmentData = data as {
+    itemId: string
+    adjustedQuantity: number
+    adjustmentReason: string
+    notes?: string
+  }
+  
+  const { itemId, adjustedQuantity, adjustmentReason, notes } = adjustmentData
 
   // 권한 확인 (관리자/매니저만)
   const { data: userRole } = await supabase
@@ -208,7 +222,7 @@ async function handleStockAdjustment(supabase: SupabaseClient, data: unknown, us
 
   // 감사 로그 기록
   await serverAuditLogger.logStockOperation(
-    'STOCK_ADJUSTMENT',
+    AuditAction.STOCK_ADJUSTMENT,
     user.id,
     user.email || 'unknown',
     'admin', // TODO: get actual user role
@@ -271,7 +285,7 @@ async function handleBulkOperation(supabase: SupabaseClient, data: BulkOperation
 
   // 감사 로그 기록
   await serverAuditLogger.logSystemOperation(
-    'SYSTEM_MAINTENANCE',
+    AuditAction.SYSTEM_MAINTENANCE,
     user.id,
     user.email || 'unknown',
     'admin', // TODO: get actual user role

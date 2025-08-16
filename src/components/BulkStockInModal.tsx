@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { StockIn, Item, supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
+import type { StockIn, Item } from '@/lib/supabase'
 import { Plus, Trash2, Download, Upload, Calendar, Copy, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
 
 interface BulkStockInRow {
@@ -47,43 +48,52 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set())
 
   // 데이터 형식 검증 함수
-  const validateRow = (row: BulkStockInRow) => {
-    const errors: { [key: string]: string } = {}
+  const validateRow = (row: Record<string, unknown>): Record<string, string> => {
+    const errors: Record<string, string> = {}
     
-    // 필수 필드 검증
-    if (!row.name.trim()) {
-      errors.name = '품명은 필수입니다.'
-    }
-    if (!row.specification.trim()) {
-      errors.specification = '규격은 필수입니다.'
-    }
-    if (!row.maker.trim()) {
-      errors.maker = '메이커는 필수입니다.'
-    }
-    if (row.quantity <= 0) {
-      errors.quantity = '수량은 0보다 커야 합니다.'
-    }
-    if (!row.condition_type) {
-      errors.condition_type = '상태는 필수입니다.'
-    }
-    if (!row.received_by.trim()) {
-      errors.received_by = '입고자는 필수입니다.'
-    }
-    if (!row.received_date) {
-      errors.received_date = '입고일은 필수입니다.'
+    const name = String(row['name'] || '')
+    const specification = String(row['specification'] || '')
+    const maker = String(row['maker'] || '')
+    const quantity = Number(row['quantity']) || 0
+    const conditionType = String(row['condition_type'] || '')
+    const receivedBy = String(row['received_by'] || '')
+    const receivedDate = String(row['received_date'] || '')
+    
+    if (!name || name.length < 1) {
+      errors['name'] = '품명은 필수입니다.'
     }
     
-    // 날짜 형식 검증
-    if (row.received_date) {
-      const date = new Date(row.received_date)
+    if (!specification || specification.length < 1) {
+      errors['specification'] = '규격은 필수입니다.'
+    }
+    
+    if (!maker || maker.length < 1) {
+      errors['maker'] = '메이커는 필수입니다.'
+    }
+    
+    if (quantity <= 0) {
+      errors['quantity'] = '수량은 0보다 커야 합니다.'
+    }
+    
+    if (!conditionType || conditionType.length < 1) {
+      errors['condition_type'] = '상태는 필수입니다.'
+    }
+    
+    if (!receivedBy || receivedBy.length < 1) {
+      errors['received_by'] = '입고자는 필수입니다.'
+    }
+    
+    if (!receivedDate || receivedDate.length < 1) {
+      errors['received_date'] = '입고일은 필수입니다.'
+    } else {
+      const date = new Date(receivedDate)
       if (isNaN(date.getTime())) {
-        errors.received_date = '올바른 날짜 형식이 아닙니다.'
+        errors['received_date'] = '올바른 날짜 형식이 아닙니다.'
       }
     }
     
-    // 수량 형식 검증
-    if (row.quantity < 0) {
-      errors.quantity = '수량은 음수일 수 없습니다.'
+    if (quantity < 0) {
+      errors['quantity'] = '수량은 음수일 수 없습니다.'
     }
     
     return errors
@@ -591,8 +601,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${getErrorStyle('name', index)}`}
                            placeholder="품명"
                          />
-                         {rowErrors.name && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.name}</p>
+                         {rowErrors['name'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['name']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -603,8 +613,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${getErrorStyle('specification', index)}`}
                            placeholder="규격"
                          />
-                         {rowErrors.specification && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.specification}</p>
+                         {rowErrors['specification'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['specification']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -615,8 +625,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${getErrorStyle('maker', index)}`}
                            placeholder="메이커"
                          />
-                         {rowErrors.maker && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.maker}</p>
+                         {rowErrors['maker'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['maker']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -629,8 +639,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            min="0"
                            step="0.01"
                          />
-                         {rowErrors.unit_price && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.unit_price}</p>
+                         {rowErrors['unit_price'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['unit_price']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -641,8 +651,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${getErrorStyle('purpose', index)}`}
                            placeholder="용도"
                          />
-                         {rowErrors.purpose && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.purpose}</p>
+                         {rowErrors['purpose'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['purpose']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -654,8 +664,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            placeholder="수량"
                            min="1"
                          />
-                         {rowErrors.quantity && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.quantity}</p>
+                         {rowErrors['quantity'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['quantity']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -669,8 +679,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            <option value="used_defective">중고(불량)</option>
                            <option value="unknown">모름</option>
                          </select>
-                         {rowErrors.condition_type && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.condition_type}</p>
+                         {rowErrors['condition_type'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['condition_type']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -699,8 +709,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${getErrorStyle('received_by', index)}`}
                            placeholder="입고자"
                          />
-                         {rowErrors.received_by && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors.received_by}</p>
+                         {rowErrors['received_by'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['received_by']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -712,8 +722,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                              onChange={(e) => updateRow(index, 'received_date', e.target.value)}
                              className={`w-full pl-7 pr-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${getErrorStyle('received_date', index)}`}
                            />
-                           {rowErrors.received_date && (
-                             <p className="text-red-500 text-xs mt-1">{rowErrors.received_date}</p>
+                           {rowErrors['received_date'] && (
+                             <p className="text-red-500 text-xs mt-1">{rowErrors['received_date']}</p>
                            )}
                          </div>
                        </td>

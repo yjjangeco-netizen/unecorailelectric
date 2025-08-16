@@ -1,9 +1,10 @@
 'use client'
 
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import React, { Component } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { logError } from '@/lib/utils'
+
 
 interface Props {
   children: ReactNode
@@ -35,23 +36,15 @@ export default class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // 에러 로깅
-    logError('ErrorBoundary 에러 발생', error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: 'ErrorBoundary'
-    })
-
-    // 상태 업데이트
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    
     this.setState({
-      error,
-      errorInfo
+      hasError: true,
+      error: error,
+      errorInfo: errorInfo
     })
-
-    // 부모 컴포넌트에 에러 전달
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo)
-    }
   }
 
   handleRetry = () => {
@@ -66,7 +59,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     window.location.href = '/'
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // 커스텀 fallback이 있으면 사용
       if (this.props.fallback) {

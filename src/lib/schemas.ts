@@ -31,6 +31,7 @@ export const stockInSchema = z.object({
 
 // 출고 스키마
 export const stockOutSchema = z.object({
+  itemId: z.string().uuid('유효한 품목 ID가 필요합니다'),
   quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
   project: z.string().max(100, '프로젝트는 100자 이하여야 합니다').optional(),
   notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),

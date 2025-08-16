@@ -160,7 +160,12 @@ export default function StockManagementPage() {
   }
 
   // 입고 저장 - 로그인된 사용자용
-  const handleSaveStockIn = async (stockInData: StockIn) => {
+  const handleSaveStockIn = async (stockInData: {
+    itemName: string
+    quantity: string
+    unitPrice: string
+    notes?: string
+  }) => {
     if (!currentUser) {
       alert('로그인이 필요한 기능입니다.')
       return
@@ -229,7 +234,11 @@ export default function StockManagementPage() {
   }
 
   // 출고 저장 - 로그인된 사용자용
-  const handleSaveStockOut = async (stockOutData: StockOut) => {
+  const handleSaveStockOut = async (stockOutData: {
+    quantity: string
+    project?: string
+    notes?: string
+  }) => {
     if (!currentUser) {
       alert('로그인이 필요한 기능입니다.')
       return
@@ -1458,7 +1467,12 @@ export default function StockManagementPage() {
       <StockHistoryModal
         isOpen={historyModalOpen}
         onClose={() => setHistoryModalOpen(false)}
-        item={selectedHistoryItem}
+        item={selectedHistoryItem ? {
+          id: selectedHistoryItem.id,
+          name: selectedHistoryItem.name,
+          specification: selectedHistoryItem.specification,
+          current_quantity: selectedHistoryItem.current_quantity
+        } : null}
       />
 
       <RentalModal
@@ -1471,7 +1485,8 @@ export default function StockManagementPage() {
       <BulkStockOutModal
         isOpen={bulkStockOutModalOpen}
         onClose={() => setBulkStockOutModalOpen(false)}
-
+        stockItems={stockItems}
+        onSave={async () => alert('로그인이 필요한 기능입니다.')}
       />
       
       {/* 로그인 모달 */}

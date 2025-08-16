@@ -1,5 +1,12 @@
+import { env } from './env'
+
 // 구조화된 로깅 시스템
-type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+export enum LogLevel {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error'
+}
 
 interface LogEntry {
   timestamp: string
@@ -18,12 +25,14 @@ class Logger {
   }
 
   private getLogLevel(): LogLevel {
-    if (typeof window !== 'undefined') {
-      return 'warn' // 브라우저에서는 warn 레벨 이상만
+    const level = env.LOG_LEVEL
+    switch (level) {
+      case 'error': return LogLevel.ERROR
+      case 'warn': return LogLevel.WARN
+      case 'info': return LogLevel.INFO
+      case 'debug': return LogLevel.DEBUG
+      default: return LogLevel.INFO
     }
-    
-    const level = process.env.NEXT_PUBLIC_LOG_LEVEL || process.env.LOG_LEVEL || 'info'
-    return level as LogLevel
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -71,9 +80,9 @@ class Logger {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context,
-      data,
-      error
+      context: context || '',
+      data: data || {},
+      error: error || undefined,
     }
 
     const formattedMessage = this.formatLog(entry)

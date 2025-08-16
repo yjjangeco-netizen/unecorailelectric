@@ -1,11 +1,12 @@
 import { createClient } from '@supabase/supabase-js'
+import { env } from './env'
 
 // 환경 변수에서 Supabase 설정 가져오기
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-key'
+const supabaseUrl = env.SUPABASE_URL
+const supabaseAnonKey = env.SUPABASE_ANON_KEY
 
 // 개발 환경에서는 기본값 사용, 프로덕션에서는 환경변수 필수
-if (process.env.NODE_ENV === 'production' && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+if (env.NODE_ENV === 'production' && (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY)) {
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
 }
 

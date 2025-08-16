@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+
 import { Package, Plus, Search, Trash2, Save, Download } from 'lucide-react'
-import { CurrentStock } from '@/lib/supabase'
+import type { CurrentStock } from '@/lib/supabase'
 import { log } from '@/lib/logger'
 
 interface BulkStockOutRow {

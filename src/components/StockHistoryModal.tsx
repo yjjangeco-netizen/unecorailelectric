@@ -7,7 +7,12 @@ import { History, Package } from 'lucide-react'
 interface StockHistoryModalProps {
   isOpen: boolean
   onClose: () => void
-  item?: { id: string; name: string; specification?: string }
+  item?: { 
+    id: string
+    name: string
+    specification?: string
+    current_quantity?: number
+  } | null
 }
 
 export default function StockHistoryModal({ isOpen, onClose, item }: StockHistoryModalProps) {
@@ -27,7 +32,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
               <h3 className="font-medium mb-2">품목 정보</h3>
               <p><strong>품명:</strong> {item.name}</p>
               <p><strong>규격:</strong> {item.specification || '-'}</p>
-              <p><strong>현재 재고:</strong> {item.current_quantity}개</p>
+              <p><strong>현재 재고:</strong> {item?.current_quantity || 0}개</p>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">

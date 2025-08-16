@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { supabase, CurrentStock } from '@/lib/supabase'
+
+import { supabase } from '@/lib/supabase'
+import type { CurrentStock } from '@/lib/supabase'
 import { Search, Clock, Edit, Check, X } from 'lucide-react'
 
 interface RentalModalProps {

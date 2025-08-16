@@ -20,42 +20,53 @@ export enum AuditCategory {
   CONFIGURATION_CHANGE = 'configuration_change'
 }
 
-// 감사 로그 액션
+// 감사 로그 액션 타입
 export enum AuditAction {
   // 인증 관련
-  LOGIN = 'login',
-  LOGOUT = 'logout',
-  LOGIN_FAILED = 'login_failed',
-  PASSWORD_CHANGE = 'password_change',
-  SESSION_EXPIRED = 'session_expired',
+  LOGIN = 'LOGIN',
+  LOGOUT = 'LOGOUT',
+  LOGIN_FAILED = 'LOGIN_FAILED',
+  REGISTER = 'REGISTER',
+  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
   
   // 권한 관련
-  PERMISSION_DENIED = 'permission_denied',
-  ROLE_CHANGE = 'role_change',
-  ACCESS_GRANTED = 'access_granted',
-  ACCESS_REVOKED = 'access_revoked',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  ROLE_CHANGE = 'ROLE_CHANGE',
+  ACCESS_GRANTED = 'ACCESS_GRANTED',
+  ACCESS_REVOKED = 'ACCESS_REVOKED',
   
-  // 재고 관리
-  STOCK_IN = 'stock_in',
-  STOCK_OUT = 'stock_out',
-  STOCK_ADJUSTMENT = 'stock_adjustment',
-  STOCK_DISPOSAL = 'stock_disposal',
-  STOCK_TRANSFER = 'stock_transfer',
+  // 재고 관련
+  STOCK_IN = 'STOCK_IN',
+  STOCK_OUT = 'STOCK_OUT',
+  STOCK_ADJUSTMENT = 'STOCK_ADJUSTMENT',
+  STOCK_DISPOSAL = 'STOCK_DISPOSAL',
+  STOCK_TRANSFER = 'STOCK_TRANSFER',
   
   // 사용자 관리
-  USER_CREATED = 'user_created',
-  USER_UPDATED = 'user_updated',
-  USER_DELETED = 'user_deleted',
-  USER_ACTIVATED = 'user_activated',
-  USER_DEACTIVATED = 'user_deactivated',
+  USER_CREATE = 'USER_CREATE',
+  USER_UPDATE = 'USER_UPDATE',
+  USER_DELETE = 'USER_DELETE',
+  USER_ROLE_CHANGE = 'USER_ROLE_CHANGE',
+  USER_ACTIVATED = 'USER_ACTIVATED',
+  USER_DEACTIVATED = 'USER_DEACTIVATED',
   
-  // 시스템 운영
-  BACKUP_CREATED = 'backup_created',
-  SYSTEM_MAINTENANCE = 'system_maintenance',
-  CONFIGURATION_CHANGED = 'configuration_changed',
-  ERROR_OCCURRED = 'error_occurred',
-  CLOSING_COMPLETE = 'closing_complete',
-  CLOSING_ROLLBACK = 'closing_rollback'
+  // 시스템 관리
+  SYSTEM_MAINTENANCE = 'SYSTEM_MAINTENANCE',
+  SYSTEM_CONFIG_CHANGE = 'SYSTEM_CONFIG_CHANGE',
+  CONFIGURATION_CHANGED = 'CONFIGURATION_CHANGED',
+  ERROR_OCCURRED = 'ERROR_OCCURRED',
+  
+  // 마감 관련
+  CLOSING_COMPLETE = 'CLOSING_COMPLETE',
+  CLOSING_ROLLBACK = 'CLOSING_ROLLBACK',
+  
+  // 기타
+  DATA_EXPORT = 'DATA_EXPORT',
+  DATA_IMPORT = 'DATA_IMPORT',
+  BACKUP = 'BACKUP',
+  RESTORE = 'RESTORE',
+  BACKUP_CREATED = 'BACKUP_CREATED'
 }
 
 // 감사 로그 인터페이스
