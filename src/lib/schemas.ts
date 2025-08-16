@@ -42,9 +42,24 @@ export const stockOutSchema = z.object({
 // 재고 조정 스키마
 export const stockAdjustmentSchema = z.object({
   itemId: z.string().uuid('유효한 품목 ID가 필요합니다'),
-  adjustedQuantity: nonNegativeInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
-  adjustmentReason: safeString.max(200, '조정 사유는 200자 이하여야 합니다'),
+  adjustmentType: z.enum(['add', 'subtract', 'set']),
+  quantity: nonNegativeInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
+  reason: safeString.max(200, '조정 사유는 200자 이하여야 합니다'),
   notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+})
+
+// 대량 작업 스키마
+export const bulkOperationSchema = z.object({
+  operations: z.array(z.object({
+    itemName: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+    quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
+    unitPrice: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
+    conditionType: z.enum(['new', 'used_good', 'used_defective', 'unknown']).default('new'),
+    reason: z.string().max(200, '사유는 200자 이하여야 합니다').optional(),
+    orderedBy: z.string().max(100, '주문자는 100자 이하여야 합니다').optional(),
+    notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  })).min(1, '최소 1개 이상의 작업이 필요합니다').max(100, '최대 100개까지 처리 가능합니다'),
+  operationType: z.enum(['stock_in', 'stock_out']),
 })
 
 // 사용자 스키마
@@ -119,6 +134,7 @@ export type ItemInput = z.infer<typeof itemSchema>
 export type StockInInput = z.infer<typeof stockInSchema>
 export type StockOutInput = z.infer<typeof stockOutSchema>
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>
+export type BulkOperationInput = z.infer<typeof bulkOperationSchema>
 export type UserInput = z.infer<typeof userSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type SearchInput = z.infer<typeof searchSchema>
@@ -153,6 +169,12 @@ export interface StockAdjustment extends StockAdjustmentInput {
   adjusted_by: string
 }
 
+export interface BulkOperation extends BulkOperationInput {
+  id: string
+  created_at: string
+  created_by: string
+}
+
 export interface User extends Omit<UserInput, 'password'> {
   id: string
   created_at: string
@@ -171,6 +193,7 @@ export const validateItem = (data: unknown): ItemInput => itemSchema.parse(data)
 export const validateStockIn = (data: unknown): StockInInput => stockInSchema.parse(data)
 export const validateStockOut = (data: unknown): StockOutInput => stockOutSchema.parse(data)
 export const validateStockAdjustment = (data: unknown): StockAdjustmentInput => stockAdjustmentSchema.parse(data)
+export const validateBulkOperation = (data: unknown): BulkOperationInput => bulkOperationSchema.parse(data)
 export const validateUser = (data: unknown): UserInput => userSchema.parse(data)
 export const validateLogin = (data: unknown): LoginInput => loginSchema.parse(data)
 export const validateSearch = (data: unknown): SearchInput => searchSchema.parse(data)
