@@ -1,14 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Vercel 배포를 위한 설정
-  experimental: {
-    optimizeCss: true
-  },
-  // Vercel에서 Next.js 감지를 위한 설정
-  poweredByHeader: false,
-  compress: true,
-  // Vercel 호환성을 위한 추가 설정
-  reactStrictMode: true
+  // 기본 설정만 유지
 }
 
 module.exports = nextConfig
