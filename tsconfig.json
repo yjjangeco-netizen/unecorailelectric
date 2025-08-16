@@ -3,7 +3,8 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "es2022"
+      "es2022",
+      "es2023"
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -42,7 +43,9 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "jest.config.js",
+    "playwright.config.ts"
   ],
   "exclude": [
     "node_modules"
