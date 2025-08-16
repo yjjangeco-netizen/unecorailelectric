@@ -1,6 +1,5 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   // Vercel 배포를 위한 설정
   experimental: {
     optimizeCss: true
@@ -10,4 +9,4 @@ const nextConfig: NextConfig = {
   compress: true
 }
 
-export default nextConfig
+module.exports = nextConfig
