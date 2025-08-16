@@ -6,7 +6,9 @@ const nextConfig = {
   },
   // Vercel에서 Next.js 감지를 위한 설정
   poweredByHeader: false,
-  compress: true
+  compress: true,
+  // Vercel 호환성을 위한 추가 설정
+  reactStrictMode: true
 }
 
 module.exports = nextConfig
