@@ -37,3 +37,6 @@ playwright-report/
 # 임시 파일
 *.tmp
 *.temp
+
+
+.next/

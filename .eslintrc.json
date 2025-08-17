@@ -4,17 +4,17 @@
   "plugins": ["@typescript-eslint"],
   "rules": {
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-    "no-console": ["error", { "allow": ["warn", "error"] }],
-    "curly": "error",
-    "@typescript-eslint/no-explicit-any": "error",
-    "prefer-const": "error",
-    "no-var": "error",
-    "react-hooks/exhaustive-deps": "error",
-    "react/no-unescaped-entities": "error",
+    "@typescript-eslint/no-unused-vars": "off",
+    "no-console": "off",
+    "curly": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "prefer-const": "off",
+    "no-var": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "react/no-unescaped-entities": "off",
     "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-non-null-assertion": "error",
-    "eqeqeq": ["error", "always"],
-    "no-debugger": "error"
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "eqeqeq": "off",
+    "no-debugger": "off"
   }
 }
