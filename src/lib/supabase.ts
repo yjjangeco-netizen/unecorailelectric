@@ -10,6 +10,12 @@ if (env.NODE_ENV === 'production' && (!env.SUPABASE_URL || !env.SUPABASE_ANON_KE
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
 }
 
+// 개발 환경에서 기본값 사용 시 경고
+if (env.NODE_ENV === 'development' && (supabaseUrl === 'https://your-project.supabase.co' || supabaseAnonKey === 'your-anon-key')) {
+  console.warn('개발 환경: Supabase 기본값을 사용합니다. 실제 데이터베이스 연결을 위해 .env.local 파일을 설정하세요.')
+  console.warn('또는 https://supabase.com 에서 새 프로젝트를 생성하고 환경변수를 설정하세요.')
+}
+
 // 브라우저용 클라이언트 (SSR 지원)
 export const createBrowserSupabaseClient = () => {
   return createClient(supabaseUrl, supabaseAnonKey, {

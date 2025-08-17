@@ -71,12 +71,17 @@ export default function StockManagementPage() {
         .select('*')
         .order('name')
 
-      if (error) {throw error}
+      if (error) {
+        console.error('재고 데이터 로드 오류:', error)
+        setStockItems([])
+        setError('데이터베이스 연결에 실패했습니다. 환경변수를 확인하세요.')
+        return
+      }
+      
       setStockItems(data || [])
+      setError(null)
     } catch (err) {
       console.error('재고 데이터 로드 오류:', err)
-      // 데이터베이스 연결 실패 시 빈 배열로 설정
-      console.error('데이터베이스 연결 실패. 재고 데이터를 표시할 수 없습니다.')
       setStockItems([])
       setError('데이터베이스 연결에 실패했습니다.')
     } finally {
@@ -92,12 +97,15 @@ export default function StockManagementPage() {
         .select('*')
         .order('name')
 
-      if (error) {throw error}
+      if (error) {
+        console.error('품목 데이터 로드 오류:', error)
+        setItems([])
+        return
+      }
+      
       setItems(data || [])
     } catch (err) {
       console.error('품목 데이터 로드 오류:', err)
-      // 데이터베이스 연결 실패 시 빈 배열로 설정
-      console.error('데이터베이스 연결 실패. 품목 데이터를 표시할 수 없습니다.')
       setItems([])
     }
   }
@@ -551,9 +559,20 @@ export default function StockManagementPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">오류 발생</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">데이터베이스 연결 오류</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={loadStockData}>다시 시도</Button>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-red-800">
+              🔧 Supabase 환경변수를 설정해야 합니다.<br/>
+              프로젝트 루트에 .env.local 파일을 생성하고 다음을 추가하세요:
+            </p>
+            <div className="bg-gray-100 p-3 rounded mt-2 text-xs font-mono text-left">
+              NEXT_PUBLIC_SUPABASE_URL=your-project-url<br/>
+              NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+            </div>
+          </div>
+          <Button onClick={loadStockData} className="mr-2">다시 시도</Button>
+          <Button onClick={() => router.push('/')} variant="outline">메인으로 돌아가기</Button>
         </div>
       </div>
     )

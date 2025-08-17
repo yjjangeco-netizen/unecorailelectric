@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ReactQueryProvider from "@/components/ReactQueryProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -38,7 +39,9 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <ErrorBoundary>
-          {children}
+          <ReactQueryProvider>
+            {children}
+          </ReactQueryProvider>
         </ErrorBoundary>
       </body>
     </html>
