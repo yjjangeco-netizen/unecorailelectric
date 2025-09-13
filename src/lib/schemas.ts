@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { StockStatus, STOCK_STATUS } from './stockStatusTypes'
+import type { StockStatus } from './stockStatusTypes'
+import { STOCK_STATUS } from './stockStatusTypes'
 
 // 기본 검증 규칙
 const positiveInteger = z.number().int().positive('양의 정수여야 합니다')

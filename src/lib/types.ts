@@ -7,6 +7,7 @@ export interface User {
   username: string
   password: string
   name: string
+  email?: string
   department?: string
   position?: string
   level: string
@@ -70,6 +71,18 @@ export interface ProfessionalStockItem {
   plus_data: number
   minus_data: number
   total_qunty: number
+}
+
+// SimpleStockInModal용 타입
+export interface SimpleStockItem {
+  name: string
+  specification: string
+  maker: string
+  location: string
+  remark: string
+  status: string
+  in_data: number
+  unit_price: number
 }
 
 // 입고/출고 수량을 포함한 완전한 재고 정보

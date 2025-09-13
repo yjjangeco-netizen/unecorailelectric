@@ -31,7 +31,12 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
     project: '',
     notes: '',
     isRental: false,
-    returnDate: ''
+    returnDate: '',
+    // 추가 필드들
+    name: '',
+    maker: '',
+    purpose: '',
+    unit_price: 0
   })
   const [recentHistory, setRecentHistory] = useState({
     lastStockIn: '',

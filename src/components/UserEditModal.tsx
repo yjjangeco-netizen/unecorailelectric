@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { X, Save, User, Building, Briefcase, Shield } from 'lucide-react'
+import { X, Save, User as UserIcon, Building, Briefcase, Shield } from 'lucide-react'
 import type { User } from '@/lib/types'
 
 interface UserEditModalProps {

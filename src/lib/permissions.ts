@@ -34,9 +34,6 @@ export class PermissionManager {
       
       // 사용자관리 권한
       'user-management': ['administrator', 'level5'],
-      
-      // 기존 호환성 유지
-      'user-management': ['administrator', 'level5'],
       'stock-management': ['administrator', 'level5', 'level4', 'level3', 'level2'],
       'stock-adjustment': ['administrator', 'level5', 'level4'],
       'disposal': ['administrator', 'level5', 'level4'],
