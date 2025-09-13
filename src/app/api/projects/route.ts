@@ -7,7 +7,7 @@ const supabase = createClient(
 )
 
 // 프로젝트 목록 조회
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('프로젝트 조회 시작...')
     
