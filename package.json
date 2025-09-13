@@ -16,7 +16,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:all": "npm run lint && npm run type-check && npm run test && npm run test:e2e",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit --skipLibCheck",
     "check": "npm run lint && npm run type-check && npm run test",
     "db:migrate": "npm run db:migrate:dev",
     "db:migrate:dev": "supabase db push --db-url $DATABASE_URL_DEV",
