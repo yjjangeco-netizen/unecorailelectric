@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger, AuditAction } from '@/lib/audit'
 import { z } from 'zod'
@@ -28,10 +28,21 @@ const rollbackRequestSchema = z.object({
 export async function POST(request: NextRequest) {
   return measureAsyncPerformance('마감 처리', async () => {
     try {
+      // Authorization 헤더에서 토큰 추출
+      const authHeader = request.headers.get('authorization')
+      const token = authHeader?.replace('Bearer ', '')
+      
+      if (!token) {
+        return NextResponse.json(
+          { ok: false, error: '인증 토큰이 필요합니다' },
+          { status: 401 }
+        )
+      }
+
       const supabase = createServerSupabaseClient()
       
-      // 사용자 인증 확인
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // 토큰으로 사용자 인증 확인
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token)
       if (authError || !user) {
         return NextResponse.json(
           { ok: false, error: '인증이 필요합니다' },
@@ -133,10 +144,21 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   return measureAsyncPerformance('마감 롤백', async () => {
     try {
+      // Authorization 헤더에서 토큰 추출
+      const authHeader = request.headers.get('authorization')
+      const token = authHeader?.replace('Bearer ', '')
+      
+      if (!token) {
+        return NextResponse.json(
+          { ok: false, error: '인증 토큰이 필요합니다' },
+          { status: 401 }
+        )
+      }
+
       const supabase = createServerSupabaseClient()
       
-      // 사용자 인증 확인
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      // 토큰으로 사용자 인증 확인
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token)
       if (authError || !user) {
         return NextResponse.json(
           { ok: false, error: '인증이 필요합니다' },

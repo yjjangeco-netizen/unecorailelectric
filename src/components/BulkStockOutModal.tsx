@@ -41,22 +41,22 @@ export default function BulkStockOutModal({
   const [isProcessing, setSaving] = useState(false)
   // 검색된 재고 아이템
   const filteredStockItems = stockItems.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.specification.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.spec?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.maker?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const addRow = (item?: CurrentStock) => {
     const newRow: BulkStockOutRow = {
       itemId: item?.id || '',
-      itemName: item?.name || '',
-      specification: item?.specification || '',
+      itemName: item?.product || '',
+      spec: item?.spec || '',
       currentQuantity: item?.current_quantity || 0,
       requestQuantity: 1,
       unitPrice: item?.unit_price || 0,
       totalAmount: item?.unit_price || 0,
       project: '',
-      notes: '',
+      note: '',
       isRental: false,
       returnDate: ''
     }
@@ -117,12 +117,13 @@ export default function BulkStockOutModal({
   }
 
   const exportTemplate = () => {
-    const headers = ['품목명', '규격', '현재재고', '출고수량', '단가', '프로젝트', '비고', '대여여부', '반납일']
+    const headers = ['품목명', '규격', '위치', '현재재고', '출고수량', '단가', '프로젝트', '비고', '대여여부', '반납일']
     const csvContent = [
       headers.join(','),
       ...rows.map(row => [
         row.itemName,
         row.specification,
+        '창고A-01', // 기본 위치
         row.currentQuantity,
         row.requestQuantity,
         row.unitPrice,
@@ -136,7 +137,7 @@ export default function BulkStockOutModal({
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `bulk_stock_out_${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `bulk_stock_out_template_${new Date().toISOString().split('T')[0]}.csv`
     link.click()
   }
 
@@ -191,8 +192,8 @@ export default function BulkStockOutModal({
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-gray-500 ml-2">{item.specification}</span>
+                        <span className="font-medium">{item.product}</span>
+                        <span className="text-gray-500 ml-2">{item.spec}</span>
                       </div>
                       <div className="text-sm text-gray-600">
                         재고: {item.current_quantity}개 | ₩{item.unit_price.toLocaleString()}
@@ -240,8 +241,8 @@ export default function BulkStockOutModal({
                     </div>
                     <div className="col-span-2">
                       <Input
-                        value={row.specification}
-                        onChange={(e) => updateRow(index, 'specification', e.target.value)}
+                        value={row.spec}
+                        onChange={(e) => updateRow(index, 'spec', e.target.value)}
                         placeholder="규격"
                         className="text-sm"
                       />

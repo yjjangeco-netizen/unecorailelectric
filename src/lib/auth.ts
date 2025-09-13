@@ -1,4 +1,4 @@
-import { createBrowserSupabaseClient } from './supabase'
+import { supabase } from './supabaseClient'
 import { logError } from './utils'
 import { auditLogger, AuditAction, AuditLevel } from './audit'
 
@@ -37,8 +37,6 @@ export class CookieAuthManager {
   // 로그인 처리
   static async login(username: string, password: string) {
     try {
-      const supabase = createBrowserSupabaseClient()
-      
       // Supabase Auth를 통한 로그인
       const { data, error } = await supabase.auth.signInWithPassword({
         email: username,
@@ -90,8 +88,6 @@ export class CookieAuthManager {
   // 로그아웃 처리
   static async logout() {
     try {
-      const supabase = createBrowserSupabaseClient()
-      
       // Supabase 세션 종료
       await supabase.auth.signOut()
       
@@ -123,8 +119,6 @@ export class CookieAuthManager {
   // 세션 유효성 검증
   static async validateSession() {
     try {
-      const supabase = createBrowserSupabaseClient()
-      
       // 현재 세션 확인
       const { data: { session }, error } = await supabase.auth.getSession()
       
@@ -159,8 +153,6 @@ export class CookieAuthManager {
   // 사용자 역할 가져오기
   private static async getUserRole(userId: string): Promise<string> {
     try {
-      const supabase = createBrowserSupabaseClient()
-      
       const { data, error } = await supabase
         .from('users')
         .select('role')

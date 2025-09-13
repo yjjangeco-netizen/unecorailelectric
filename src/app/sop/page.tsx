@@ -1,14 +1,64 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import CommonHeader from '@/components/CommonHeader'
 import { ArrowLeft, FileText, Search, Plus, Edit, Download, BookOpen } from 'lucide-react'
 
 export default function SOPPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string; level?: string } | null>(null)
+
+  useEffect(() => {
+    // 로그인 상태 확인 - user 키로 저장된 정보 사용
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        console.log('SOP 페이지 사용자 정보:', userData)
+        setCurrentUser({
+          username: userData.username,
+          name: userData.name,
+          role: userData.level || '1',
+          level: userData.level || '1'
+        })
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error)
+      }
+    }
+  }, [])
+
+  // 레벨 4 이하 사용자는 준비중 메시지 표시
+  const userLevel = currentUser?.level || '1'
+  const levelNum = parseInt(userLevel)
+  if (levelNum < 5 && userLevel !== 'administrator') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">SOP (표준작업절차)</h1>
+            <p className="text-gray-600 mb-6">
+              현재 페이지 준비 중입니다.<br />
+              Level 5 이상 사용자만 이용 가능합니다.
+            </p>
+            <div className="text-sm text-gray-500">
+              현재 권한: Level {userLevel}
+            </div>
+            <Button 
+              onClick={() => router.push('/dashboard')}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              대시보드로 돌아가기
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // SOP 카테고리 목록
   const categories = [
@@ -81,33 +131,16 @@ export default function SOPPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <BookOpen className="h-8 w-8 text-purple-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">SOP (표준작업절차)</h1>
-            </div>
-            
-            {/* 우측: 메인으로 돌아가기 버튼 */}
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => router.push('/stock-management')}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>재고관리로</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 메인 콘텐츠 */}
+    <div className="min-h-screen bg-white">
+      {/* 공통 헤더 추가 */}
+      <CommonHeader
+        currentUser={currentUser}
+        isAdmin={currentUser?.role === 'admin'}
+        title="SOP (표준작업절차)"
+        showBackButton={true}
+        backUrl="/stock-management"
+      />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 mb-8">

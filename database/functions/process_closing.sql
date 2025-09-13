@@ -93,10 +93,10 @@ BEGIN
   
   -- 6. 현재 재고 품목들 순회하며 스냅샷 생성
   FOR v_item_record IN 
-    SELECT DISTINCT i.id, i.name, i.specification, i.maker, i.category, i.unit_price
+    SELECT DISTINCT i.id, i.product, i.spec, i.maker, i.category, i.unit_price
     FROM items i
     WHERE i.created_at <= v_period_end + interval '1 day'
-    ORDER BY i.name
+    ORDER BY i.product
   LOOP
     -- 기초 재고 (기간 시작 전 마지막 스냅샷 또는 0)
     SELECT COALESCE(closing_quantity, 0) INTO v_opening_qty
@@ -140,13 +140,13 @@ BEGIN
     -- 스냅샷 저장
     INSERT INTO stock_snapshot (
       period_year, period_quarter, period_month,
-      item_id, item_name, specification, maker, category,
+      item_id, item_product, spec, maker, category,
       opening_quantity, stock_in_quantity, stock_out_quantity,
       adjustment_quantity, disposal_quantity, closing_quantity,
       unit_price, total_value, closed_by
     ) VALUES (
       p_year, p_quarter, p_month,
-      v_item_record.id, v_item_record.name, v_item_record.specification,
+      v_item_record.id, v_item_record.product, v_item_record.spec,
       v_item_record.maker, v_item_record.category,
       v_opening_qty, v_in_qty, v_out_qty,
       v_adj_qty, v_disposal_qty, v_closing_qty,

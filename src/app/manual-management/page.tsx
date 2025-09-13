@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import CommonHeader from '@/components/CommonHeader'
 import { Building2, FileText, ArrowLeft, Plus, Search, Download, Edit } from 'lucide-react'
 
 interface ManualItem {
@@ -19,6 +20,20 @@ export default function ManualManagementPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+
+  useEffect(() => {
+    // 로그인 상태 확인
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        setCurrentUser(userData)
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error)
+      }
+    }
+  }, [])
 
   // 샘플 메뉴얼 데이터
   const manualItems: ManualItem[] = [
@@ -61,36 +76,19 @@ export default function ManualManagementPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* 헤더 */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Building2 className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">유네코레일 전기파트</h1>
-                <p className="text-sm text-gray-600">메뉴얼 관리 시스템</p>
-              </div>
-            </div>
-            
-            <Button
-              onClick={() => router.push('/work-tool')}
-              variant="outline"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>업무툴로 돌아가기</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* 메인 콘텐츠 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="text-center mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">메뉴얼 관리</h2>
-          <p className="text-sm sm:text-lg text-gray-600">
+      {/* 공통 헤더 추가 */}
+      <CommonHeader
+        currentUser={currentUser}
+        isAdmin={currentUser?.role === 'admin'}
+        title="메뉴얼 관리"
+        showBackButton={true}
+        backUrl="/work-tool"
+      />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">메뉴얼 관리</h2>
+          <p className="text-lg text-gray-600">
             업무 매뉴얼 및 가이드 문서를 관리합니다
           </p>
         </div>
@@ -213,7 +211,7 @@ export default function ManualManagementPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 } 

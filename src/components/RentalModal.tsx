@@ -21,11 +21,17 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   const [selectedItem, setSelectedItem] = useState<CurrentStock | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState({
-    name: '',
-    specification: '',
-    maker: '',
-    purpose: '',
-    unit_price: 0
+    itemId: '',
+    itemName: '',
+    spec: '',
+    currentQuantity: 0,
+    requestQuantity: 1,
+    unitPrice: 0,
+    totalAmount: 0,
+    project: '',
+    notes: '',
+    isRental: false,
+    returnDate: ''
   })
   const [recentHistory, setRecentHistory] = useState({
     lastStockIn: '',
@@ -36,8 +42,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   useEffect(() => {
     if (searchTerm.trim()) {
       const filtered = stockItems.filter(item => 
-        (item.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (item.specification?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (item.product?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (item.spec?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (item.maker?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (item.purpose?.toLowerCase() || '').includes(searchTerm.toLowerCase())
       )
@@ -55,8 +61,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   const handleItemSelect = async (item: CurrentStock) => {
     setSelectedItem(item)
     setEditForm({
-      name: item.name || '',
-      specification: item.specification || '',
+              name: item.product || '',
+        spec: item.spec || '',
       maker: item.maker || '',
       purpose: item.purpose || '',
       unit_price: item.unit_price || 0
@@ -124,8 +130,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
       const { error } = await supabase
         .from('items')
         .update({
-          name: editForm.name,
-          specification: editForm.specification,
+          product: editForm.name,
+          spec: editForm.spec,
           maker: editForm.maker,
           purpose: editForm.purpose,
           unit_price: editForm.unit_price
@@ -140,8 +146,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
       // 선택된 아이템 정보 업데이트
       setSelectedItem({
         ...selectedItem,
-        name: editForm.name,
-        specification: editForm.specification,
+        product: editForm.name,
+        spec: editForm.spec,
         maker: editForm.maker,
         purpose: editForm.purpose,
         unit_price: editForm.unit_price
@@ -155,8 +161,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   const handleCancel = () => {
     if (selectedItem) {
       setEditForm({
-        name: selectedItem.name || '',
-        specification: selectedItem.specification || '',
+        name: selectedItem.product || '',
+        spec: selectedItem.spec || '',
         maker: selectedItem.maker || '',
         purpose: selectedItem.purpose || '',
         unit_price: selectedItem.unit_price || 0
@@ -242,12 +248,12 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
                             }`}
                             onClick={() => handleItemSelect(item)}
                           >
-                            <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900">
-                              {item.name}
-                            </td>
-                            <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900">
-                              {item.specification || '-'}
-                            </td>
+                                                    <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900">
+                          {item.product}
+                        </td>
+                                                          <td className="border-gray-300 px-3 py-2 text-sm text-gray-900">
+                                {item.spec || '-'}
+                              </td>
                             <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900">
                               {item.maker || '-'}
                             </td>
@@ -338,11 +344,11 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700">품명</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedItem.name}</p>
+                        <p className="mt-1 text-sm text-gray-900">{selectedItem.product}</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">규격</label>
-                        <p className="mt-1 text-sm text-gray-900">{selectedItem.specification || '-'}</p>
+                        <p className="mt-1 text-sm text-gray-900">{selectedItem.spec || '-'}</p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700">메이커</label>
@@ -380,8 +386,8 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
                         <label className="block text-sm font-medium text-gray-700">규격</label>
                         <input
                           type="text"
-                          value={editForm.specification}
-                          onChange={(e) => setEditForm({...editForm, specification: e.target.value})}
+                          value={editForm.spec}
+                          onChange={(e) => setEditForm({...editForm, spec: e.target.value})}
                           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>

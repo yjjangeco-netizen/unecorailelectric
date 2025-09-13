@@ -1,49 +1,32 @@
-import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import ReactQueryProvider from "@/components/ReactQueryProvider";
-import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-});
+import './globals.css'
+import type { Metadata, Viewport } from 'next'
+import ClientLayout from './ClientLayout'
+import ReactQueryProvider from '@/components/ReactQueryProvider'
 
 export const metadata: Metadata = {
-  title: "유네코레일 전기파트 - 업무관리 시스템",
-  description: "전기파트 재고관리, 업무일지, SOP 등을 통합 관리하는 웹 애플리케이션",
-  keywords: ["재고관리", "전기파트", "업무관리", "유네코레일"],
-  authors: [{ name: "JYJ" }],
-  creator: "JYJ",
-  publisher: "유네코레일",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-};
+  title: '유네코레일 전기팀 자재관리 시스템',
+  description: '유네코레일 전기팀의 자재 입출고 및 재고 관리 시스템',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="ko">
-      <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
-      >
-        <ErrorBoundary>
-          <ReactQueryProvider>
+      <body>
+        <ReactQueryProvider>
+          <ClientLayout>
             {children}
-          </ReactQueryProvider>
-        </ErrorBoundary>
+          </ClientLayout>
+        </ReactQueryProvider>
       </body>
     </html>
-  );
+  )
 }

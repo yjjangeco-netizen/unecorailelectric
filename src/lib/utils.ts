@@ -28,7 +28,7 @@ export const getStockStatusColor = (status: string): string => {
   switch (status) {
     case 'low_stock':
       return 'text-red-600'
-    case 'normal':
+    case 'new':
       return 'text-green-600'
     default:
       return 'text-gray-600'
@@ -42,7 +42,7 @@ export const getStockStatusBgColor = (status: string): string => {
   switch (status) {
     case 'low_stock':
       return 'bg-red-100'
-    case 'normal':
+    case 'new':
       return 'bg-green-100'
     default:
       return 'bg-gray-100'
@@ -273,4 +273,14 @@ export const safeLocalStorage = {
       return false
     }
   }
+}
+
+/**
+ * 정렬 필드 정규화 가드 함수
+ */
+export const normalizeOrderBy = (orderBy?: string): string => {
+  const ALLOW = ['product', 'spec', 'maker', 'created_at', 'current_quantity', 'unit_price']
+  if (!orderBy) return 'product'
+  if (orderBy === 'name') return 'product'
+  return ALLOW.includes(orderBy) ? orderBy : 'product'
 } 

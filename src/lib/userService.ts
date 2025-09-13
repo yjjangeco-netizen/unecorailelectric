@@ -1,0 +1,146 @@
+import type { User, UserPublic, PermissionType } from './types';
+import { supabase } from './supabaseClient';
+
+export class UserService {
+  // DB에서 실제 사용자 정보로 로그인
+  static async login(username: string, password: string): Promise<User | null> {
+    try {
+      console.log('로그인 시도:', username, password);
+      
+      // DB에서 사용자 조회
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+
+      if (error) {
+        console.log('로그인 실패:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('사용자를 찾을 수 없음');
+        return null;
+      }
+
+      console.log('로그인 성공:', data);
+
+      // User 타입에 맞게 변환 (DB 스키마에 맞게 수정)
+      const user: User = {
+        id: data.id,
+        username: data.username,
+        password: data.password,
+        name: data.name,
+        department: data.depart || data.department || '',
+        position: data.position || '',
+        level: data.level || '1', // 기본값 설정
+        is_active: data.is_active !== undefined ? data.is_active : true,
+        stock_view: data.stock_view || false,
+        stock_in: data.stock_in || false,
+        stock_out: data.stock_out || false,
+        stock_disposal: data.stock_disposal || false,
+        work_tools: data.work_tools || false,
+        daily_log: data.daily_log || false,
+        work_manual: data.work_manual || false,
+        sop: data.sop || false,
+        user_management: data.user_management || false,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      return user;
+    } catch (error) {
+      console.error('로그인 오류:', error);
+      return null;
+    }
+  }
+
+  // DB에서 사용자 프로필 조회
+  static async getUserProfile(userId: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        console.log('프로필 조회 실패:', error);
+        return null;
+      }
+
+      const user: User = {
+        id: data.id,
+        username: data.username,
+        password: data.password,
+        name: data.name,
+        department: data.depart || data.department || '',
+        position: data.position || '',
+        level: data.level, // 원본 level 값 보존
+        is_active: data.is_active,
+        stock_view: data.stock_view || false,
+        stock_in: data.stock_in || false,
+        stock_out: data.stock_out || false,
+        stock_disposal: data.stock_disposal || false,
+        work_tools: data.work_tools || false,
+        daily_log: data.daily_log || false,
+        work_manual: data.work_manual || false,
+        sop: data.sop || false,
+        user_management: data.user_management || false,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      return user;
+    } catch (error) {
+      console.error('프로필 조회 오류:', error);
+      return null;
+    }
+  }
+
+  // level을 permissions로 변환하는 함수
+  static mapLevelToPermissions(level: string): PermissionType[] {
+    console.log('권한 매핑 - 원본 level:', level);
+    
+    // level이 문자열인 경우 처리
+    const levelStr = String(level).toLowerCase().trim();
+    
+    // 직책 기반 권한 매핑 (우선순위 높음)
+    if (levelStr === '팀장' || levelStr === 'team_leader' || levelStr === 'teamleader') {
+      console.log('팀장 권한으로 administrator + level3 부여');
+      return ['administrator', 'level1', 'level2', 'level3'];
+    } else if (levelStr === '과장' || levelStr === 'manager') {
+      console.log('과장 권한으로 level2 부여');
+      return ['level1', 'level2'];
+    } else if (levelStr === '대리' || levelStr === 'assistant_manager') {
+      console.log('대리 권한으로 level2 부여');
+      return ['level1', 'level2'];
+    } else if (levelStr === '사원' || levelStr === 'staff') {
+      console.log('사원 권한으로 level1 부여');
+      return ['level1'];
+    }
+    
+    // 숫자 level을 권한으로 변환
+    if (levelStr === '1' || levelStr === 'level1') {
+      return ['level1'];
+    } else if (levelStr === '2' || levelStr === 'level2') {
+      return ['level1', 'level2'];
+    } else if (levelStr === '3' || levelStr === 'level3') {
+      return ['level1', 'level2', 'level3'];
+    } else if (levelStr === '4' || levelStr === 'level4') {
+      return ['level1', 'level2', 'level3', 'level4'];
+    } else if (levelStr === '5' || levelStr === 'level5') {
+      return ['level1', 'level2', 'level3', 'level4', 'level5'];
+    } else if (levelStr === 'admin' || levelStr === 'administrator' || levelStr === '관리자') {
+      console.log('관리자 권한으로 administrator 부여');
+      return ['administrator'];
+    }
+    
+    // 기본값: level1 권한 부여
+    console.log('기본 권한 level1 부여');
+    return ['level1'];
+  }
+}

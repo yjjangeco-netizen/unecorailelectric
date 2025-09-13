@@ -1,66 +1,104 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-
-import type { Item } from '@/lib/supabase'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { supabase } from '@/lib/supabaseClient'
+import type { Item } from '@/lib/types'
 
 interface ItemModalProps {
   isOpen: boolean
   onClose: () => void
-  item?: Item | null
-  onSave: (item: Omit<Item, 'id' | 'created_at' | 'updated_at'>) => Promise<void>
+  item?: Item
+  onSave: (item: Item) => void
 }
 
 export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    specification: '',
-    maker: '',
-    unit_price: 0,
-    purpose: '',
-    min_stock: 0,
-    category: '',
-    description: ''
+    product: item?.product || '',
+    spec: item?.spec || '',
+    maker: item?.maker || '',
+    unit_price: item?.unit_price || 0,
+    purpose: item?.purpose || '',
+    min_stock: item?.min_stock || 0,
+    category: item?.category || '',
+    note: item?.note || ''
   })
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
-    if (item) {
-      setFormData({
-        name: item.name,
-        specification: item.specification,
-        maker: item.maker,
-        unit_price: item.unit_price,
-        purpose: item.purpose,
-        min_stock: item.min_stock,
-        category: item.category || '',
-        description: item.description || ''
-      })
-    } else {
-      setFormData({
-        name: '',
-        specification: '',
-        maker: '',
-        unit_price: 0,
-        purpose: '',
-        min_stock: 0,
-        category: '',
-        description: ''
-      })
-    }
-  }, [item])
+  // useEffect(() => {
+  //   if (item) {
+  //     setFormData({
+  //             product: item.product,
+  //     spec: item.spec,
+  //       maker: item.maker,
+  //       unit_price: item.unit_price,
+  //       purpose: item.purpose,
+  //       min_stock: item.min_stock,
+  //       category: item.category || '',
+  //       description: item.description || ''
+  //     })
+  //   } else {
+  //     setFormData({
+  //       name: '',
+  //       specification: '',
+  //       maker: '',
+  //       unit_price: 0,
+  //       purpose: '',
+  //       min_stock: 0,
+  //       category: '',
+  //       description: ''
+  //     })
+  //   }
+  // }, [item])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     
     try {
-      await onSave(formData)
+      if (item) {
+        // 기존 품목 수정
+        const { error } = await supabase
+          .from('items')
+          .update({
+            product: formData.product,
+            spec: formData.spec,
+            maker: formData.maker,
+            unit_price: formData.unit_price,
+            purpose: formData.purpose,
+            min_stock: formData.min_stock,
+            category: formData.category,
+            note: formData.note
+          })
+          .eq('id', item.id)
+
+        if (error) throw error
+        onSave({ ...item, ...formData })
+      } else {
+        // 새 품목 추가
+        const { data, error } = await supabase
+          .from('items')
+          .insert([{
+            product: formData.product,
+            spec: formData.spec,
+            maker: formData.maker,
+            unit_price: formData.unit_price,
+            purpose: formData.purpose,
+            min_stock: formData.min_stock,
+            category: formData.category,
+            note: formData.note
+          }])
+          .select()
+          .single()
+
+        if (error) throw error
+        onSave(data)
+      }
       onClose()
     } catch (error) {
       console.error('품목 저장 오류:', error)
+      alert('품목 저장 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -80,8 +118,8 @@ export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalPr
             <input
               type="text"
               required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.product}
+              onChange={(e) => setFormData({ ...formData, product: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -94,8 +132,8 @@ export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalPr
               <input
                 type="text"
                 required
-                value={formData.specification}
-                onChange={(e) => setFormData({ ...formData, specification: e.target.value })}
+                value={formData.spec}
+                onChange={(e) => setFormData({ ...formData, spec: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -170,13 +208,14 @@ export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalPr
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              설명
+              비고
             </label>
             <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={formData.note}
+              onChange={(e) => setFormData({ ...formData, note: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={3}
+              placeholder="추가 설명을 입력하세요"
             />
           </div>
 

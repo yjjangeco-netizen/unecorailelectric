@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import CommonHeader from '@/components/CommonHeader'
 import { 
   Play, 
   RefreshCw, 
@@ -36,6 +37,20 @@ export default function TestResultsPage() {
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [summary, setSummary] = useState<TestSummary | null>(null)
   const [lastRun, setLastRun] = useState<string>('')
+  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+
+  useEffect(() => {
+    // 로그인 상태 확인
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        setCurrentUser(userData)
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error)
+      }
+    }
+  }, [])
 
   const runAllTests = async () => {
     setIsRunning(true)
@@ -108,8 +123,17 @@ export default function TestResultsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <div className="min-h-screen bg-white">
+      {/* 공통 헤더 추가 */}
+      <CommonHeader
+        currentUser={currentUser}
+        isAdmin={currentUser?.role === 'admin'}
+        title="테스트 결과"
+        showBackButton={true}
+        backUrl="/"
+      />
+      
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* 헤더 */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">

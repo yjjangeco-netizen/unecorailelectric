@@ -1,4 +1,4 @@
-import { createBrowserSupabaseClient } from './supabase'
+import { supabase } from './supabaseClient'
 import { logError } from './utils'
 
 // 감사 로그 레벨
@@ -93,7 +93,7 @@ export interface AuditLogEntry {
 // 감사 로그 매니저
 export class AuditLogger {
   private static instance: AuditLogger
-  private supabase = createBrowserSupabaseClient()
+  private supabase = supabase
   
   private constructor() {}
   

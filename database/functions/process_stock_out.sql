@@ -24,7 +24,7 @@ BEGIN
   -- 트랜잭션 시작 (자동)
   
   -- 1. 품목 정보 조회 및 행 잠금
-  SELECT name, current_quantity, unit_price
+  SELECT product, current_quantity, unit_price
   INTO v_item_name, v_current_quantity, v_unit_price
   FROM items 
   WHERE id = p_item_id
@@ -79,11 +79,9 @@ BEGIN
     updated_at = NOW()
   WHERE id = p_item_id;
   
-  -- 7. 현재 재고 테이블 업데이트
-  UPDATE current_stock 
+  -- 7. items 테이블의 stock_status 업데이트
+  UPDATE items 
   SET 
-    current_quantity = v_new_quantity,
-    total_amount = v_unit_price * v_new_quantity,
     stock_status = CASE 
       WHEN v_new_quantity <= 0 THEN 'low_stock'
       ELSE 'normal'

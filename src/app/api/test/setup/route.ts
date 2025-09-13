@@ -1,48 +1,48 @@
 import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 
 export async function POST() {
   try {
-    const supabase = createServerSupabaseClient()
+      const supabase = createServerSupabaseClient()
     
     // 테스트용 품목 데이터 생성
     const testItems = [
       {
         id: 'test_item_1',
-        name: '전기 케이블 3C 2.5sq',
-        specification: '3C 2.5sq',
+        product: '전기 케이블 3C 2.5sq',
+        spec: '3C 2.5sq',
         maker: 'LS전선',
         unit_price: 2500,
         purpose: '전기 배선',
         min_stock: 100,
         category: '전기자재',
-        description: '테스트용 전기 케이블',
+        note: '테스트용 전기 케이블',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       },
       {
         id: 'test_item_2',
-        name: '배선용 차단기 20A',
-        specification: '20A 1P',
+        product: '배선용 차단기 20A',
+        spec: '20A 1P',
         maker: 'LS산전',
         unit_price: 15000,
         purpose: '전기 보호',
         min_stock: 50,
         category: '전기자재',
-        description: '테스트용 차단기',
+        note: '테스트용 차단기',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       },
       {
         id: 'test_item_3',
-        name: 'LED 조명 20W',
-        specification: '20W 220V',
+        product: 'LED 조명 20W',
+        spec: '20W 220V',
         maker: '삼성전자',
         unit_price: 8000,
         purpose: '조명',
         min_stock: 200,
         category: '조명',
-        description: '테스트용 LED 조명',
+        note: '테스트용 LED 조명',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -52,36 +52,36 @@ export async function POST() {
     const testCurrentStock = [
       {
         id: 'test_stock_1',
-        name: '전기 케이블 3C 2.5sq',
-        specification: '3C 2.5sq',
+        product: '전기 케이블 3C 2.5sq',
+        spec: '3C 2.5sq',
         unit_price: 2500,
         current_quantity: 500,
         total_amount: 1250000,
-        notes: '테스트 재고',
+        note: '테스트 재고',
         category: '전기자재',
-        stock_status: 'normal'
+        stock_status: 'new'
       },
       {
         id: 'test_stock_2',
-        name: '배선용 차단기 20A',
-        specification: '20A 1P',
+        product: '배선용 차단기 20A',
+        spec: '20A 1P',
         unit_price: 15000,
         current_quantity: 100,
         total_amount: 1500000,
-        notes: '테스트 재고',
+        note: '테스트 재고',
         category: '전기자재',
-        stock_status: 'normal'
+        stock_status: 'new'
       },
       {
         id: 'test_stock_3',
-        name: 'LED 조명 20W',
-        specification: '20W 220V',
+        product: 'LED 조명 20W',
+        spec: '20W 220V',
         unit_price: 8000,
         current_quantity: 300,
         total_amount: 2400000,
-        notes: '테스트 재고',
+        note: '테스트 재고',
         category: '조명',
-        stock_status: 'normal'
+        stock_status: 'new'
       }
     ]
 
@@ -103,7 +103,7 @@ export async function POST() {
     // 현재 재고 데이터 삽입
     for (const stock of testCurrentStock) {
       const { error } = await supabase
-        .from('current_stock')
+        .from('items')
         .upsert(stock, { onConflict: 'id' })
       
       if (!error) {
@@ -134,7 +134,7 @@ export async function POST() {
 
 export async function DELETE() {
   try {
-    const supabase = createServerSupabaseClient()
+      const supabase = createServerSupabaseClient()
     
     // 테스트 데이터 삭제
     const { error: itemsError } = await supabase
@@ -143,7 +143,7 @@ export async function DELETE() {
       .like('id', 'test_%')
     
     const { error: stockError } = await supabase
-      .from('current_stock')
+      .from('items')
       .delete()
       .like('id', 'test_%')
 

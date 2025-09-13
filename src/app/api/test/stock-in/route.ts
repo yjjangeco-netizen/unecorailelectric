@@ -28,11 +28,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    if (!conditionType || !['new', 'used_good', 'used_defective', 'unknown'].includes(conditionType)) {
-      return NextResponse.json({
-        ok: false,
-        error: '유효하지 않은 상태입니다'
-      }, { status: 400 })
+    // 품목 상태 검증
+    if (!conditionType || !['new', 'used-new', 'used-used', 'broken'].includes(conditionType)) {
+      return NextResponse.json(
+        { error: '올바르지 않은 품목 상태입니다. new, used-new, used-used, broken 중에서 선택해주세요.' },
+        { status: 400 }
+      )
     }
 
     if (!reason || reason.trim().length < 1) {

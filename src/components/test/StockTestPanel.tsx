@@ -438,7 +438,7 @@ export default function StockTestPanel() {
     quantity: Math.floor(Math.random() * 1000) + 1,
     unitPrice: Math.floor(Math.random() * 100000) + 1000,
     notes: `테스트 입고 ${index}`,
-    conditionType: ['new', 'used_good', 'used_defective', 'unknown'][Math.floor(Math.random() * 4)] as unknown,
+    conditionType: ['new', 'used-new', 'used-used', 'broken'][Math.floor(Math.random() * 4)] as unknown,
     reason: `테스트 사유 ${index}`,
     orderedBy: `주문자_${index}`,
     receivedBy: `입고자_${index}`
@@ -488,7 +488,7 @@ export default function StockTestPanel() {
     currentQuantity: Math.floor(Math.random() * 1000),
     totalAmount: 0,
     category: `카테고리_${index}`,
-    stockStatus: ['normal', 'low_stock'][Math.floor(Math.random() * 2)] as unknown
+            stockStatus: ['new', 'low_stock'][Math.floor(Math.random() * 2)] as unknown
   })
 
   // 시뮬레이션 함수들

@@ -1,15 +1,18 @@
 -- 입고 처리 저장 프로시저
 -- 단일 트랜잭션으로 입고 처리, 재고 업데이트, 감사 로그 생성
+-- 통일된 컬럼명 사용 (name, specification, maker, location, note)
 
 CREATE OR REPLACE FUNCTION process_stock_in(
   p_item_name TEXT,
+  p_specification TEXT,
+  p_maker TEXT,
+  p_location TEXT,
   p_quantity INTEGER,
   p_unit_price DECIMAL(15,2),
-  p_condition_type stock_condition DEFAULT 'new',
+  p_stock_status TEXT DEFAULT 'new',
   p_reason TEXT DEFAULT NULL,
-  p_ordered_by TEXT DEFAULT NULL,
-  p_received_by TEXT,
-  p_notes TEXT DEFAULT NULL
+  p_note TEXT DEFAULT NULL,
+  p_received_by TEXT
 ) RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -24,23 +27,41 @@ DECLARE
 BEGIN
   -- 트랜잭션 시작 (자동)
   
+  -- 입력값 검증
+  IF p_item_name IS NULL OR p_item_name = '' THEN
+    RAISE EXCEPTION '품목명은 필수입니다';
+  END IF;
+  
+  IF p_specification IS NULL OR p_specification = '' THEN
+    RAISE EXCEPTION '규격은 필수입니다';
+  END IF;
+  
+  IF p_quantity IS NULL OR p_quantity <= 0 THEN
+    RAISE EXCEPTION '수량은 0보다 커야 합니다';
+  END IF;
+  
+  -- 품목상태 매핑 및 검증
+  IF p_stock_status NOT IN ('new', 'used-new', 'used-used', 'broken') THEN
+    RAISE EXCEPTION '유효하지 않은 품목상태: % (허용값: new, used-new, used-used, broken)', p_stock_status;
+  END IF;
+  
   -- 1. 품목 조회/생성
   SELECT id, current_quantity, unit_price 
   INTO v_item_id, v_current_quantity, v_weighted_avg_price
   FROM items 
-  WHERE name = p_item_name
+  WHERE product = p_item_name AND spec = p_specification
   FOR UPDATE; -- 행 잠금으로 동시성 보장
   
   IF v_item_id IS NULL THEN
     -- 새 품목 생성
     INSERT INTO items (
-      id, name, specification, maker, unit_price, purpose, 
-      min_stock, category, description, current_quantity,
+      product, spec, maker, location, unit_price, purpose, 
+      min_stock, category, note, current_quantity, stock_status,
       created_at, updated_at
     ) VALUES (
-      gen_random_uuid(), p_item_name, p_item_name, '미정', 
-      p_unit_price, '재고입고', 0, '일반', 
-      COALESCE(p_notes, ''), p_quantity,
+      p_item_name, p_specification, p_maker, 
+      p_location, p_unit_price, '재고관리', 0, '일반', 
+      COALESCE(p_note, ''), p_quantity, p_stock_status,
       NOW(), NOW()
     ) RETURNING id INTO v_item_id;
     
@@ -63,12 +84,12 @@ BEGIN
   END IF;
   
   -- 2. 입고 기록 생성
-  INSERT INTO stock_in (
-    id, item_id, quantity, unit_price, condition_type,
-    reason, ordered_by, received_by, received_at
+  INSERT INTO stock_history (
+    id, item_id, event_type, quantity, unit_price, condition_type,
+    reason, received_by, notes, event_date
   ) VALUES (
-    gen_random_uuid(), v_item_id, p_quantity, p_unit_price, 
-    p_condition_type, p_reason, p_ordered_by, p_received_by, NOW()
+    gen_random_uuid(), v_item_id, 'IN', p_quantity, p_unit_price, p_stock_status,
+    p_reason, p_received_by, p_note, NOW()
   ) RETURNING id INTO v_stock_in_id;
   
   -- 3. 품목 테이블 업데이트
@@ -76,28 +97,9 @@ BEGIN
   SET 
     current_quantity = v_new_quantity,
     unit_price = v_weighted_avg_price,
+    stock_status = CASE WHEN v_new_quantity > 0 THEN 'normal' ELSE 'low_stock' END,
     updated_at = NOW()
   WHERE id = v_item_id;
-  
-  -- 4. 현재 재고 테이블 UPSERT
-  INSERT INTO current_stock (
-    id, name, specification, maker, unit_price, 
-    current_quantity, total_amount, notes, category,
-    stock_status, updated_at
-  ) VALUES (
-    v_item_id, p_item_name, p_item_name, '미정',
-    v_weighted_avg_price, v_new_quantity, 
-    v_weighted_avg_price * v_new_quantity,
-    COALESCE(p_notes, ''), '일반',
-    CASE WHEN v_new_quantity > 0 THEN 'normal' ELSE 'low_stock' END,
-    NOW()
-  )
-  ON CONFLICT (id) DO UPDATE SET
-    unit_price = EXCLUDED.unit_price,
-    current_quantity = EXCLUDED.current_quantity,
-    total_amount = EXCLUDED.total_amount,
-    stock_status = EXCLUDED.stock_status,
-    updated_at = NOW();
   
   -- 5. 감사 로그 생성
   INSERT INTO audit_log (
@@ -108,6 +110,9 @@ BEGIN
     jsonb_build_object(
       'item_id', v_item_id,
       'item_name', p_item_name,
+      'specification', p_specification,
+      'maker', p_maker,
+      'location', p_location,
       'quantity', p_quantity,
       'unit_price', p_unit_price,
       'previous_quantity', v_current_quantity,
@@ -123,6 +128,9 @@ BEGIN
     'item_id', v_item_id,
     'stock_in_id', v_stock_in_id,
     'item_name', p_item_name,
+    'item_specification', p_specification,
+    'maker', p_maker,
+    'location', p_location,
     'quantity_added', p_quantity,
     'previous_quantity', v_current_quantity,
     'new_quantity', v_new_quantity,
@@ -147,4 +155,4 @@ $$;
 GRANT EXECUTE ON FUNCTION process_stock_in TO authenticated;
 
 -- 사용 예시:
--- SELECT process_stock_in('테스트품목', 100, 5000.00, 'new', '테스트입고', '홍길동', 'user@test.com', '테스트용');
+-- SELECT process_stock_in('테스트품목', '테스트규격', '테스트제조사', '테스트위치', 100, 5000.00, 'new', '테스트입고', '테스트용', 'user@test.com');

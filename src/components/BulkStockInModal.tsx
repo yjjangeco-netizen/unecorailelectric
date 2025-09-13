@@ -4,17 +4,17 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
-import type { StockIn, Item } from '@/lib/supabase'
+import type { StockIn, Item } from '@/lib/types'
 import { Plus, Trash2, Download, Upload, Calendar, Copy, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react'
 
 interface BulkStockInRow {
   name: string           // 품명
-  specification: string   // 규격
+  spec: string          // 규격
   maker: string          // 메이커
   unit_price: number     // 금액
   purpose: string        // 용도
   quantity: number       // 입고수량
-  condition_type: 'new' | 'used_good' | 'used_defective' | 'unknown'
+  condition_type: 'new' | 'used-new' | 'used-used' | 'broken'
   reason: string
   ordered_by: string
   received_by: string
@@ -32,7 +32,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   const [rows, setRows] = useState<BulkStockInRow[]>([
     {
       name: '',
-      specification: '',
+      spec: '',
       maker: '',
       unit_price: 0,
       purpose: '',
@@ -52,7 +52,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     const errors: Record<string, string> = {}
     
     const name = String(row['name'] || '')
-    const specification = String(row['specification'] || '')
+    const spec = String(row['spec'] || '')
     const maker = String(row['maker'] || '')
     const quantity = Number(row['quantity']) || 0
     const conditionType = String(row['condition_type'] || '')
@@ -63,8 +63,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       errors['name'] = '품명은 필수입니다.'
     }
     
-    if (!specification || specification.length < 1) {
-      errors['specification'] = '규격은 필수입니다.'
+    if (!spec || spec.length < 1) {
+      errors['spec'] = '규격은 필수입니다.'
     }
     
     if (!maker || maker.length < 1) {
@@ -120,7 +120,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
   const addRow = () => {
     setRows([...rows, {
       name: '',
-      specification: '',
+      spec: '',
       maker: '',
       unit_price: 0,
       purpose: '',
@@ -159,7 +159,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     const newRow = { 
       ...originalRow,
       name: originalRow.name || '',
-      specification: originalRow.specification || '',
+      spec: originalRow.spec || '',
       maker: originalRow.maker || '',
       unit_price: originalRow.unit_price || 0,
       purpose: originalRow.purpose || '',
@@ -239,7 +239,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       // 유효한 행만 필터링
       const validRows = rows.filter(row => 
         row.name.trim() && 
-        row.specification.trim() &&
+        row.spec.trim() &&
         row.maker.trim() &&
         row.quantity > 0 && 
         row.condition_type &&
@@ -261,8 +261,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         
         // 기존 품목이 있는지 확인
         const existingItem = items.find(item => 
-          item.name.toLowerCase() === (row?.name || '').toLowerCase() &&
-          item.specification.toLowerCase() === (row?.specification || '').toLowerCase()
+            item.product?.toLowerCase() === (row?.name || '').toLowerCase() &&
+            item.spec?.toLowerCase() === (row?.spec || '').toLowerCase()
         )
         
         // 기존 품목 검색 완료
@@ -280,8 +280,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
             const { data: newItem, error: itemError } = await supabase
               .from('items')
               .insert([{
-                name: row?.name || '',
-                specification: row?.specification || '',
+                product: row?.name || '',
+                spec: row?.spec || '',
                 maker: row?.maker || '',
                 unit_price: row?.unit_price || 0,
                 purpose: row?.purpose || '',
@@ -338,7 +338,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
       onClose()
       setRows([{
         name: '',
-        specification: '',
+        spec: '',
         maker: '',
         unit_price: 0,
         purpose: '',
@@ -364,13 +364,13 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
 
   const exportTemplate = () => {
     const csvContent = "data:text/csv;charset=utf-8," + 
-      "ItemName,Specification,Maker,UnitPrice,Purpose,Quantity,Condition,Reason,OrderedBy,ReceivedBy,ReceivedDate\n" +
-      "Sample Item,Sample Spec,Sample Maker,10000,Sample Purpose,10,신품,Sample Reason,Sample Orderer,Sample Receiver," + new Date().toISOString().split('T')[0]
+      "ItemName,Spec,Location,Maker,UnitPrice,Purpose,Quantity,Condition,Reason,OrderedBy,ReceivedBy\n" +
+      "Sample Item,Sample Spec,창고A-01,Sample Maker,10000,Sample Purpose,10,신품,Sample Reason,Sample Orderer,Sample Receiver"
     
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
     link.setAttribute("href", encodedUri)
-    link.setAttribute("download", "stock_in_template.csv")
+    link.setAttribute("download", "bulk_stock_in_template.csv")
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -409,7 +409,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         }
         
         // 기본 날짜 설정
-        let receivedDate = values[9] || new Date().toISOString().split('T')[0] || ''
+        let receivedDate = values[10] || new Date().toISOString().split('T')[0] || ''
         if (!isValidDate(receivedDate)) {
           console.warn(`행 ${index + 1}: 잘못된 날짜 형식 "${receivedDate}", 오늘 날짜로 설정`)
           receivedDate = new Date().toISOString().split('T')[0] || ''
@@ -417,7 +417,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         
         const row = {
           name: values[0] || '',
-          specification: values[1] || '',
+          spec: values[1] || '',
           maker: values[2] || '',
           unit_price: parseFloat(values[3] || '0') || 0,
           purpose: values[4] || '',
@@ -441,7 +441,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
           // 기존에 빈 행이 하나만 있고 모든 필드가 비어있으면 새 행으로 교체
           if (prevRows.length === 1 && 
               prevRows[0]?.name === '' && 
-              prevRows[0]?.specification === '' && 
+              prevRows[0]?.spec === '' && 
               (prevRows[0]?.quantity || 0) === 0) {
             return newRows
           }
@@ -461,11 +461,11 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
     reader.readAsText(file, 'UTF-8')
   }
 
-  const mapConditionType = (value: string): 'new' | 'used_good' | 'used_defective' | 'unknown' => {
+  const mapConditionType = (value: string): 'new' | 'used-new' | 'used-used' | 'broken' => {
     if (value === '신품') {return 'new'}
-    if (value === '중고(양품)') {return 'used_good'}
-    if (value === '중고(불량)') {return 'used_defective'}
-    if (value === '모름') {return 'unknown'}
+    if (value === '중고(양품)') {return 'used-new'}
+    if (value === '중고(불량)') {return 'used-used'}
+    if (value === '불량품') {return 'broken'}
     return 'new' // 기본값
   }
 
@@ -493,7 +493,7 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                   id="file-upload"
                 />
                 <Button type="button" variant="outline" asChild>
-                  <label htmlFor="file-upload" className="cursor-pointer">
+                  <label className="cursor-pointer">
                     <Upload className="h-4 w-4 mr-2" />
                     엑셀 업로드
                   </label>
@@ -607,13 +607,13 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                        <td className="border border-gray-300 px-3 py-2">
                          <input
                            type="text"
-                           value={row.specification}
-                           onChange={(e) => updateRow(index, 'specification', e.target.value)}
-                           className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${getErrorStyle('specification', index)}`}
+                           value={row.spec}
+                           onChange={(e) => updateRow(index, 'spec', e.target.value)}
+                           className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${getErrorStyle('spec', index)}`}
                            placeholder="규격"
                          />
-                         {rowErrors['specification'] && (
-                           <p className="text-red-500 text-xs mt-1">{rowErrors['specification']}</p>
+                         {rowErrors['spec'] && (
+                           <p className="text-red-500 text-xs mt-1">{rowErrors['spec']}</p>
                          )}
                        </td>
                        <td className="border border-gray-300 px-3 py-2">
@@ -673,10 +673,9 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
                            onChange={(e) => updateRow(index, 'condition_type', e.target.value)}
                            className={`w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${getErrorStyle('condition_type', index)}`}
                          >
-                           <option value="new">신품</option>
-                           <option value="used_good">중고(양품)</option>
-                           <option value="used_defective">중고(불량)</option>
-                           <option value="unknown">모름</option>
+                           <option value="normal">정상</option>
+                           <option value="low_stock">재고부족</option>
+                           <option value="out_of_stock">재고없음</option>
                          </select>
                          {rowErrors['condition_type'] && (
                            <p className="text-red-500 text-xs mt-1">{rowErrors['condition_type']}</p>

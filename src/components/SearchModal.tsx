@@ -36,6 +36,8 @@ export default function SearchModal({ isOpen, onClose, onSearch }: SearchModalPr
             </label>
             <input
               type="text"
+              id="searchQuery"
+              name="searchQuery"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="품목명, 규격, 카테고리로 검색..."

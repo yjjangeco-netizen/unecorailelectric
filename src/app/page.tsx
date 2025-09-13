@@ -1,108 +1,171 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Building2, User, Package, BookOpen, FileText, Settings, Database, ClipboardList } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/hooks/useUser'
+import { Building2, User, Lock } from 'lucide-react'
 
 export default function HomePage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        {/* 헤더 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <Building2 className="h-12 w-12 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">유네코레일</h1>
-          </div>
-          <h2 className="text-xl font-semibold text-blue-600">전기파트</h2>
-          <p className="text-gray-600 mt-2">업무 관리 시스템</p>
-        </div>
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [formLoading, setFormLoading] = useState(false)
+  const [error, setError] = useState('')
+  const router = useRouter()
+  const { user, login, isAuthenticated, loading } = useUser()
 
-        {/* 메인 기능 카드 */}
-        <div className="bg-white rounded-lg shadow-xl p-6 mb-6">
-          <div className="text-center pb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center justify-center space-x-2">
-              <Package className="h-5 w-5 text-blue-600" />
-              <span>주요 기능</span>
-            </h3>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <Link href="/stock-management">
-              <Button className="w-full h-20" variant="outline">
-                <div className="text-center">
-                  <Package className="h-6 w-6 mx-auto mb-2 text-green-600" />
-                  <div className="text-sm font-medium">재고관리</div>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/sop">
-              <Button className="w-full h-20" variant="outline">
-                <div className="text-center">
-                  <ClipboardList className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-                  <div className="text-sm font-medium">SOP</div>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/work-diary">
-              <Button className="w-full h-20" variant="outline">
-                <div className="text-center">
-                  <FileText className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-                  <div className="text-sm font-medium">업무일지</div>
-                </div>
-              </Button>
-            </Link>
-            
-            <Link href="/manual-management">
-              <Button className="w-full h-20" variant="outline">
-                <div className="text-center">
-                  <BookOpen className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-                  <div className="text-sm font-medium">메뉴얼관리</div>
-                </div>
-              </Button>
-            </Link>
-          </div>
-        </div>
+  useEffect(() => {
+    if (!loading && isAuthenticated && user) {
+      router.push('/dashboard')
+    }
+  }, [loading, isAuthenticated, user, router])
 
-        {/* 테스트 카드 */}
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <div className="text-center pb-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center justify-center space-x-2">
-              <User className="h-5 w-5 text-blue-600" />
-              <span>시스템 테스트</span>
-            </h3>
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormLoading(true)
+    setError('')
+
+    try {
+      if (username && password) {
+        const success = await login(username, password)
+        if (!success) {
+          setError('사용자명 또는 비밀번호가 올바르지 않습니다.')
+        }
+      } else {
+        setError('사용자명과 비밀번호를 입력해주세요.')
+      }
+    } catch (error) {
+      setError('로그인 중 오류가 발생했습니다.')
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  const handleSignup = () => {
+    router.push('/signup')
+  }
+
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+            <Building2 className="h-10 w-10 text-white" />
           </div>
-          
           <div className="space-y-4">
-            <div className="p-4 bg-green-100 border border-green-300 rounded">
-              <p className="text-green-800 text-center">✅ 기본 페이지 렌더링 성공!</p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <Link href="/simple">
-                <Button className="w-full" variant="outline">
-                  <Package className="h-4 w-4 mr-2" />
-                  간단 테스트
-                </Button>
-              </Link>
-              
-              <Link href="/test-simple">
-                <Button className="w-full" variant="outline">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  테스트 페이지
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="text-center text-sm text-gray-500">
-              <p>💡 위의 주요 기능 버튼을 클릭하여 각 기능을 테스트할 수 있습니다.</p>
-              <p>🔐 재고관리 페이지에서 로그인하여 모든 기능을 이용하세요.</p>
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <p className="text-white font-medium">로그인 처리 중...</p>
             </div>
           </div>
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+              <Building2 className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">유네코레일</h1>
+            <h2 className="text-xl font-semibold text-blue-300 mb-2">전기파트</h2>
+            <p className="text-gray-300 text-sm">업무 관리 시스템</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-200">
+                사용자 ID
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="사용자 ID를 입력하세요"
+                  className="w-full pl-12 h-12 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-200">
+                비밀번호
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="비밀번호를 입력하세요"
+                  className="w-full pl-12 h-12 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400/20 focus:border-blue-400"
+                  required
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-4">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  <p className="text-sm text-red-200">{error}</p>
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={formLoading}
+              className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {formLoading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>로그인 중...</span>
+                </div>
+              ) : (
+                '로그인'
+              )}
+            </button>
+          </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-transparent text-gray-400">또는</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSignup}
+            className="w-full h-12 border border-white/20 text-white rounded-xl hover:bg-white/10 hover:border-white/30"
+          >
+            회원가입
+          </button>
+
+        </div>
+
+        <div className="text-center mt-8">
+          <p className="text-xs text-gray-400">
+            © 2024 유네코레일 전기파트. All rights reserved.
+          </p>
+        </div>
+      </div>
     </div>
   )
-} 
+}

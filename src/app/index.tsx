@@ -1,40 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, User, Lock, Search } from 'lucide-react'
+import { Building2, User, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@/hooks/useUser'
 
 export default function HomePage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loginAttempted, setLoginAttempted] = useState(false)
   const router = useRouter()
+  const { login, isAuthenticated, loading: authLoading } = useUser()
+
+  // 이미 로그인된 경우 대시보드로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, router])
 
   // 로그인 처리
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setLoginAttempted(true)
 
     try {
-      // GUEST 로그인 처리
-      if (username.toUpperCase() === 'GUEST') {
-        router.push('/stock-management')
+      if (!username || !password) {
+        setError('사용자명과 비밀번호를 입력해주세요.')
         return
       }
 
-      // 일반 사용자 로그인 처리
-      if (username && password) {
-        // 여기서 실제 인증 로직을 구현할 수 있습니다
-        // 현재는 간단한 예시로 처리
-        const userRole = getDefaultRole(username)
-        router.push(`/work-tool?role=${userRole}`)
+      const success = await login(username, password)
+      if (success) {
+        router.push('/dashboard')
       } else {
-        setError('사용자명과 비밀번호를 입력해주세요.')
+        setError('사용자명 또는 비밀번호가 올바르지 않습니다.')
       }
     } catch (error) {
       setError('로그인 중 오류가 발생했습니다.')
@@ -43,11 +51,12 @@ export default function HomePage() {
     }
   }
 
-  // 사용자명에 따른 기본 역할 반환
-  const getDefaultRole = (username: string) => {
-    if (username.toLowerCase().includes('admin')) {return 'admin'}
-    if (username.toLowerCase().includes('manager')) {return 'manager'}
-    return 'user'
+  // 로그인 시도 후 창 닫기 방지
+  const handleClose = () => {
+    if (loginAttempted) {
+      return
+    }
+    setError('로그인을 시도해주세요.')
   }
 
   return (
@@ -75,7 +84,7 @@ export default function HomePage() {
             <form onSubmit={handleLogin} className="space-y-4">
               {/* 사용자명 입력 */}
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   사용자 ID
                 </label>
                 <div className="relative">
@@ -94,7 +103,7 @@ export default function HomePage() {
 
               {/* 비밀번호 입력 */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   비밀번호
                 </label>
                 <div className="relative">
@@ -111,17 +120,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* GUEST 안내 */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-start space-x-2">
-                  <Search className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <p className="text-xs text-blue-800">
-                    <strong>재고 검색만 이용하실분은 ID에</strong>
-                    <br />
-                    <span className="font-mono bg-blue-100 px-1 rounded">guest</span>를 입력하세요
-                  </p>
-                </div>
-              </div>
 
               {/* 오류 메시지 */}
               {error && (
@@ -141,6 +139,7 @@ export default function HomePage() {
             </form>
           </CardContent>
         </Card>
+
 
         {/* 하단 정보 */}
         <div className="text-center mt-6">

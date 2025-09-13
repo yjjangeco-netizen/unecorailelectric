@@ -41,15 +41,18 @@ export default function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="login-description">
         <DialogHeader>
           <DialogTitle className="text-center">로그인</DialogTitle>
+          <p id="login-description" className="text-sm text-gray-600 text-center">
+            시스템에 로그인하여 재고 관리 기능을 사용하세요.
+          </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* 사용자명 입력 */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               사용자 ID
             </label>
             <div className="relative">
@@ -68,7 +71,7 @@ export default function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps
 
           {/* 비밀번호 입력 */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               비밀번호
             </label>
             <div className="relative">

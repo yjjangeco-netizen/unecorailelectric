@@ -56,8 +56,8 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key'
 process.env.NODE_ENV = 'test'
 
 // Supabase 클라이언트 모킹
-jest.mock('@/lib/supabase', () => ({
-  createBrowserSupabaseClient: jest.fn(() => ({
+jest.mock('@/lib/supabaseClient', () => ({
+  supabase: {
     auth: {
       signInWithPassword: jest.fn(),
       signOut: jest.fn(),
@@ -75,7 +75,10 @@ jest.mock('@/lib/supabase', () => ({
       range: jest.fn().mockReturnThis()
     })),
     rpc: jest.fn()
-  })),
+  }
+}))
+
+jest.mock('@/lib/supabaseServer', () => ({
   createServerSupabaseClient: jest.fn(() => ({
     auth: {
       getUser: jest.fn().mockResolvedValue({
@@ -100,26 +103,7 @@ jest.mock('@/lib/supabase', () => ({
       range: jest.fn().mockReturnThis()
     })),
     rpc: jest.fn()
-  })),
-  supabase: {
-    auth: {
-      signInWithPassword: jest.fn(),
-      signOut: jest.fn(),
-      getSession: jest.fn(),
-      getUser: jest.fn()
-    },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn(),
-      order: jest.fn().mockReturnThis(),
-      range: jest.fn().mockReturnThis()
-    })),
-    rpc: jest.fn()
-  }
+  }))
 }))
 
 // 콘솔 경고/에러 필터링 (테스트 환경에서만)

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { StockStatus, STOCK_STATUS } from './stockStatusTypes'
 
 // 기본 검증 규칙
 const positiveInteger = z.number().int().positive('양의 정수여야 합니다')
@@ -6,71 +7,85 @@ const nonNegativeInteger = z.number().int().min(0, '0 이상의 정수여야 합
 const nonNegativeNumber = z.number().min(0, '0 이상의 숫자여야 합니다')
 const safeString = z.string().trim().min(1, '필수 입력 항목입니다').max(500, '500자 이하여야 합니다')
 
-// 품목 스키마
+// 품목 스키마 (데이터베이스와 일치)
 export const itemSchema = z.object({
   name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
   specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
   maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  location: safeString.max(100, '보관위치는 100자 이하여야 합니다'),
   unit_price: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
   purpose: safeString.max(200, '용도는 200자 이하여야 합니다'),
   min_stock: nonNegativeInteger.max(999999, '최소재고는 999,999개 이하여야 합니다'),
   category: z.string().max(50, '카테고리는 50자 이하여야 합니다').optional(),
-  description: z.string().max(1000, '설명은 1000자 이하여야 합니다').optional(),
+  note: z.string().max(1000, '비고는 1000자 이하여야 합니다').optional(),
+  status: z.enum(['사용중', '단종', '중지']).default('사용중'),
+  stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
 })
 
-// 입고 스키마
+// 입고 스키마 (데이터베이스와 일치)
 export const stockInSchema = z.object({
-  itemName: safeString.max(100, '품목명은 100자 이하여야 합니다'),
-  quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
-  unitPrice: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
-  notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
-  conditionType: z.enum(['new', 'used_good', 'used_defective', 'unknown']).default('new'),
+  name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+  specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
+  maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  location: safeString.max(100, '위치는 100자 이하여야 합니다'),
+  quantity: positiveInteger.max(2147483647, '수량은 2,147,483,647개 이하여야 합니다'),
+  unit_price: nonNegativeNumber.max(999999999999.99, '단가는 999,999,999,999.99원 이하여야 합니다'),
+  stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
   reason: z.string().max(200, '사유는 200자 이하여야 합니다').optional(),
-  orderedBy: z.string().max(100, '주문자는 100자 이하여야 합니다').optional(),
+  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
 })
 
-// 출고 스키마
+// 출고 스키마 (데이터베이스와 일치)
 export const stockOutSchema = z.object({
-  itemId: z.string().uuid('유효한 품목 ID가 필요합니다'),
+  itemId: z.string().uuid('유효한 UUID여야 합니다'), // itemId 추가
+  name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+  specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
+  maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  location: safeString.max(100, '위치는 100자 이하여야 합니다'),
   quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
   project: z.string().max(100, '프로젝트는 100자 이하여야 합니다').optional(),
-  notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
-  isRental: z.boolean().default(false),
-  returnDate: z.string().datetime().optional(),
+  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  is_rental: z.boolean().default(false),
+  return_date: z.string().datetime().optional(),
 })
 
-// 재고 조정 스키마
+// 재고 조정 스키마 (데이터베이스와 일치)
 export const stockAdjustmentSchema = z.object({
-  itemId: z.string().uuid('유효한 품목 ID가 필요합니다'),
-  adjustmentType: z.enum(['add', 'subtract', 'set']),
+  itemId: z.string().uuid('유효한 UUID여야 합니다'), // itemId 추가
+  name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+  specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
+  adjustment_type: z.enum(['PLUS', 'MINUS', 'ADJUSTMENT']),
   quantity: nonNegativeInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
   reason: safeString.max(200, '조정 사유는 200자 이하여야 합니다'),
-  notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
 })
 
-// 대량 작업 스키마
+// 대량 작업 스키마 (데이터베이스와 일치)
 export const bulkOperationSchema = z.object({
   operations: z.array(z.object({
-    itemName: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+    name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
+    specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
+    maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+    location: safeString.max(100, '위치는 100자 이하여야 합니다'),
     quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
-    unitPrice: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
-    conditionType: z.enum(['new', 'used_good', 'used_defective', 'unknown']).default('new'),
+    unit_price: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
+    stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
     reason: z.string().max(200, '사유는 200자 이하여야 합니다').optional(),
-    orderedBy: z.string().max(100, '주문자는 100자 이하여야 합니다').optional(),
-    notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+    note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
   })).min(1, '최소 1개 이상의 작업이 필요합니다').max(100, '최대 100개까지 처리 가능합니다'),
-  operationType: z.enum(['stock_in', 'stock_out']),
+  operation_type: z.enum(['stock_in', 'stock_out']),
 })
 
-// 사용자 스키마
+// 사용자 스키마 (데이터베이스와 일치)
 export const userSchema = z.object({
   username: z.string().min(3, '사용자명은 3자 이상이어야 합니다').max(50, '사용자명은 50자 이하여야 합니다'),
   password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다').max(100, '비밀번호는 100자 이하여야 합니다'),
   name: safeString.max(100, '이름은 100자 이하여야 합니다'),
   department: safeString.max(100, '부서는 100자 이하여야 합니다'),
   position: safeString.max(100, '직책은 100자 이하여야 합니다'),
-  phone: z.string().regex(/^[0-9-+\s()]+$/, '유효한 전화번호 형식이어야 합니다').max(20, '전화번호는 20자 이하여야 합니다'),
-  isAdmin: z.boolean().default(false),
+  level: z.string().max(50, '레벨은 50자 이하여야 합니다').optional(),
+  is_active: z.boolean().default(true),
+  email: z.string().email('유효한 이메일 형식이어야 합니다').optional(),
 })
 
 // 로그인 스키마
@@ -83,24 +98,24 @@ export const loginSchema = z.object({
 export const searchSchema = z.object({
   query: z.string().min(1, '검색어를 입력해주세요').max(200, '검색어는 200자 이하여야 합니다'),
   category: z.string().max(50).optional(),
-  minPrice: nonNegativeNumber.optional(),
-  maxPrice: nonNegativeNumber.optional(),
-  inStock: z.boolean().optional(),
+  min_price: nonNegativeNumber.optional(),
+  max_price: nonNegativeNumber.optional(),
+  in_stock: z.boolean().optional(),
 })
 
 // CSV 업로드 스키마
 export const csvUploadSchema = z.object({
   file: z.instanceof(File, { message: '파일을 선택해주세요' }),
-  fileSize: z.number().max(10 * 1024 * 1024, '파일 크기는 10MB 이하여야 합니다'), // 10MB 제한
-  fileType: z.string().refine(type => type === 'text/csv', 'CSV 파일만 업로드 가능합니다'),
+  file_size: z.number().max(10 * 1024 * 1024, '파일 크기는 10MB 이하여야 합니다'), // 10MB 제한
+  file_type: z.string().refine(type => type === 'text/csv', 'CSV 파일만 업로드 가능합니다'),
 })
 
 // 분기 마감 스키마
 export const quarterClosingSchema = z.object({
   quarter: z.number().int().min(1, '분기는 1-4 사이여야 합니다').max(4),
   year: z.number().int().min(2020, '연도는 2020년 이후여야 합니다').max(2030),
-  closingDate: z.string().datetime('유효한 날짜 형식이어야 합니다'),
-  notes: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  closing_date: z.string().datetime('유효한 날짜 형식이어야 합니다'),
+  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
 })
 
 // API 응답 스키마
@@ -141,24 +156,42 @@ export type SearchInput = z.infer<typeof searchSchema>
 export type CsvUploadInput = z.infer<typeof csvUploadSchema>
 export type QuarterClosingInput = z.infer<typeof quarterClosingSchema>
 
-// 확장된 타입 정의 (데이터베이스 엔티티)
+// Item 인터페이스 정의 - stock_status 타입 통일 (데이터베이스 기준)
 export interface Item extends ItemInput {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  stock_status: StockStatus; // 통일된 타입 사용 (데이터베이스 기준)
+}
+
+export interface StockHistory {
   id: string
+  item_id: string
+  event_type: 'IN' | 'OUT' | 'PLUS' | 'MINUS' | 'DISPOSAL' | 'ADJUSTMENT'
+  quantity: number
+  unit_price?: number
+  stock_status?: StockStatus // 통일된 타입 사용 (데이터베이스 기준)
+  reason?: string
+  ordered_by?: string
+  received_by?: string
+  project?: string
+  note?: string
+  is_rental?: boolean
+  return_date?: string
+  event_date: string
   created_at: string
-  updated_at: string
-  current_quantity?: number
 }
 
 export interface StockIn extends StockInInput {
   id: string
-  item_id: string
+  item_id?: string
   received_at: string
   received_by: string
 }
 
 export interface StockOut extends StockOutInput {
   id: string
-  item_id: string
+  item_id?: string
   issued_at: string
   issued_by: string
 }

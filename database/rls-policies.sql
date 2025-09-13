@@ -11,13 +11,13 @@ ALTER TABLE disposal ENABLE ROW LEVEL SECURITY;
 
 -- 2. 인덱스 생성 (성능 최적화)
 -- 품목 테이블 인덱스
-CREATE INDEX IF NOT EXISTS idx_items_name ON items(name);
+CREATE INDEX IF NOT EXISTS idx_items_product ON items(product);
 CREATE INDEX IF NOT EXISTS idx_items_category ON items(category);
 CREATE INDEX IF NOT EXISTS idx_items_created_at ON items(created_at);
 CREATE INDEX IF NOT EXISTS idx_items_updated_at ON items(updated_at);
 
 -- 재고 테이블 인덱스
-CREATE INDEX IF NOT EXISTS idx_current_stock_name ON current_stock(name);
+CREATE INDEX IF NOT EXISTS idx_current_stock_product ON current_stock(product);
 CREATE INDEX IF NOT EXISTS idx_current_stock_category ON current_stock(category);
 CREATE INDEX IF NOT EXISTS idx_current_stock_status ON current_stock(stock_status);
 CREATE INDEX IF NOT EXISTS idx_current_stock_updated_at ON current_stock(updated_at);
@@ -250,8 +250,8 @@ CREATE POLICY "관리자만 감사 로그를 조회할 수 있음" ON audit_log
 CREATE OR REPLACE VIEW stock_summary AS
 SELECT 
   cs.id,
-  cs.name,
-  cs.specification,
+  cs.product,
+  cs.spec,
   cs.category,
   cs.current_quantity,
   cs.unit_price,
@@ -265,7 +265,7 @@ SELECT
 FROM current_stock cs
 LEFT JOIN stock_in si ON cs.id = si.item_id
 LEFT JOIN stock_out so ON cs.id = so.item_id
-GROUP BY cs.id, cs.name, cs.specification, cs.category, cs.current_quantity, cs.unit_price, cs.total_amount, cs.stock_status, cs.updated_at;
+GROUP BY cs.id, cs.product, cs.spec, cs.category, cs.current_quantity, cs.unit_price, cs.total_amount, cs.stock_status, cs.updated_at;
 
 -- 뷰에 대한 RLS 정책
 CREATE POLICY "모든 인증 사용자가 재고 요약을 조회할 수 있음" ON stock_summary
@@ -276,7 +276,7 @@ CREATE POLICY "모든 인증 사용자가 재고 요약을 조회할 수 있음"
 -- 월별 입출고 통계
 CREATE OR REPLACE FUNCTION get_monthly_stock_stats(year_param INTEGER, month_param INTEGER)
 RETURNS TABLE (
-  item_name TEXT,
+  item_product TEXT,
   in_quantity BIGINT,
   out_quantity BIGINT,
   net_change BIGINT
@@ -284,7 +284,7 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT 
-    cs.name,
+    cs.product,
     COALESCE(SUM(si.quantity), 0) as in_quantity,
     COALESCE(SUM(so.quantity), 0) as out_quantity,
     COALESCE(SUM(si.quantity), 0) - COALESCE(SUM(so.quantity), 0) as net_change
@@ -295,8 +295,8 @@ BEGIN
   LEFT JOIN stock_out so ON cs.id = so.item_id 
     AND EXTRACT(YEAR FROM so.issued_at) = year_param
     AND EXTRACT(MONTH FROM so.issued_at) = month_param
-  GROUP BY cs.id, cs.name
-  ORDER BY cs.name;
+  GROUP BY cs.id, cs.product
+  ORDER BY cs.product;
 END;
 $$ LANGUAGE plpgsql;
 

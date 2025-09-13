@@ -1,8 +1,8 @@
 import { CookieAuthManager } from '@/lib/auth'
 
 // Mock dependencies
-jest.mock('@/lib/supabase', () => ({
-  createBrowserSupabaseClient: jest.fn(() => ({
+jest.mock('@/lib/supabaseClient', () => ({
+  supabase: {
     auth: {
       signInWithPassword: jest.fn(),
       signOut: jest.fn(),
@@ -15,7 +15,7 @@ jest.mock('@/lib/supabase', () => ({
         }))
       }))
     }))
-  }))
+  }
 }))
 
 // Mock cookies

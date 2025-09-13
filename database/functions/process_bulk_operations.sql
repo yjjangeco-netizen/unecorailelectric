@@ -49,7 +49,7 @@ BEGIN
             (v_operation ->> 'itemName')::TEXT,
             (v_operation ->> 'quantity')::INTEGER,
             (v_operation ->> 'unitPrice')::DECIMAL,
-            COALESCE((v_operation ->> 'conditionType')::stock_condition, 'new'),
+            COALESCE((v_operation ->> 'conditionType')::TEXT, 'new'),
             (v_operation ->> 'reason')::TEXT,
             (v_operation ->> 'orderedBy')::TEXT,
             p_processed_by,
@@ -72,10 +72,9 @@ BEGIN
           
         WHEN 'stock_adjustment' THEN
           -- 재고 조정 로직 (간단 버전)
-          UPDATE current_stock 
+          UPDATE items 
           SET 
             current_quantity = (v_operation ->> 'adjustedQuantity')::INTEGER,
-            total_amount = unit_price * (v_operation ->> 'adjustedQuantity')::INTEGER,
             updated_at = NOW()
           WHERE id = (v_operation ->> 'itemId')::UUID;
           
@@ -183,7 +182,7 @@ GRANT EXECUTE ON FUNCTION process_bulk_operations TO authenticated;
 SELECT process_bulk_operations(
   '[
     {"itemName": "품목1", "quantity": 100, "unitPrice": 1000, "conditionType": "new"},
-    {"itemName": "품목2", "quantity": 50, "unitPrice": 2000, "conditionType": "used_good"}
+    {"itemName": "품목2", "quantity": 50, "unitPrice": 2000, "conditionType": "used-new"}
   ]'::jsonb,
   'stock_in',
   'admin@test.com'
