@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. 마감 이력에 현재 상태 저장
+    const closedBy = 'system' // 임시로 시스템으로 설정
     const closingHistoryData = currentStockData.map(item => ({
       closing_date: closingDate,
       item_id: item.id, // items 테이블의 id 사용

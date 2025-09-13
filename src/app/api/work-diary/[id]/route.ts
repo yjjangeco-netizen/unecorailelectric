@@ -58,7 +58,7 @@ async function validateWorkTypeAndSubType(body: any): Promise<string | null> {
 
 // 업무일지 삭제
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -160,7 +160,7 @@ export async function PUT(
 
 // 업무일지 조회
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

@@ -8,7 +8,7 @@ export default function TestPage() {
   const [stockStatuses, setStockStatuses] = useState<any[]>([])
   const [conditionTypes, setConditionTypes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   useEffect(() => {
     checkDatabaseStatus()
@@ -17,7 +17,11 @@ export default function TestPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
-        setCurrentUser(userData)
+        setCurrentUser({
+          id: userData.id || userData.username,
+          name: userData.name,
+          level: userData.level || '1'
+        })
       } catch (error) {
         console.error('사용자 정보 파싱 오류:', error)
       }
@@ -73,7 +77,7 @@ export default function TestPage() {
       {/* 공통 헤더 추가 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="데이터베이스 상태 확인"
         showBackButton={true}
         backUrl="/"

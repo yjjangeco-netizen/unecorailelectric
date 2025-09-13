@@ -10,7 +10,7 @@ export default function SOPPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string; level?: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   useEffect(() => {
     // 로그인 상태 확인 - user 키로 저장된 정보 사용
@@ -20,9 +20,8 @@ export default function SOPPage() {
         const userData = JSON.parse(savedUser)
         console.log('SOP 페이지 사용자 정보:', userData)
         setCurrentUser({
-          username: userData.username,
+          id: userData.id || userData.username,
           name: userData.name,
-          role: userData.level || '1',
           level: userData.level || '1'
         })
       } catch (error) {
@@ -135,7 +134,7 @@ export default function SOPPage() {
       {/* 공통 헤더 추가 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="SOP (표준작업절차)"
         showBackButton={true}
         backUrl="/stock-management"

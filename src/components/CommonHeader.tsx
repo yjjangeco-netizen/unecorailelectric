@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { User } from '@/lib/types'
 
 interface CommonHeaderProps {
-  currentUser: User | null
+  currentUser: { id: string; name: string; level: string } | null
   isAdmin: boolean
   onShowUserManagement?: () => void
   onLogout?: () => void

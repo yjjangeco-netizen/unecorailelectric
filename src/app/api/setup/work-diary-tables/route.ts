@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // 1. 기본 프로젝트 데이터 삽입 (테이블이 없으면 자동 생성됨)
     const { error: insertError } = await supabase

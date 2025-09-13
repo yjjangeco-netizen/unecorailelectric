@@ -621,7 +621,7 @@ export default function SchedulePage() {
     const generateTitle = () => {
       if (newEvent.category === '반/연차') {
         const timeText = newEvent.subCategory === '반차' 
-          ? (newEvent.start?.time === '09:00' ? '오전' : '오후')
+          ? (newEvent.time === '09:00' ? '오전' : '오후')
           : ''
         return `${newEvent.subCategory || '연차'}${timeText ? `-${timeText}` : ''}`
       } else if (newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') {
@@ -648,7 +648,7 @@ export default function SchedulePage() {
       },
       location: '사무실',
       participant: participant || { id: 'unknown', name: 'Unknown User', level: '1' },
-      companions: companions.length > 0 ? companions : undefined,
+      companions: companions.length > 0 ? companions : [],
       createdBy: {
         id: user?.id || 'unknown',
         name: user?.name || 'Unknown User',
@@ -761,7 +761,7 @@ export default function SchedulePage() {
     const generateTitle = () => {
       if (newEvent.category === '반/연차') {
         const timeText = newEvent.subCategory === '반차' 
-          ? (newEvent.start?.time === '09:00' ? '오전' : '오후')
+          ? (newEvent.time === '09:00' ? '오전' : '오후')
           : ''
         return `${newEvent.subCategory || '연차'}${timeText ? `-${timeText}` : ''}`
       } else if (newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') {
@@ -781,7 +781,7 @@ export default function SchedulePage() {
       summary: generateTitle(),
       description: newEvent.description,
       participant: participant || editingEvent.participant,
-      companions: companions.length > 0 ? companions : undefined,
+      companions: companions.length > 0 ? companions : [],
       start: { 
         dateTime: `${startDate}T${newEvent.time || '09:00'}:00+09:00` 
       },
@@ -823,6 +823,7 @@ export default function SchedulePage() {
       projectId: '',
       customProject: '',
       participantId: '',
+      companions: [],
       title: '',
       date: dateStr,
       endDate: dateStr,
@@ -1380,8 +1381,8 @@ export default function SchedulePage() {
                                       : '0'
                               }}
                               title={`${(event as LocalEvent).summary} (${position.totalDays}일간) - 드래그하여 이동, 더블클릭으로 수정`}
-                              onDragStart={(e) => handleDragStart(e, event as LocalEvent)}
-                              onDragEnd={handleDragEnd}
+                              onDragStart={() => {}}
+                              onDragEnd={() => {}}
                               onDoubleClick={(e) => {
                                 e.stopPropagation()
                                 handleEditEvent(event as LocalEvent)
@@ -1391,11 +1392,11 @@ export default function SchedulePage() {
                                 {position.isStart ? (
                                   (event as LocalEvent).category === '반/연차' 
                                     ? `[${(event as LocalEvent).subCategory === '반차' 
-                                        ? `반차-${(event as LocalEvent).start?.time === '09:00' ? '오전' : '오후'}`
+                                        ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
                                         : (event as LocalEvent).subCategory || '연차'
                                       }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
                                     : (event as LocalEvent).category === '출장/외근' || (event as LocalEvent).category === '출장' || (event as LocalEvent).category === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
-                                    ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions && (event as LocalEvent).companions.length > 0 ? ` +${(event as LocalEvent).companions.length}` : ''}`
+                                    ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
                                     : (event as LocalEvent).summary
                                 ) : '⋯'}
                               </span>
@@ -1426,14 +1427,14 @@ export default function SchedulePage() {
                               <span className="truncate block font-semibold">
                                 {(event as LocalEvent).category === '반/연차' 
                                   ? `[${(event as LocalEvent).subCategory === '반차' 
-                                      ? `반차-${(event as LocalEvent).start?.time === '09:00' ? '오전' : '오후'}`
+                                      ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
                                       : (event as LocalEvent).subCategory || '연차'
                                     }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
                                   : (event as LocalEvent).category === '출장/외근' || (event as LocalEvent).category === '출장' || (event as LocalEvent).category === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
                                   ? (() => {
                                       const tripType = (event as LocalEvent).subCategory || ((event as LocalEvent).category === '출장' ? '출장' : '외근')
                                       const summary = (event as LocalEvent).summary
-                                      const companions = (event as LocalEvent).companions && (event as LocalEvent).companions.length > 0 ? ` +${(event as LocalEvent).companions.length}` : ''
+                                      const companions = (event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''
                                       
                                       // 이미 [출장] 또는 [외근]이 포함된 경우 그대로 사용
                                       if (summary.startsWith('[출장]') || summary.startsWith('[외근]')) {
@@ -1589,7 +1590,7 @@ export default function SchedulePage() {
                       <div className="flex space-x-2">
                         <button
                           type="button"
-                          onClick={() => setNewEvent({...newEvent, subCategory: '반차', start: {...newEvent.start, time: '09:00'}})}
+                          onClick={() => setNewEvent({...newEvent, subCategory: '반차', time: '09:00'})}
                           className={`px-4 py-2 rounded-md border text-sm font-medium ${
                             newEvent.subCategory === '반차' 
                               ? 'bg-blue-600 text-white border-blue-600' 
@@ -1600,7 +1601,7 @@ export default function SchedulePage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setNewEvent({...newEvent, subCategory: '연차', start: {...newEvent.start, time: ''}})}
+                          onClick={() => setNewEvent({...newEvent, subCategory: '연차', time: ''})}
                           className={`px-4 py-2 rounded-md border text-sm font-medium ${
                             newEvent.subCategory === '연차' 
                               ? 'bg-blue-600 text-white border-blue-600' 
@@ -1620,9 +1621,9 @@ export default function SchedulePage() {
                           <div className="flex space-x-2">
                             <button
                               type="button"
-                              onClick={() => setNewEvent({...newEvent, start: {...newEvent.start, time: '09:00'}})}
+                              onClick={() => setNewEvent({...newEvent, time: '09:00'})}
                               className={`px-4 py-2 rounded-md border text-sm font-medium ${
-                                newEvent.start?.time === '09:00' 
+                                newEvent.time === '09:00' 
                                   ? 'bg-green-600 text-white border-green-600' 
                                   : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
                               }`}
@@ -1631,9 +1632,9 @@ export default function SchedulePage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setNewEvent({...newEvent, start: {...newEvent.start, time: '14:00'}})}
+                              onClick={() => setNewEvent({...newEvent, time: '14:00'})}
                               className={`px-4 py-2 rounded-md border text-sm font-medium ${
-                                newEvent.start?.time === '14:00' 
+                                newEvent.time === '14:00' 
                                   ? 'bg-green-600 text-white border-green-600' 
                                   : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
                               }`}
@@ -2075,7 +2076,7 @@ export default function SchedulePage() {
                     <div className="flex space-x-2">
                         <button
                           type="button"
-                          onClick={() => setNewEvent({...newEvent, subCategory: '반차', start: {...newEvent.start, time: '09:00'}})}
+                          onClick={() => setNewEvent({...newEvent, subCategory: '반차', time: '09:00'})}
                           className={`px-4 py-2 rounded-md border text-sm font-medium ${
                             newEvent.subCategory === '반차' 
                               ? 'bg-blue-600 text-white border-blue-600' 
@@ -2086,7 +2087,7 @@ export default function SchedulePage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setNewEvent({...newEvent, subCategory: '연차', start: {...newEvent.start, time: ''}})}
+                          onClick={() => setNewEvent({...newEvent, subCategory: '연차', time: ''})}
                           className={`px-4 py-2 rounded-md border text-sm font-medium ${
                             newEvent.subCategory === '연차' 
                               ? 'bg-blue-600 text-white border-blue-600' 
@@ -2106,9 +2107,9 @@ export default function SchedulePage() {
                           <div className="flex space-x-2">
                             <button
                               type="button"
-                              onClick={() => setNewEvent({...newEvent, start: {...newEvent.start, time: '09:00'}})}
+                              onClick={() => setNewEvent({...newEvent, time: '09:00'})}
                               className={`px-4 py-2 rounded-md border text-sm font-medium ${
-                                newEvent.start?.time === '09:00' 
+                                newEvent.time === '09:00' 
                                   ? 'bg-green-600 text-white border-green-600' 
                                   : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
                               }`}
@@ -2117,9 +2118,9 @@ export default function SchedulePage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setNewEvent({...newEvent, start: {...newEvent.start, time: '14:00'}})}
+                              onClick={() => setNewEvent({...newEvent, time: '14:00'})}
                               className={`px-4 py-2 rounded-md border text-sm font-medium ${
-                                newEvent.start?.time === '14:00' 
+                                newEvent.time === '14:00' 
                                   ? 'bg-green-600 text-white border-green-600' 
                                   : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
                               }`}

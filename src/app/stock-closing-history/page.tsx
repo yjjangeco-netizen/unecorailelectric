@@ -25,7 +25,7 @@ export default function StockClosingHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState('')
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   useEffect(() => {
     // 로그인 상태 확인
@@ -33,7 +33,11 @@ export default function StockClosingHistoryPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
-        setCurrentUser(userData)
+        setCurrentUser({
+          id: userData.id || userData.username,
+          name: userData.name,
+          level: userData.level || '1'
+        })
       } catch (error) {
         console.error('사용자 정보 파싱 오류:', error)
       }
@@ -106,7 +110,7 @@ export default function StockClosingHistoryPage() {
       {/* 공통 헤더 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="재고 마감 이력"
         showBackButton={true}
         backUrl="/stock-management"

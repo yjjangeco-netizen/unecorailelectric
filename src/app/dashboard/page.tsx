@@ -258,8 +258,8 @@ export default function DashboardPage() {
           
           // 날짜순으로 정렬
           businessTripEvents.sort((a, b) => {
-            const dateA = new Date(a.start.dateTime || a.start.date)
-            const dateB = new Date(b.start.dateTime || b.start.date)
+            const dateA = new Date(a.start.dateTime || a.start.date || new Date())
+            const dateB = new Date(b.start.dateTime || b.start.date || new Date())
             return dateA.getTime() - dateB.getTime()
           })
           
@@ -290,8 +290,8 @@ export default function DashboardPage() {
           })
           
           businessTripEvents.sort((a, b) => {
-            const dateA = new Date(a.start.dateTime || a.start.date)
-            const dateB = new Date(b.start.dateTime || b.start.date)
+            const dateA = new Date(a.start.dateTime || a.start.date || new Date())
+            const dateB = new Date(b.start.dateTime || b.start.date || new Date())
             return dateA.getTime() - dateB.getTime()
           })
           
@@ -340,7 +340,7 @@ export default function DashboardPage() {
           }
           
           // 오늘 이후 날짜만
-          const eventDate = new Date(event.start.dateTime || event.start.date)
+          const eventDate = new Date(event.start.dateTime || event.start.date || new Date())
           eventDate.setHours(0, 0, 0, 0)
           
           return eventDate >= today
@@ -348,8 +348,8 @@ export default function DashboardPage() {
         
         // 날짜순으로 정렬
         vacationEvents.sort((a, b) => {
-          const dateA = new Date(a.start.dateTime || a.start.date)
-          const dateB = new Date(b.start.dateTime || b.start.date)
+          const dateA = new Date(a.start.dateTime || a.start.date || new Date())
+          const dateB = new Date(b.start.dateTime || b.start.date || new Date())
           return dateA.getTime() - dateB.getTime()
         })
         
@@ -365,7 +365,7 @@ export default function DashboardPage() {
 
   // 프로젝트 일정 로드 (오늘 기준 3개월치)
   const loadProjectEvents = useCallback(async () => {
-    if (!user?.id || user.level < 3) return
+    if (!user?.id || parseInt(user.level || '0') < 3) return
     
     setLoadingProjects(true)
     try {
@@ -849,7 +849,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="space-y-2">
                     {vacationEvents.map((event) => {
-                      const eventDate = new Date(event.start.dateTime || event.start.date)
+                      const eventDate = new Date(event.start.dateTime || event.start.date || new Date())
                       const isToday = eventDate.toDateString() === new Date().toDateString()
                       const isTomorrow = eventDate.toDateString() === new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString()
                       
@@ -862,7 +862,7 @@ export default function DashboardPage() {
                               </div>
                               <div className="w-20 text-sm text-gray-600">
                                 [{event.subCategory === '반차' 
-                                  ? `반차-${event.start?.time === '09:00' ? '오전' : '오후'}`
+                                  ? `반차-${event.start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
                                   : event.subCategory || '연차'
                                 }]
                               </div>
@@ -873,7 +873,7 @@ export default function DashboardPage() {
                                 {eventDate.toLocaleDateString('ko-KR', { weekday: 'short' })}
                               </div>
                               <div className="w-16 text-sm text-gray-600">
-                                {event.start.time || '종일'}
+                                {event.start.dateTime?.includes('T') ? event.start.dateTime.split('T')[1]?.substring(0, 5) || '종일' : '종일'}
                               </div>
                             </div>
                             {isToday && (
@@ -903,7 +903,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 프로젝트 일정 (레벨 3 이상만 표시) */}
-        {user && user.level >= 3 && (
+        {user && parseInt(user.level || '0') >= 3 && (
           <Card className="mb-8 bg-gray-50 border-2 border-gray-300">
               <CardHeader className="bg-white border-b-2 border-gray-300">
                 <CardTitle className="flex items-center text-gray-800">
@@ -982,23 +982,25 @@ export default function DashboardPage() {
           )}
 
         {/* 보고서 작성 모달 */}
-        <BusinessTripReportModal
-          isOpen={reportModalOpen}
-          onClose={() => {
-            setReportModalOpen(false)
-            setSelectedTrip(null)
-          }}
-          onSave={handleSubmitReport}
-          tripData={selectedTrip ? {
-            id: selectedTrip.id,
-            title: selectedTrip.summary,
-            purpose: selectedTrip.description || selectedTrip.summary,
-            location: selectedTrip.location || '미지정',
-            startDate: selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date || '',
-            endDate: selectedTrip.end.dateTime?.split('T')[0] || selectedTrip.end.date || selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date || ''
-          } : undefined}
-          loading={submittingReport}
-        />
+        {selectedTrip && (
+          <BusinessTripReportModal
+            isOpen={reportModalOpen}
+            onClose={() => {
+              setReportModalOpen(false)
+              setSelectedTrip(null)
+            }}
+            onSave={handleSubmitReport}
+            tripData={{
+              id: selectedTrip.id,
+              title: selectedTrip.summary,
+              purpose: selectedTrip.description || selectedTrip.summary,
+              location: selectedTrip.location || '미지정',
+              startDate: selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date || '',
+              endDate: selectedTrip.end.dateTime?.split('T')[0] || selectedTrip.end.date || selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date || ''
+            }}
+            loading={submittingReport}
+          />
+        )}
       </div>
     </div>
   )

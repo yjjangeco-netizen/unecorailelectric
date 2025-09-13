@@ -20,7 +20,7 @@ export default function ManualManagementPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   useEffect(() => {
     // 로그인 상태 확인
@@ -28,7 +28,11 @@ export default function ManualManagementPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
-        setCurrentUser(userData)
+        setCurrentUser({
+          id: userData.id || userData.username,
+          name: userData.name,
+          level: userData.level || '1'
+        })
       } catch (error) {
         console.error('사용자 정보 파싱 오류:', error)
       }
@@ -79,7 +83,7 @@ export default function ManualManagementPage() {
       {/* 공통 헤더 추가 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="메뉴얼 관리"
         showBackButton={true}
         backUrl="/work-tool"

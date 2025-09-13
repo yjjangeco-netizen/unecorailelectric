@@ -87,7 +87,7 @@ export default function StockClosingPage() {
   const [basicStockItems, setBasicStockItems] = useState<BasicStockItem[]>([])
   const [adjustmentItems, setAdjustmentItems] = useState<StockAdjustmentItem[]>([])
   const [disposalHistory, setDisposalHistory] = useState<DisposalItem[]>([])
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   // 현재 분기 및 마감 가능 여부 계산
   useEffect(() => {
@@ -111,7 +111,11 @@ export default function StockClosingPage() {
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
-        setCurrentUser(userData)
+        setCurrentUser({
+          id: userData.id || userData.username,
+          name: userData.name,
+          level: userData.level || '1'
+        })
       } catch (error) {
         console.error('사용자 정보 파싱 오류:', error)
       }
@@ -302,7 +306,7 @@ export default function StockClosingPage() {
       {/* 공통 헤더 추가 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="분기별 재고 마감"
         showBackButton={true}
         backUrl="/stock-management"

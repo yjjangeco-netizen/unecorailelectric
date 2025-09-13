@@ -730,7 +730,7 @@ export default function StockManagementPage() {
               const newStockOut = (selectedItem.outbound || 0) + formData.requestQuantity
               const newCurrentQuantity = Math.max(currentStock - formData.requestQuantity, 0)
 
-              const { error: updateError } = await supabase
+              const { error: updateError } = await (supabase as any)
                 .from('items')
                 .update({ 
                   current_quantity: newCurrentQuantity,
