@@ -4,13 +4,6 @@ declare namespace NodeJS {
     NEXT_PUBLIC_SUPABASE_URL: string
     NEXT_PUBLIC_SUPABASE_ANON_KEY: string
     
-    // Google Calendar API 설정
-    GOOGLE_CLIENT_ID: string
-    GOOGLE_CLIENT_SECRET: string
-    GOOGLE_REDIRECT_URI: string
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: string
-    NEXT_PUBLIC_GOOGLE_REDIRECT_URI: string
-    
     // 환경 설정
     NODE_ENV: 'development' | 'production' | 'test'
     NEXT_PUBLIC_LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error'
