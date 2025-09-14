@@ -13,8 +13,6 @@ export function Navigation() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  if (!user) return null
-
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -28,6 +26,8 @@ export function Navigation() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  if (!user) return null
   
   // 사용자 레벨 확인
   const userLevel = user.level || '1'
