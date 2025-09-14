@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 // 작업유형/세부유형 검증 함수
-async function validateWorkTypeAndSubType(body: any): Promise<string | null> {
+async function validateWorkTypeAndSubType(body: any, supabase: any): Promise<string | null> {
   try {
     // 프로젝트번호 확인
     let projectNumber = ''
@@ -88,6 +83,12 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
 
     // RLS가 적용된 쿼리 - 사용자 레벨에 따라 자동 필터링
     let query = supabase
@@ -210,8 +211,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     // 작업유형/세부유형 검증
-    const validationError = await validateWorkTypeAndSubType(body)
+    const validationError = await validateWorkTypeAndSubType(body, supabase)
     if (validationError) {
       return NextResponse.json(
         { error: validationError },
