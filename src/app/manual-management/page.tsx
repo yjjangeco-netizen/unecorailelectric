@@ -88,7 +88,7 @@ export default function ManualManagementPage() {
         backUrl="/work-tool"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">메뉴얼 관리</h2>
           <p className="text-lg text-gray-600">

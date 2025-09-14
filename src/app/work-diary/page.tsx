@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Navigation } from '@/components/Navigation'
+import CommonHeader from '@/components/CommonHeader'
 import { 
   FileText, 
   Search,
@@ -123,7 +123,15 @@ export default function WorkDiaryPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
+      {/* 공통 헤더 */}
+      <CommonHeader
+        currentUser={user}
+        isAdmin={user?.level === 'admin'}
+        title="업무일지"
+        backUrl="/"
+        onLogout={() => router.push('/login')}
+      />
+
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">일일 업무일지</h1>

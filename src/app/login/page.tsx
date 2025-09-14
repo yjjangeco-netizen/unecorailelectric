@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   
-  const { login } = useUser()
+  const { login, user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,14 +26,29 @@ export default function LoginPage() {
     setError('')
 
     try {
+      console.log('로그인 시도:', { username, password })
       const success = await login(username, password)
+      console.log('로그인 결과:', success)
+      console.log('현재 사용자 상태:', { user, isAuthenticated, authLoading })
+      
       if (success) {
-        router.push('/dashboard')
+        console.log('대시보드로 이동 시도')
+        // 여러 방법으로 이동 시도
+        console.log('즉시 대시보드로 이동')
+        try {
+          router.push('/dashboard')
+          router.refresh()
+        } catch (e) {
+          console.log('router.push 실패, window.location 사용')
+          window.location.href = '/dashboard'
+        }
       } else {
+        console.log('로그인 실패')
         setError('로그인에 실패했습니다. 사용자명과 비밀번호를 확인해주세요.')
       }
     } catch (err) {
-      setError('로그인 중 오류가 발생했습니다.')
+      console.error('로그인 오류:', err)
+      setError(`로그인 중 오류가 발생했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
     } finally {
       setIsLoading(false)
     }

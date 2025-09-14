@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
-import { Navigation } from '@/components/Navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
 
 export default function ClientLayout({
@@ -11,11 +10,8 @@ export default function ClientLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { user, isAuthenticated, loading } = useUser()
-  
-  // 자동 로그아웃 비활성화
-  const resetActivity = () => {}
-  const timeRemaining = () => 0
   
   // 클라이언트 사이드 마이그레이션 실행 (한 번만)
   useEffect(() => {
@@ -31,12 +27,22 @@ export default function ClientLayout({
     }
   }, [])
 
-  // 로그인과 회원가입 페이지에서는 navigation 표시하지 않음
-  const shouldShowNavigation = !['/', '/signup'].includes(pathname) && isAuthenticated && !loading
+  // 로그인과 회원가입 페이지에서는 헤더 표시하지 않음
+  const shouldShowHeader = !['/', '/signup', '/login'].includes(pathname) && isAuthenticated && !loading
+
+  // 현재 페이지 이름 매핑
+  const getPageName = (path: string) => {
+    const pageMap: { [key: string]: string } = {
+      '/project-management': '프로젝트관리',
+      '/nara-monitoring': 'Nara 모니터링',
+      '/sop': 'SOP',
+      '/work-tool': '업무도구'
+    }
+    return pageMap[path] || '시스템'
+  }
 
   return (
     <>
-      {shouldShowNavigation && <Navigation />}
       {children}
     </>
   )

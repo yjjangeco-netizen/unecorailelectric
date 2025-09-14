@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import CommonHeader from '@/components/CommonHeader'
 import UserEditModal from '@/components/UserEditModal'
-import { Package, User, Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Package, User, Plus, Edit, Trash2, Search, Globe, Shield, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import type { User as UserType, PositionType, DepartmentType, PermissionType } from '@/lib/types'
 
 export default function UserManagementPage() {
@@ -16,6 +20,13 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<UserType | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null)
+  const [domainInput, setDomainInput] = useState('')
+  const [domainValidation, setDomainValidation] = useState<{
+    isValid: boolean | null
+    message: string
+  }>({ isValid: null, message: '' })
+  const [showDomainModal, setShowDomainModal] = useState(false)
 
   // 사용자 목록 로드
   useEffect(() => {
@@ -89,6 +100,52 @@ export default function UserManagementPage() {
         console.error('사용자 삭제 오류:', error)
         alert('사용자 삭제 중 오류가 발생했습니다.')
       }
+    }
+  }
+
+  // 도메인 검증 함수
+  const validateDomain = async (domain: string) => {
+    try {
+      setDomainValidation({ isValid: null, message: '검증 중...' })
+      
+      // 간단한 도메인 형식 검증
+      const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/
+      if (!domainRegex.test(domain)) {
+        setDomainValidation({ isValid: false, message: '올바른 도메인 형식이 아닙니다.' })
+        return false
+      }
+
+      // 실제 도메인 존재 여부 확인 (간단한 예시)
+      // 실제로는 서버에서 DNS 조회를 수행해야 함
+      await new Promise(resolve => setTimeout(resolve, 1000)) // 시뮬레이션
+      
+      setDomainValidation({ isValid: true, message: '도메인이 유효합니다.' })
+      return true
+    } catch (error) {
+      setDomainValidation({ isValid: false, message: '도메인 검증 중 오류가 발생했습니다.' })
+      return false
+    }
+  }
+
+  // 사용자별 커스텀 버튼 클릭 핸들러
+  const handleCustomButtonClick = (user: UserType) => {
+    setSelectedUser(user)
+    setShowDomainModal(true)
+    setDomainInput('')
+    setDomainValidation({ isValid: null, message: '' })
+  }
+
+  // 도메인 검증 후 사용자 페이지로 이동
+  const handleDomainSubmit = async () => {
+    if (!selectedUser) return
+    
+    const isValid = await validateDomain(domainInput)
+    if (isValid) {
+      // 도메인이 유효하면 해당 사용자의 전용 페이지로 이동
+      // 실제로는 사용자별 고유 URL을 생성해야 함
+      const userPageUrl = `/user-dashboard/${selectedUser.id}?domain=${encodeURIComponent(domainInput)}`
+      window.open(userPageUrl, '_blank')
+      setShowDomainModal(false)
     }
   }
 
@@ -182,7 +239,7 @@ export default function UserManagementPage() {
         backUrl="/dashboard"
       />
       
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 헤더 */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">

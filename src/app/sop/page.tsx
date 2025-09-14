@@ -39,7 +39,7 @@ export default function SOPPage() {
         <div className="text-center max-w-md mx-auto p-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
             <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">SOP (표준작업절차)</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">SOP</h1>
             <p className="text-gray-600 mb-6">
               현재 페이지 준비 중입니다.<br />
               Level 5 이상 사용자만 이용 가능합니다.
@@ -135,11 +135,11 @@ export default function SOPPage() {
       <CommonHeader
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
-        title="SOP (표준작업절차)"
+        title="SOP"
         backUrl="/stock-management"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-4 sm:p-6">
@@ -321,7 +321,7 @@ export default function SOPPage() {
               📋 SOP (Standard Operating Procedure)
             </h3>
             <p className="text-blue-700 mb-4">
-              표준작업절차는 업무의 일관성과 품질을 보장하기 위한 중요한 문서입니다.
+              SOP는 업무의 일관성과 품질을 보장하기 위한 중요한 문서입니다.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-blue-600">
               <div>

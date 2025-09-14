@@ -185,7 +185,7 @@ export default function BusinessTripReportsPage() {
         backUrl="/work-diary"
       />
       
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+      <div className="max-w-[1600px] mx-auto p-4 sm:p-6">
         {/* 필터 섹션 */}
         <Card className="mb-6">
           <CardHeader>

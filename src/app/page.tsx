@@ -321,7 +321,6 @@ export default function HomePage() {
               <h3 className="text-xl font-bold mb-6 text-white">서비스</h3>
               <ul className="space-y-3 text-gray-300">
                 <li><Link href="/stock-management" className="hover:text-yellow-400 text-lg transition-colors duration-300">재고 관리</Link></li>
-                <li><Link href="/schedule" className="hover:text-yellow-400 text-lg transition-colors duration-300">일정 관리</Link></li>
                 <li><Link href="/nara-monitoring" className="hover:text-yellow-400 text-lg transition-colors duration-300">입찰 모니터링</Link></li>
                 <li><Link href="/user-management" className="hover:text-yellow-400 text-lg transition-colors duration-300">사용자 관리</Link></li>
               </ul>

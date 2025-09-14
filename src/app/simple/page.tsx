@@ -33,7 +33,7 @@ export default function SimplePage() {
         backUrl="/"
       />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="text-2xl font-bold mb-4">🧪 Simple Main Page</h1>
         <p className="text-gray-600">This is a simplified main page for testing.</p>
         <div className="mt-4 p-4 bg-blue-100 border border-blue-300 rounded">

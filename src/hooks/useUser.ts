@@ -20,6 +20,7 @@ export function useUser() {
       const user = await UserService.login(username, password);
       if (user) {
         console.log('로그인 성공:', user.username);
+        console.log('사용자 정보:', user);
         setUser(user);
         
         // 데이터베이스 권한 관리에 세션 설정
@@ -32,6 +33,7 @@ export function useUser() {
         
         // localStorage에 사용자 정보 저장
         localStorage.setItem('user', JSON.stringify(user));
+        console.log('사용자 상태 업데이트 완료, isAuthenticated:', !!user);
         return true;
       } else {
         setError('사용자명 또는 비밀번호가 올바르지 않습니다.');
@@ -199,8 +201,11 @@ export function useUser() {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const userData: User = JSON.parse(storedUser);
-          // 임시로 저장된 사용자 정보 사용 (환경변수 없이도 작동)
+          console.log('localStorage에서 사용자 정보 복원:', userData);
           setUser(userData);
+          console.log('사용자 상태 설정 완료:', userData);
+        } else {
+          console.log('localStorage에 사용자 정보 없음');
         }
       } catch (err) {
         console.error('사용자 정보 로드 중 오류:', err);
@@ -212,7 +217,7 @@ export function useUser() {
 
     // localStorage에서 사용자 정보 로드
     loadUserFromStorage();
-  }, []); // user를 의존성에서 제거하여 무한 루프 방지
+  }, []);
 
   return {
     user,
@@ -233,7 +238,7 @@ export function useUser() {
     checkDbSelfAccess,
     executeWithDbPermission,
     executeWithDbDepartmentAccess,
-    // 인증 상태
-    isAuthenticated: !!user,
+    // 인증 상태 - 더 엄격한 체크
+    isAuthenticated: !!(user && user.id && user.username),
   };
 }
