@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(_request: NextRequest) {
   try {
     // TODO: 실제 모니터링 서비스 중지 로직 구현

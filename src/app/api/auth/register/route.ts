@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { hashPassword, validatePasswordStrength, validateUsername, sanitizeInput } from '@/lib/security'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     console.log('=== 회원가입 API 호출 시작 ===')

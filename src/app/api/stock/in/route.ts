@@ -4,6 +4,8 @@ import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger, AuditAction } from '@/lib/audit'
 import { stockInSchema } from '@/lib/schemas'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   return measureAsyncPerformance('재고 입고 처리', async () => {
     try {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function PUT(request: NextRequest) {
   try {
     console.log('=== 재고 수정 API 호출됨 ===')

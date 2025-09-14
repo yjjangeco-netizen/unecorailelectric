@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // 임시 데이터 - 실제로는 데이터베이스나 캐시에서 가져와야 함
 const mockBidItems = [
   {
