@@ -126,24 +126,30 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 shiftee-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="shiftee-container">
-          <div className="flex justify-between items-center h-16">
+      <header className="bg-white shadow-lg border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
             <div className="flex items-center space-x-4">
-              <Building2 className="h-8 w-8 text-blue-600" />
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Building2 className="h-7 w-7 text-white" />
+              </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">유네코레일</h1>
-                <p className="text-xs text-gray-600">전기파트 업무 시스템</p>
+                <h1 className="text-2xl font-bold text-gray-900">유네코레일</h1>
+                <p className="text-sm text-gray-600 font-medium">전기파트 업무 시스템</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <Link href="/signup">
-                <Button variant="outline">무료 체험</Button>
+                <Button variant="outline" className="px-6 py-2 border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">
+                  무료 체험
+                </Button>
               </Link>
               <Link href="/login">
-                <Button>로그인</Button>
+                <Button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                  로그인
+                </Button>
               </Link>
             </div>
           </div>
@@ -151,24 +157,24 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20">
-        <div className="shiftee-container text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+      <section className="py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
             Empower Your Workforce,<br />
-            <span className="text-blue-600">Streamline your HR process</span>
+            <span className="text-yellow-300">Streamline your HR process</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-4xl mx-auto leading-relaxed">
             유네코레일 전기팀을 위한 통합 업무 관리 시스템. 재고 관리부터 입찰 모니터링까지 모든 것을 하나의 플랫폼에서.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+              <Button size="lg" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-10 py-4 text-lg font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
                 30일 무료 체험 시작
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-3 h-6 w-6" />
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="px-8 py-3">
+              <Button size="lg" variant="outline" className="px-10 py-4 text-lg font-bold border-2 border-white text-white hover:bg-white hover:text-blue-600 transition-all duration-300">
                 영업팀 문의
               </Button>
             </Link>
@@ -177,13 +183,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="shiftee-container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               모든 업무를 하나의 플랫폼에서
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
               재고 관리, 일정 관리, 입찰 모니터링까지 모든 기능을 통합하여 효율적인 업무 환경을 제공합니다.
             </p>
           </div>
@@ -192,20 +198,18 @@ export default function HomePage() {
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-                <Card 
+                <div 
                   key={index}
-                  className={`transition-all duration-300 hover:shadow-lg cursor-pointer ${isHovered === feature.title ? 'transform scale-105' : ''}`}
+                  className={`bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border-2 border-transparent hover:border-blue-200 ${isHovered === feature.title ? 'transform scale-105 -rotate-1' : 'hover:rotate-1'}`}
                   onMouseEnter={() => setIsHovered(feature.title)}
                   onMouseLeave={() => setIsHovered(null)}
                 >
-                  <CardContent className="p-6">
-                    <div className={`w-12 h-12 ${feature.bgColor} rounded-lg flex items-center justify-center mb-4`}>
-                      <Icon className={`h-6 w-6 ${feature.color}`} />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                    <p className="text-gray-600">{feature.description}</p>
-                  </CardContent>
-                </Card>
+                  <div className={`w-16 h-16 ${feature.bgColor} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
+                    <Icon className={`h-8 w-8 ${feature.color}`} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{feature.title}</h3>
+                  <p className="text-gray-600 text-lg leading-relaxed">{feature.description}</p>
+                </div>
               )
             })}
           </div>
@@ -213,82 +217,83 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="shiftee-container">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+      <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               비즈니스에 맞는 플랜을 선택하세요
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl md:text-2xl text-gray-600">
               다양한 요구사항에 맞는 유연한 가격 정책
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {plans.map((plan, index) => (
-              <Card 
+              <div 
                 key={index}
-                className={`relative transition-all duration-300 hover:shadow-xl ${plan.recommended ? 'ring-2 ring-blue-500 transform scale-105' : ''} ${plan.color}`}
+                className={`relative bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all duration-500 ${plan.recommended ? 'ring-4 ring-blue-500 transform scale-105 -rotate-1' : 'hover:rotate-1'} ${plan.color}`}
               >
                 {plan.recommended && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className="bg-blue-600 text-white px-4 py-1">
-                      <Star className="w-4 h-4 mr-1" />
+                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-full shadow-lg">
+                      <Star className="w-5 h-5 mr-2 inline" />
                       추천
-                    </Badge>
+                    </div>
                   </div>
                 )}
                 
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl font-bold text-gray-900">{plan.name}</CardTitle>
-                  <p className="text-gray-600 mt-2">{plan.description}</p>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                    <span className="text-gray-600 ml-2">{plan.period}</span>
+                <div className="text-center pb-6">
+                  <h3 className="text-3xl font-bold text-gray-900 mb-4">{plan.name}</h3>
+                  <p className="text-gray-600 text-lg mb-6">{plan.description}</p>
+                  <div className="mb-8">
+                    <span className="text-5xl font-black text-gray-900">{plan.price}</span>
+                    <span className="text-gray-600 ml-2 text-lg">{plan.period}</span>
                   </div>
-                </CardHeader>
+                </div>
                 
-                <CardContent className="pt-0">
-                  <ul className="space-y-3 mb-8">
+                <div className="pt-0">
+                  <ul className="space-y-4 mb-10">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center">
-                        <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
+                        <CheckCircle className="w-6 h-6 text-green-500 mr-4 flex-shrink-0" />
+                        <span className="text-gray-700 text-lg">{feature}</span>
                       </li>
                     ))}
                   </ul>
                   
                   <Button 
-                    className={`w-full ${plan.buttonColor} text-white`}
+                    className={`w-full py-4 text-lg font-bold ${plan.buttonColor} text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300`}
                     size="lg"
                   >
                     {plan.price === '문의' ? '영업팀 문의' : '시작하기'}
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-3 h-5 w-5" />
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
-        <div className="shiftee-container text-center max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      <section className="py-24 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-800 text-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-8">
             30일 무료 체험으로 시작하세요
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-4xl mx-auto leading-relaxed">
             계약 없이 모든 기능을 체험해보세요. 언제든지 중단할 수 있습니다.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/signup">
-              <Button size="lg" variant="secondary" className="px-8 py-3">
+              <Button size="lg" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-12 py-4 text-xl font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
                 무료 체험 시작
+                <ArrowRight className="ml-3 h-6 w-6" />
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="px-8 py-3 text-white border-white hover:bg-white hover:text-blue-600">
+              <Button size="lg" variant="outline" className="px-12 py-4 text-xl font-bold border-3 border-white text-white hover:bg-white hover:text-blue-600 transition-all duration-300">
                 영업팀 문의
               </Button>
             </Link>
@@ -297,50 +302,52 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="shiftee-container">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Building2 className="h-6 w-6" />
-                <span className="text-lg font-bold">유네코레일</span>
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold">유네코레일</span>
               </div>
-              <p className="text-gray-400">
+              <p className="text-gray-300 text-lg leading-relaxed">
                 전기파트 업무 시스템으로 더 나은 업무 환경을 만들어갑니다.
               </p>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">서비스</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/stock-management" className="hover:text-white">재고 관리</Link></li>
-                <li><Link href="/schedule" className="hover:text-white">일정 관리</Link></li>
-                <li><Link href="/nara-monitoring" className="hover:text-white">입찰 모니터링</Link></li>
-                <li><Link href="/user-management" className="hover:text-white">사용자 관리</Link></li>
+              <h3 className="text-xl font-bold mb-6 text-white">서비스</h3>
+              <ul className="space-y-3 text-gray-300">
+                <li><Link href="/stock-management" className="hover:text-yellow-400 text-lg transition-colors duration-300">재고 관리</Link></li>
+                <li><Link href="/schedule" className="hover:text-yellow-400 text-lg transition-colors duration-300">일정 관리</Link></li>
+                <li><Link href="/nara-monitoring" className="hover:text-yellow-400 text-lg transition-colors duration-300">입찰 모니터링</Link></li>
+                <li><Link href="/user-management" className="hover:text-yellow-400 text-lg transition-colors duration-300">사용자 관리</Link></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">지원</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/help" className="hover:text-white">도움말</Link></li>
-                <li><Link href="/contact" className="hover:text-white">문의하기</Link></li>
-                <li><Link href="/security" className="hover:text-white">보안</Link></li>
+              <h3 className="text-xl font-bold mb-6 text-white">지원</h3>
+              <ul className="space-y-3 text-gray-300">
+                <li><Link href="/help" className="hover:text-yellow-400 text-lg transition-colors duration-300">도움말</Link></li>
+                <li><Link href="/contact" className="hover:text-yellow-400 text-lg transition-colors duration-300">문의하기</Link></li>
+                <li><Link href="/security" className="hover:text-yellow-400 text-lg transition-colors duration-300">보안</Link></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">회사</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link href="/about" className="hover:text-white">회사 소개</Link></li>
-                <li><Link href="/blog" className="hover:text-white">블로그</Link></li>
-                <li><Link href="/careers" className="hover:text-white">채용</Link></li>
+              <h3 className="text-xl font-bold mb-6 text-white">회사</h3>
+              <ul className="space-y-3 text-gray-300">
+                <li><Link href="/about" className="hover:text-yellow-400 text-lg transition-colors duration-300">회사 소개</Link></li>
+                <li><Link href="/blog" className="hover:text-yellow-400 text-lg transition-colors duration-300">블로그</Link></li>
+                <li><Link href="/careers" className="hover:text-yellow-400 text-lg transition-colors duration-300">채용</Link></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 유네코레일. All rights reserved.</p>
+          <div className="border-t border-gray-700 mt-12 pt-8 text-center">
+            <p className="text-gray-400 text-lg">&copy; 2024 유네코레일. All rights reserved.</p>
           </div>
         </div>
       </footer>
