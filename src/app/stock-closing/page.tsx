@@ -308,7 +308,6 @@ export default function StockClosingPage() {
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="분기별 재고 마감"
-        showBackButton={true}
         backUrl="/stock-management"
       />
       

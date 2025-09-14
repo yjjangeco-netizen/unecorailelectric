@@ -30,7 +30,6 @@ export default function SimplePage() {
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="간단한 메인 페이지"
-        showBackButton={true}
         backUrl="/"
       />
       

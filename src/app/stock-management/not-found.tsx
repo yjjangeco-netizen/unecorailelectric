@@ -18,12 +18,6 @@ export default function StockManagementNotFound() {
           요청하신 재고 관리 페이지가 존재하지 않거나 접근할 수 없습니다.
         </p>
         <div className="space-y-3">
-          <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-            <Link href="/">
-              <Home className="h-4 w-4 mr-2" />
-              메인으로 돌아가기
-            </Link>
-          </Button>
           <Button
             onClick={() => window.history.back()}
             variant="outline"

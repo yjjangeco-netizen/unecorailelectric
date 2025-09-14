@@ -4,9 +4,11 @@ import { cookies } from 'next/headers'
 // 환경변수 검증 함수
 const validateSupabaseEnv = () => {
   if (!process.env['NEXT_PUBLIC_SUPABASE_URL'] || !process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']) {
-    console.error('Supabase 환경변수가 설정되지 않았습니다.')
-    throw new Error('Supabase 환경변수가 설정되지 않았습니다.')
+    console.warn('Supabase 환경변수가 설정되지 않았습니다. 임시 설정을 사용합니다.')
+    // 임시 설정으로 계속 진행
+    return false
   }
+  return true
 }
 
 // 서버 사이드용 Supabase 클라이언트 생성 (쿠키 기반 인증)

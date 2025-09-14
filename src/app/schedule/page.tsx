@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, ExternalLink, CalendarDays } from 'lucide-react'
 import CommonHeader from '@/components/CommonHeader'
-import FullCalendarComponent from '@/components/FullCalendarComponent'
 // 로컬 이벤트 타입 정의
 interface LocalEvent {
   id: string
@@ -58,7 +57,7 @@ interface User {
 // 프로젝트 이벤트 타입 정의
 interface ProjectEvent {
   id: string
-  type: '조립완료' | '공장시운전' | '현장시운전'
+  type: '조완' | '공시' | '현시'
   projectName: string
   projectNumber: string
   date: string
@@ -81,7 +80,7 @@ const sampleEvents: LocalEvent[] = [
   },
   {
     id: '2',
-    category: '조립완료',
+    category: '조완',
     summary: '프로젝트 리뷰',
     description: '프로젝트 진행 상황 리뷰',
     start: { dateTime: '2024-01-16T14:00:00+09:00' },
@@ -450,7 +449,7 @@ export default function SchedulePage() {
           const projects = await projectsResponse.json()
           
           projects.forEach((project: any) => {
-            // 조립완료일
+            // 조완일
             if (project.assemblyDate) {
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.assemblyDate.split('-').map(Number)
@@ -458,16 +457,16 @@ export default function SchedulePage() {
               if (assemblyDate >= startDate && assemblyDate <= endDate) {
                 projectEvents.push({
                   id: `assembly-${project.id}`,
-                  type: '조립완료',
+                  type: '조완',
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.projectNumber,
                   date: project.assemblyDate,
-                  description: `${project.projectName} 조립완료`
+                  description: `${project.projectName} 조완`
                 })
               }
             }
             
-            // 공장시운전일
+            // 공시일
             if (project.factoryTestDate) {
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.factoryTestDate.split('-').map(Number)
@@ -475,16 +474,16 @@ export default function SchedulePage() {
               if (factoryDate >= startDate && factoryDate <= endDate) {
                 projectEvents.push({
                   id: `factory-${project.id}`,
-                  type: '공장시운전',
+                  type: '공시',
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.projectNumber,
                   date: project.factoryTestDate,
-                  description: `${project.projectName} 공장시운전`
+                  description: `${project.projectName} 공시`
                 })
               }
             }
             
-            // 현장시운전일
+            // 현시일
             if (project.siteTestDate) {
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.siteTestDate.split('-').map(Number)
@@ -492,11 +491,11 @@ export default function SchedulePage() {
               if (siteDate >= startDate && siteDate <= endDate) {
                 projectEvents.push({
                   id: `site-${project.id}`,
-                  type: '현장시운전',
+                  type: '현시',
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.projectNumber,
                   date: project.siteTestDate,
-                  description: `${project.projectName} 현장시운전`
+                  description: `${project.projectName} 현시`
                 })
               }
             }
@@ -963,7 +962,7 @@ export default function SchedulePage() {
       return eventStart && eventEnd && dateStr && eventStart <= dateStr && eventEnd >= dateStr
     }).filter(event => {
       // 필터 적용
-      if (event.category === '조립완료' || event.category === '시운전') {
+      if (event.category === '조완' || event.category === '시운전') {
         return filters.project
       } else if (event.category === '반/연차') {
         return filters.vacation
@@ -1155,7 +1154,6 @@ export default function SchedulePage() {
         currentUser={user}
         isAdmin={user?.permissions?.includes('administrator') || false}
         title="일정 관리"
-        showBackButton={true}
         backUrl="/"
       />
 
@@ -1299,16 +1297,16 @@ export default function SchedulePage() {
               {monthHeaders.map((monthHeader, monthIndex) => {
                 const monthDays = getDaysInMonth(new Date(monthHeader.year, monthHeader.month, 1))
                 return (
-                  <div key={`month-${monthIndex}`} className="border-2 border-black rounded-xl p-4 bg-white shadow-lg">
-                    {/* 월 제목 */}
-                    <div className="text-center text-lg font-bold text-white mb-4 pb-2 border-b-2 border-black bg-black px-2 py-3 rounded-t-lg">
+                  <div key={`month-${monthIndex}`} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                    {/* 월 제목 - FullCalendar 스타일 */}
+                    <div className="text-center text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 bg-gray-50 px-4 py-3 rounded-t-lg">
                       {monthHeader.name}
                     </div>
                     
-            {/* 요일 헤더 */}
-                    <div className="grid grid-cols-7 gap-0 mb-2 bg-black rounded-b-lg">
+            {/* 요일 헤더 - FullCalendar 스타일 */}
+                    <div className="grid grid-cols-7 gap-0 mb-2 bg-gray-100 rounded-lg">
               {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-                        <div key={day} className="p-2 text-center text-sm font-medium text-white">
+                        <div key={day} className="p-3 text-center text-sm font-medium text-gray-600">
                   {day}
                 </div>
               ))}
@@ -1323,9 +1321,9 @@ export default function SchedulePage() {
                 return (
                   <div
                             key={`${monthIndex}-${dayIndex}`}
-                            className={`min-h-[120px] p-2 ${
+                            className={`min-h-[120px] p-2 border-r border-b border-gray-100 ${
                               isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                            } ${isToday ? 'ring-2 ring-blue-500 bg-blue-50' : ''} cursor-pointer hover:bg-gray-100 transition-colors`}
+                            } ${isToday ? 'bg-blue-50 border-blue-200' : ''} cursor-pointer hover:bg-gray-50 transition-colors`}
                             style={{
                               borderTop: '1px solid #d1d5db',
                               borderBottom: '1px solid #d1d5db',
@@ -1360,10 +1358,10 @@ export default function SchedulePage() {
                         if (isProjectEvent) {
                           // 프로젝트 이벤트 렌더링
                           const projectEvent = event as ProjectEvent
-                          const bgColor = projectEvent.type === '조립완료' ? 'bg-orange-100 border-orange-300' : 
-                                         projectEvent.type === '공장시운전' ? 'bg-blue-100 border-blue-300' : 'bg-purple-100 border-purple-300'
-                          const textColor = projectEvent.type === '조립완료' ? 'text-orange-800' : 
-                                          projectEvent.type === '공장시운전' ? 'text-blue-800' : 'text-purple-800'
+                          const bgColor = projectEvent.type === '조완' ? 'bg-orange-100 border-orange-300' : 
+                                         projectEvent.type === '공시' ? 'bg-blue-100 border-blue-300' : 'bg-purple-100 border-purple-300'
+                          const textColor = projectEvent.type === '조완' ? 'text-orange-800' : 
+                                          projectEvent.type === '공시' ? 'text-blue-800' : 'text-purple-800'
                           
                           // 디버깅을 위한 로그
                           console.log('프로젝트 이벤트 렌더링:', {

@@ -128,9 +128,6 @@ export default function RequireAuth({
               )}
             </p>
             <div className="space-y-2">
-              <Button onClick={() => router.push('/')} variant="outline" className="w-full">
-                메인으로 돌아가기
-              </Button>
               <Button onClick={() => router.back()} className="w-full">
                 이전 페이지로
               </Button>

@@ -406,7 +406,7 @@ export default function DashboardPage() {
           const projects = await projectsResponse.json()
           
           projects.forEach((project: any) => {
-            // 조립완료일
+            // 조완일
             if (project.assemblyDate) {
               const assemblyDate = new Date(project.assemblyDate)
               if (assemblyDate >= today && assemblyDate <= threeMonthsLater) {
@@ -415,14 +415,14 @@ export default function DashboardPage() {
                   projectId: project.id,
                   projectName: project.projectName,
                   projectNumber: project.projectNumber,
-                  type: '조립완료',
+                  type: '조완',
                   date: project.assemblyDate,
                   description: project.description || ''
                 })
               }
             }
             
-            // 공장시운전일
+            // 공시일
             if (project.factoryTestDate) {
               const factoryDate = new Date(project.factoryTestDate)
               if (factoryDate >= today && factoryDate <= threeMonthsLater) {
@@ -431,14 +431,14 @@ export default function DashboardPage() {
                   projectId: project.id,
                   projectName: project.projectName,
                   projectNumber: project.projectNumber,
-                  type: '공장시운전',
+                  type: '공시',
                   date: project.factoryTestDate,
                   description: project.description || ''
                 })
               }
             }
             
-            // 현장시운전일
+            // 현시일
             if (project.siteTestDate) {
               const siteDate = new Date(project.siteTestDate)
               if (siteDate >= today && siteDate <= threeMonthsLater) {
@@ -447,7 +447,7 @@ export default function DashboardPage() {
                   projectId: project.id,
                   projectName: project.projectName,
                   projectNumber: project.projectNumber,
-                  type: '현장시운전',
+                  type: '현시',
                   date: project.siteTestDate,
                   description: project.description || ''
                 })
@@ -665,7 +665,6 @@ export default function DashboardPage() {
         currentUser={user}
         isAdmin={user?.permissions?.includes('administrator') || false}
         title="대시보드"
-        showBackButton={true}
         backUrl="/"
       />
       
@@ -943,9 +942,9 @@ export default function DashboardPage() {
                           {/* 구분 */}
                           <div className="col-span-2 flex justify-center">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              event.type === '조립완료' 
+                              event.type === '조완' 
                                 ? 'bg-orange-100 text-orange-800' 
-                                : event.type === '공장시운전'
+                                : event.type === '공시'
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-purple-100 text-purple-800'
                             }`}>

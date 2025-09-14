@@ -136,7 +136,6 @@ export default function SOPPage() {
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="SOP (표준작업절차)"
-        showBackButton={true}
         backUrl="/stock-management"
       />
       

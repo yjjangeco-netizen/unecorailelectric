@@ -482,7 +482,6 @@ export default function StockManagementPage() {
         currentUser={user}
         isAdmin={user?.level === 'admin'}
         title="재고 관리"
-        showBackButton={true}
         backUrl="/"
         onShowUserManagement={() => setShowUserManagement(true)}
         onLogout={logout}

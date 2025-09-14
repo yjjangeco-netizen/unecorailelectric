@@ -30,18 +30,8 @@ export default function StockManagementHeader({
             <h1 className="text-2xl font-bold text-gray-900">유네코레일 전기팀 자재관리 시스템</h1>
           </div>
           
-          {/* 우측: 로그인/사용자 정보 및 메인으로 돌아가기 */}
+          {/* 우측: 로그인/사용자 정보 */}
           <div className="flex items-center space-x-4">
-            {/* 메인으로 돌아가기 버튼 */}
-            <Button
-              onClick={() => router.push('/')}
-              variant="outline"
-              size="sm"
-              className="flex items-center space-x-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>메인으로</span>
-            </Button>
             
             
           </div>

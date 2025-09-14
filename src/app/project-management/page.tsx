@@ -351,7 +351,7 @@ export default function ProjectManagementPage() {
                 />
               </div>
               <div>
-                <Label className="text-green-700 font-medium">조립완료일</Label>
+                <Label className="text-green-700 font-medium">조완일</Label>
                 <Input
                   id="assemblyDate"
                   type="date"
@@ -361,7 +361,7 @@ export default function ProjectManagementPage() {
                 />
               </div>
               <div>
-                <Label className="text-green-700 font-medium">공장시운전일</Label>
+                <Label className="text-green-700 font-medium">공시일</Label>
                 <Input
                   id="factoryTestDate"
                   type="date"
@@ -371,7 +371,7 @@ export default function ProjectManagementPage() {
                 />
               </div>
               <div>
-                <Label className="text-green-700 font-medium">현장시운전일</Label>
+                <Label className="text-green-700 font-medium">현시일</Label>
                 <Input
                   id="siteTestDate"
                   type="date"
@@ -494,9 +494,9 @@ export default function ProjectManagementPage() {
                     <tr className="bg-slate-100 border-b-2 border-slate-200">
                       <th className="text-left p-3 font-semibold text-slate-800 w-32">프로젝트번호</th>
                       <th className="text-left p-3 font-semibold text-slate-800 w-48">프로젝트명</th>
-                      <th className="text-left p-3 font-semibold text-slate-800 w-28">조립완료일</th>
-                      <th className="text-left p-3 font-semibold text-slate-800 w-28">공장시운전일</th>
-                      <th className="text-left p-3 font-semibold text-slate-800 w-28">현장시운전일</th>
+                      <th className="text-left p-3 font-semibold text-slate-800 w-28">조완일</th>
+                      <th className="text-left p-3 font-semibold text-slate-800 w-28">공시일</th>
+                      <th className="text-left p-3 font-semibold text-slate-800 w-28">현시일</th>
                       <th className="text-left p-3 font-semibold text-slate-800 w-40">기타</th>
                       <th className="text-left p-3 font-semibold text-slate-800 w-24">수정</th>
                     </tr>

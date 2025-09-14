@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FullCalendar CSS */
-@import '@fullcalendar/core/index.css';
-@import '@fullcalendar/daygrid/index.css';
-@import '@fullcalendar/timegrid/index.css';
+/* FullCalendar CSS - 임시 비활성화 */
+/* @import '@fullcalendar/core/main.css';
+@import '@fullcalendar/daygrid/main.css';
+@import '@fullcalendar/timegrid/main.css'; */
 
 :root {
   --background: #0B0E14;

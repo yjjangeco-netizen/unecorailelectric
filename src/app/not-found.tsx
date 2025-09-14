@@ -18,12 +18,6 @@ export default function NotFound() {
           요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.
         </p>
         <div className="space-y-3">
-          <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-            <Link href="/">
-              <Home className="h-4 w-4 mr-2" />
-              메인으로 돌아가기
-            </Link>
-          </Button>
           <Button
             onClick={() => window.history.back()}
             variant="outline"

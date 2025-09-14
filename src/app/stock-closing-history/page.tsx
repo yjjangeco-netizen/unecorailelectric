@@ -112,7 +112,6 @@ export default function StockClosingHistoryPage() {
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="재고 마감 이력"
-        showBackButton={true}
         backUrl="/stock-management"
       />
       

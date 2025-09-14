@@ -182,7 +182,6 @@ export default function BusinessTripReportsPage() {
         currentUser={user}
         isAdmin={user?.level === 'administrator'}
         title="출장/외근 보고서"
-        showBackButton={true}
         backUrl="/work-diary"
       />
       

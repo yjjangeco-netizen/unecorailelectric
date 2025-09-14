@@ -179,7 +179,6 @@ export default function UserManagementPage() {
         currentUser={currentUser}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="회원관리"
-        showBackButton={true}
         backUrl="/dashboard"
       />
       

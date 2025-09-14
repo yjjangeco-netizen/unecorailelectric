@@ -114,13 +114,6 @@ export default class ErrorBoundary extends Component<Props, State> {
                 다시 시도
               </Button>
               
-              <Button
-                onClick={this.handleGoHome}
-                className="flex items-center justify-center gap-2"
-              >
-                <Home className="h-4 w-4" />
-                메인으로
-              </Button>
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200">
