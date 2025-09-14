@@ -1,194 +1,246 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createApiClient } from '@/lib/supabaseServer'
 
+// GET: 출장/외근 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const status = searchParams.get('status')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    const supabase = createApiClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    let query = supabaseServer
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+    const trip_type = searchParams.get('trip_type')
+    const project_id = searchParams.get('project_id')
+
+    let query = supabase
       .from('business_trips')
       .select(`
         *,
-        business_trip_reports (
-          id,
-          title,
-          content,
-          submitted_at,
-          status
+        companions:trip_companions(
+          user_id,
+          users:user_id(
+            first_name,
+            last_name
+          )
         )
       `)
-      .order('start_date', { ascending: false })
+      .order('created_at', { ascending: false })
 
-    // 사용자별 필터링
-    if (userId) {
-      query = query.eq('user_id', userId)
+    // 필터 적용
+    if (status && status !== 'all') {
+      query = query.eq('status', status)
+    }
+    if (trip_type && trip_type !== 'all') {
+      query = query.eq('trip_type', trip_type)
+    }
+    if (project_id && project_id !== 'all') {
+      query = query.eq('project_id', project_id)
     }
 
-    // 상태별 필터링 (report_status 필드 사용)
-    if (status) {
-      query = query.eq('report_status', status)
+    // 관리자가 아닌 경우 자신의 출장만 조회
+    if (user.user_metadata?.['level'] !== 'admin') {
+      query = query.eq('user_id', user.id)
     }
 
-    // 날짜 범위 필터링
-    if (startDate) {
-      query = query.gte('start_date', startDate)
-    }
-    if (endDate) {
-      query = query.lte('end_date', endDate)
-    }
-
-    const { data: trips, error } = await query
-
-    console.log('데이터베이스 쿼리 결과:', { trips, error })
-    console.log('쿼리 조건:', { userId, status, startDate, endDate })
+    const { data, error } = await query
 
     if (error) {
-      console.warn('외근/출장 조회 오류:', error)
-      return NextResponse.json({ trips: [] })
+      console.error('Error fetching business trips:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // trip_type 필드 추가 (title에 '출장'이 포함되어 있으면 'business', 아니면 'external')
-    const tripsWithType = (trips || []).map((trip: any) => ({
-      ...trip,
-      trip_type: trip.title?.includes('출장') ? 'business' : 'external'
-    }))
-    
-    return NextResponse.json({ trips: tripsWithType })
+    return NextResponse.json({ trips: data })
   } catch (error) {
-    console.error('외근/출장 조회 오류:', error)
-    return NextResponse.json(
-      { error: '외근/출장 정보를 가져오는데 실패했습니다.' },
-      { status: 500 }
-    )
+    console.error('Unexpected error in GET /api/business-trips:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
+// POST: 출장/외근 신청
 export async function POST(request: NextRequest) {
   try {
-    const { 
-      userId, 
-      userName, 
-      title, 
-      purpose, 
-      location, 
-      startDate, 
-      endDate, 
-      startTime, 
-      endTime 
-    } = await request.json()
+    const supabase = createApiClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // 외근/출장 등록
-    const tripType = title?.includes('출장') ? 'business' : 'external'
-    
-    console.log('출장/외근 등록 요청 데이터:', {
-      userId, userName, title, purpose, location, startDate, endDate, startTime, endTime, tripType
-    })
-
-    const { data, error } = await supabaseServer
-      .from('business_trips')
-      .insert({
-        user_id: userId,
-        user_name: userName,
-        title,
-        purpose,
-        location,
-        start_date: startDate,
-        end_date: endDate,
-        start_time: startTime,
-        end_time: endTime,
-        trip_type: tripType,
-        status: 'scheduled',
-        report_status: 'pending',
-        created_at: new Date().toISOString()
-      })
-      .select()
-
-    console.log('데이터베이스 삽입 결과:', { data, error })
-
-    if (error) {
-      console.warn('외근/출장 등록 오류, localStorage에 저장:', error)
-      
-      // Mock 데이터 생성
-      const mockTrip = {
-        id: Date.now().toString(),
-        user_id: userId,
-        user_name: userName,
-        title,
-        purpose,
-        location,
-        start_date: startDate,
-        end_date: endDate,
-        start_time: startTime,
-        end_time: endTime,
-        trip_type: tripType,
-        status: 'scheduled',
-        report_status: 'pending',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-      
-      // localStorage에 저장하도록 클라이언트에 지시
-      return NextResponse.json({
-        success: true,
-        message: '외근/출장이 성공적으로 등록되었습니다. (localStorage 저장)',
-        trip: mockTrip,
-        useLocalStorage: true
-      })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '외근/출장이 성공적으로 등록되었습니다.',
-      trip: data[0]
-    })
+    const body = await request.json()
+    const {
+      trip_type,
+      sub_type,
+      title,
+      description,
+      start_date,
+      end_date,
+      start_time,
+      end_time,
+      location,
+      purpose,
+      project_id,
+      companions
+    } = body
+
+    // 출장/외근 생성
+    const { data: trip, error: tripError } = await supabase
+      .from('business_trips')
+      .insert({
+        user_id: user.id,
+        project_id: project_id || null,
+        trip_type,
+        sub_type,
+        title,
+        description,
+        start_date,
+        end_date,
+        start_time: start_time || null,
+        end_time: end_time || null,
+        location,
+        purpose,
+        status: 'pending'
+      })
+      .select()
+      .single()
+
+    if (tripError) {
+      console.error('Error creating business trip:', tripError)
+      return NextResponse.json({ error: tripError.message }, { status: 500 })
+    }
+
+    // 동행자 추가
+    if (companions && companions.length > 0) {
+      const companionData = companions.map((companionId: string) => ({
+        trip_id: trip.id,
+        user_id: companionId
+      }))
+
+      const { error: companionError } = await supabase
+        .from('trip_companions')
+        .insert(companionData)
+
+      if (companionError) {
+        console.error('Error adding companions:', companionError)
+        // 출장은 생성되었으므로 에러를 로그만 남기고 계속 진행
+      }
+    }
+
+    return NextResponse.json({ trip }, { status: 201 })
   } catch (error) {
-    console.error('외근/출장 등록 오류:', error)
-    return NextResponse.json(
-      { error: '외근/출장 등록에 실패했습니다.' },
-      { status: 500 }
-    )
+    console.error('Unexpected error in POST /api/business-trips:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 
+// PUT: 출장/외근 수정
 export async function PUT(request: NextRequest) {
   try {
-    const { id, status, reportStatus } = await request.json()
+    const supabase = createApiClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const updateData: any = {
-      updated_at: new Date().toISOString()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (status) updateData.status = status
-    if (reportStatus) updateData.report_status = reportStatus
+    const body = await request.json()
+    const { id, ...updateData } = body
 
-    const { data, error } = await supabaseServer
+    // 권한 확인 (본인의 출장이거나 관리자)
+    const { data: existingTrip, error: fetchError } = await supabase
       .from('business_trips')
-      .update(updateData)
+      .select('user_id, status')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
+    }
+
+    if (existingTrip.user_id !== user.id && user.user_metadata?.['level'] !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // 승인된 출장은 수정 불가
+    if (existingTrip.status === 'approved') {
+      return NextResponse.json({ error: 'Cannot modify approved trip' }, { status: 400 })
+    }
+
+    const { data: trip, error: updateError } = await supabase
+      .from('business_trips')
+      .update({
+        ...updateData,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', id)
       .select()
+      .single()
 
-    if (error) {
-      console.error('외근/출장 업데이트 오류:', error)
-      return NextResponse.json(
-        { error: '외근/출장 정보 업데이트에 실패했습니다.' },
-        { status: 500 }
-      )
+    if (updateError) {
+      console.error('Error updating business trip:', updateError)
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      message: '외근/출장 정보가 업데이트되었습니다.',
-      trip: data[0]
-    })
+    return NextResponse.json({ trip })
   } catch (error) {
-    console.error('외근/출장 업데이트 오류:', error)
-    return NextResponse.json(
-      { error: '외근/출장 정보 업데이트에 실패했습니다.' },
-      { status: 500 }
-    )
+    console.error('Unexpected error in PUT /api/business-trips:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
+
+// DELETE: 출장/외근 삭제
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createApiClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Trip ID is required' }, { status: 400 })
+    }
+
+    // 권한 확인
+    const { data: existingTrip, error: fetchError } = await supabase
+      .from('business_trips')
+      .select('user_id, status')
+      .eq('id', id)
+      .single()
+
+    if (fetchError) {
+      return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
+    }
+
+    if (existingTrip.user_id !== user.id && user.user_metadata?.['level'] !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // 승인된 출장은 삭제 불가
+    if (existingTrip.status === 'approved') {
+      return NextResponse.json({ error: 'Cannot delete approved trip' }, { status: 400 })
+    }
+
+    const { error: deleteError } = await supabase
+      .from('business_trips')
+      .delete()
+      .eq('id', id)
+
+    if (deleteError) {
+      console.error('Error deleting business trip:', deleteError)
+      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Unexpected error in DELETE /api/business-trips:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
