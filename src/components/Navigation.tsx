@@ -1,6 +1,6 @@
 'use client'
 
-import { Building2, Package, Wrench, Calendar, FileText, Users, LogOut, BarChart3, Plus, Minus } from 'lucide-react'
+import { Building2, Package, Wrench, Calendar, FileText, Users, LogOut, BarChart3, Plus, Minus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useUser } from '@/hooks/useUser'
@@ -119,6 +119,14 @@ export function Navigation() {
       href: '/schedule',
       icon: Calendar,
       description: '업무 일정 관리',
+      requiredLevel: '3', // Level3 이상
+      show: isLevel3 || isLevel4 || isLevel5 || isAdmin
+    },
+    {
+      name: 'Nara 모니터링',
+      href: '/nara-monitoring',
+      icon: Search,
+      description: '입찰공고 모니터링',
       requiredLevel: '3', // Level3 이상
       show: isLevel3 || isLevel4 || isLevel5 || isAdmin
     },
