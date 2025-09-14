@@ -6,9 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { EventInput } from '@fullcalendar/core'
-import '@fullcalendar/core/main.css'
-import '@fullcalendar/daygrid/main.css'
-import '@fullcalendar/timegrid/main.css'
+// CSS는 globals.css에서 import
 
 interface FullCalendarComponentProps {
   events?: EventInput[]

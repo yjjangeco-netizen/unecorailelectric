@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* FullCalendar CSS */
+@import '@fullcalendar/core/index.css';
+@import '@fullcalendar/daygrid/index.css';
+@import '@fullcalendar/timegrid/index.css';
+
 :root {
   --background: #0B0E14;
   --foreground: #E6EAF2;

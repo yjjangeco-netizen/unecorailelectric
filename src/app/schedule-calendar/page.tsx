@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { CalendarDays, List, Plus } from 'lucide-react'
 import CommonHeader from '@/components/CommonHeader'
 import FullCalendarComponent from '@/components/FullCalendarComponent'
+import CalendarEventModal from '@/components/CalendarEventModal'
 import type { EventInput } from '@fullcalendar/core'
 
 // 이벤트 타입 정의
@@ -52,18 +53,23 @@ export default function ScheduleCalendarPage() {
   const [loadingEvents, setLoadingEvents] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
+  const [showEventModal, setShowEventModal] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [selectedDate, setSelectedDate] = useState<string>('')
+  const [users, setUsers] = useState<any[]>([])
 
   // 이벤트 로드
   useEffect(() => {
     if (isAuthenticated) {
       loadEvents()
+      loadUsers()
     }
   }, [isAuthenticated])
 
   const loadEvents = async () => {
     try {
       setLoadingEvents(true)
-      const response = await fetch('/api/schedule')
+      const response = await fetch('/api/calendar-events')
       if (!response.ok) {
         throw new Error('일정을 불러오는데 실패했습니다.')
       }
@@ -73,6 +79,18 @@ export default function ScheduleCalendarPage() {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
     } finally {
       setLoadingEvents(false)
+    }
+  }
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (err) {
+      console.error('사용자 목록 로드 실패:', err)
     }
   }
 
@@ -122,20 +140,75 @@ export default function ScheduleCalendarPage() {
 
   // 날짜 선택 핸들러
   const handleDateSelect = (selectInfo: any) => {
-    console.log('Selected date:', selectInfo)
-    // 여기에 새 이벤트 생성 모달 열기 로직 추가
+    setSelectedDate(selectInfo.startStr.split('T')[0])
+    setSelectedEvent(null)
+    setShowEventModal(true)
   }
 
   // 이벤트 클릭 핸들러
   const handleEventClick = (clickInfo: any) => {
-    console.log('Event clicked:', clickInfo)
-    // 여기에 이벤트 상세보기/편집 모달 열기 로직 추가
+    const event = events.find(e => e.id === clickInfo.event.id)
+    if (event) {
+      setSelectedEvent(event)
+      setShowEventModal(true)
+    }
   }
 
   // 이벤트 드래그 핸들러
-  const handleEventDrop = (dropInfo: any) => {
-    console.log('Event dropped:', dropInfo)
-    // 여기에 이벤트 날짜 변경 로직 추가
+  const handleEventDrop = async (dropInfo: any) => {
+    try {
+      const eventId = dropInfo.event.id
+      const newStartDate = dropInfo.event.start.toISOString().split('T')[0]
+      const newEndDate = dropInfo.event.end ? dropInfo.event.end.toISOString().split('T')[0] : newStartDate
+      
+      const response = await fetch('/api/calendar-events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: eventId,
+          start_date: newStartDate,
+          end_date: newEndDate
+        })
+      })
+      
+      if (response.ok) {
+        loadEvents() // 이벤트 목록 새로고침
+      }
+    } catch (err) {
+      console.error('이벤트 이동 실패:', err)
+    }
+  }
+
+  // 이벤트 저장 핸들러
+  const handleEventSave = async (eventData: any) => {
+    try {
+      const url = selectedEvent ? '/api/calendar-events' : '/api/calendar-events'
+      const method = selectedEvent ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedEvent ? { ...eventData, id: selectedEvent.id } : eventData)
+      })
+      
+      if (response.ok) {
+        setShowEventModal(false)
+        setSelectedEvent(null)
+        loadEvents() // 이벤트 목록 새로고침
+      } else {
+        const error = await response.json()
+        setError(error.error || '이벤트 저장에 실패했습니다.')
+      }
+    } catch (err) {
+      setError('이벤트 저장 중 오류가 발생했습니다.')
+    }
+  }
+
+  // 새 이벤트 추가 핸들러
+  const handleAddEvent = () => {
+    setSelectedEvent(null)
+    setSelectedDate('')
+    setShowEventModal(true)
   }
 
   if (loading) {
@@ -182,7 +255,7 @@ export default function ScheduleCalendarPage() {
               <List className="w-4 h-4" />
               목록
             </Button>
-            <Button className="flex items-center gap-2">
+            <Button onClick={handleAddEvent} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               일정 추가
             </Button>
@@ -266,6 +339,20 @@ export default function ScheduleCalendarPage() {
             )}
           </div>
         )}
+
+        {/* 이벤트 모달 */}
+        <CalendarEventModal
+          isOpen={showEventModal}
+          onClose={() => {
+            setShowEventModal(false)
+            setSelectedEvent(null)
+            setSelectedDate('')
+          }}
+          onSave={handleEventSave}
+          selectedDate={selectedDate}
+          event={selectedEvent}
+          users={users}
+        />
       </div>
     </div>
   )

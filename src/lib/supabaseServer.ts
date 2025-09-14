@@ -35,6 +35,15 @@ export const createServerSupabaseClient = () => {
   )
 }
 
+// API 라우트용 createClient 함수
+export const createApiClient = () => {
+  validateSupabaseEnv()
+  return createClient(
+    process.env['NEXT_PUBLIC_SUPABASE_URL']!,
+    process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
+  )
+}
+
 // 기존 코드와의 호환성을 위한 기본 클라이언트
 export const supabaseServer = (() => {
   try {
