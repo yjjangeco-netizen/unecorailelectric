@@ -147,14 +147,6 @@ export function Navigation() {
       requiredLevel: '3', // Level3 이상
       show: isLevel3 || isLevel4 || isLevel5 || isAdmin
     },
-    {
-      name: '사용자 관리 및 설정',
-      href: '/user-management-settings',
-      icon: Users,
-      description: '사용자 및 프로젝트 관리',
-      requiredLevel: '5', // Level5 이상
-      show: isLevel5 || isAdmin
-    }
   ]
 
 
