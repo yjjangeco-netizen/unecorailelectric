@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 // 작업유형/세부유형 검증 함수
-async function validateWorkTypeAndSubType(body: any): Promise<string | null> {
+async function validateWorkTypeAndSubType(body: any, supabase: any): Promise<string | null> {
   try {
     // 프로젝트번호 확인
     let projectNumber = ''
@@ -80,6 +75,12 @@ export async function DELETE(
       )
     }
 
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     // 데이터베이스에서 업무일지 삭제
     const { error } = await supabase
       .from('work_diary')
@@ -124,8 +125,14 @@ export async function PUT(
       )
     }
 
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     // 작업유형/세부유형 검증
-    const validationError = await validateWorkTypeAndSubType(body)
+    const validationError = await validateWorkTypeAndSubType(body, supabase)
     if (validationError) {
       return NextResponse.json(
         { error: validationError },
@@ -182,6 +189,12 @@ export async function GET(
         { status: 400 }
       )
     }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
 
     // 데이터베이스에서 업무일지 조회
     const { data, error } = await supabase
