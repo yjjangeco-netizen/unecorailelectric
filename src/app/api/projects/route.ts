@@ -22,8 +22,8 @@ export async function GET(_request: NextRequest) {
       const mockProjects = [
         {
           id: 1,
-          projectName: '전기설비 유지보수',
-          projectNumber: 'EL-2024-001',
+          project_name: '전기설비 유지보수',
+          project_number: 'EL-2024-001',
           description: 'A동 전기설비 정기점검',
           assemblyDate: '2024-01-10',
           factoryTestDate: '2024-01-12',
@@ -33,8 +33,8 @@ export async function GET(_request: NextRequest) {
         },
         {
           id: 2,
-          projectName: '신규 설치',
-          projectNumber: 'EL-2024-002',
+          project_name: '신규 설치',
+          project_number: 'EL-2024-002',
           description: 'B동 신규 전기설비 설치',
           assemblyDate: '2024-01-08',
           factoryTestDate: '2024-01-10',
@@ -44,8 +44,8 @@ export async function GET(_request: NextRequest) {
         },
         {
           id: 3,
-          projectName: '고장 수리',
-          projectNumber: 'EL-2024-003',
+          project_name: '고장 수리',
+          project_number: 'EL-2024-003',
           description: 'C동 조명 고장 수리',
           assemblyDate: '2024-01-05',
           factoryTestDate: '2024-01-07',
@@ -62,8 +62,8 @@ export async function GET(_request: NextRequest) {
 
     const projects = data?.map(item => ({
       id: item.id,
-      projectName: item.project_name || '',
-      projectNumber: item.project_number || '',
+      project_name: item.project_name || '',
+      project_number: item.project_number || '',
       description: item.description || '',
       assemblyDate: item.assembly_date || '',
       factoryTestDate: item.factory_test_date || '',
