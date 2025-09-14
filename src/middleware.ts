@@ -7,6 +7,7 @@ export function middleware(_request: NextRequest) {
   // 기본 보안 헤더만 설정
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
   
   return response
 }
