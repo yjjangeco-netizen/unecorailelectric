@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
       .from('users')
       .select('*')
       .eq('username', username)
-      .eq('password', password)
       .single()
 
     console.log('DB 조회 결과:', { data: data ? '사용자 발견' : '사용자 없음', error })
@@ -68,17 +67,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // 비밀번호 확인 (실제로는 해시 비교해야 함)
+    if (data.password_hash !== password) {
+      console.log('비밀번호 불일치')
+      return NextResponse.json(
+        { error: '사용자명 또는 비밀번호가 올바르지 않습니다' },
+        { status: 401 }
+      )
+    }
+
     console.log('로그인 성공:', data.username)
 
     // 비밀번호 제외하고 사용자 정보 반환
-    const { password: _, ...userWithoutPassword } = data as any
+    const { password_hash: _, ...userWithoutPassword } = data as any
     
     return NextResponse.json({
       user: {
         id: userWithoutPassword.id,
         username: userWithoutPassword.username,
-        name: userWithoutPassword.name,
-        department: userWithoutPassword.depart || userWithoutPassword.department || '',
+        name: `${userWithoutPassword.first_name} ${userWithoutPassword.last_name}`,
+        department: userWithoutPassword.department || '',
         position: userWithoutPassword.position || '',
         level: userWithoutPassword.level || '1',
         is_active: userWithoutPassword.is_active !== undefined ? userWithoutPassword.is_active : true,
