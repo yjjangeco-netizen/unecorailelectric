@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase 클라이언트 생성
-const supabase = createClient(
-  process.env['NEXT_PUBLIC_SUPABASE_URL']!,
-  process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
-)
-
 export async function POST(request: NextRequest) {
   try {
     // 환경 변수 확인
@@ -17,6 +11,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
 
     const body = await request.json()
     const { username, password, name, position, department, email, level } = body
