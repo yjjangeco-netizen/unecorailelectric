@@ -53,6 +53,8 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(mockProjects, { status: 200 })
     }
     
+    console.log('Supabase 환경 변수 확인됨, 데이터베이스에서 프로젝트 조회 시작...')
+    
     const { data, error } = await supabase
       .from('projects')
       .select('*')
