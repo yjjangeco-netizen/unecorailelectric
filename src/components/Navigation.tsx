@@ -1,16 +1,33 @@
 'use client'
 
-import { Building2, Package, Wrench, Calendar, FileText, Users, LogOut, BarChart3, Plus, Minus, Search } from 'lucide-react'
+import { Building2, Package, Wrench, Calendar, FileText, Users, LogOut, BarChart3, Plus, Minus, Search, Settings, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
 
 export function Navigation() {
   const { user, logout, hasPermission, canAccessFeature } = useUser()
   const router = useRouter()
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   if (!user) return null
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
   
   // 사용자 레벨 확인
   const userLevel = user.level || '1'
@@ -191,7 +208,7 @@ export function Navigation() {
 
           </div>
 
-          {/* 사용자 정보 */}
+          {/* 사용자 정보 및 설정 */}
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{user.name}</p>
@@ -199,15 +216,59 @@ export function Navigation() {
                 {user.department || '전기팀'}·{user.position || '사원'} (Level {userLevel})
               </p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="flex items-center space-x-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>로그아웃</span>
-            </Button>
+            
+            {/* 설정 드롭다운 */}
+            <div className="relative" ref={dropdownRef}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="flex items-center space-x-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span>설정</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${isSettingsOpen ? 'rotate-180' : ''}`} />
+              </Button>
+              
+              {/* 드롭다운 메뉴 */}
+              {isSettingsOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        router.push('/user-management')
+                        setIsSettingsOpen(false)
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Users className="h-4 w-4 mr-3" />
+                      회원 관리
+                    </button>
+                    <button
+                      onClick={() => {
+                        router.push('/project-management')
+                        setIsSettingsOpen(false)
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <FileText className="h-4 w-4 mr-3" />
+                      프로젝트 관리
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsSettingsOpen(false)
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4 mr-3" />
+                      로그아웃
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
