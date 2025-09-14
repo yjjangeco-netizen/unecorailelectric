@@ -4,7 +4,7 @@ import { supabaseServer } from '@/lib/supabaseServer'
 export async function GET(request: NextRequest) {
   try {
     const supabase = supabaseServer
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const type = searchParams.get('type') || 'overview'
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
