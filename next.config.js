@@ -23,6 +23,10 @@ const nextConfig = {
   },
   // 출력 설정 - 모든 라우트를 동적으로 처리
   output: 'standalone',
+  // 강제 동적 렌더링
+  trailingSlash: false,
+  // 빌드 시 정적 생성 비활성화
+  generateStaticParams: false,
 }
 
 module.exports = nextConfig
