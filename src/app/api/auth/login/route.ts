@@ -4,10 +4,18 @@ import { createClient } from '@supabase/supabase-js'
 export async function POST(request: NextRequest) {
   try {
     // 환경 변수 확인
+    console.log('환경 변수 확인:', {
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '미설정',
+      supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정'
+    })
+
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Supabase 환경 변수가 설정되지 않음')
       return NextResponse.json(
-        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { 
+          error: '데이터베이스 연결이 설정되지 않았습니다',
+          details: 'Vercel 환경 변수를 확인해주세요'
+        },
         { status: 500 }
       )
     }
@@ -30,6 +38,8 @@ export async function POST(request: NextRequest) {
     console.log('로그인 시도:', username)
 
     // DB에서 사용자 조회
+    console.log('사용자 조회 시작:', username)
+    
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -37,10 +47,15 @@ export async function POST(request: NextRequest) {
       .eq('password', password)
       .single()
 
+    console.log('DB 조회 결과:', { data: data ? '사용자 발견' : '사용자 없음', error })
+
     if (error) {
       console.log('로그인 실패:', error)
       return NextResponse.json(
-        { error: '사용자명 또는 비밀번호가 올바르지 않습니다' },
+        { 
+          error: '사용자명 또는 비밀번호가 올바르지 않습니다',
+          details: error.message
+        },
         { status: 401 }
       )
     }

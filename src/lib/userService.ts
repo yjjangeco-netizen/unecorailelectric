@@ -7,6 +7,26 @@ export class UserService {
     try {
       console.log('로그인 시도:', username);
       
+      // 먼저 테스트 로그인 시도
+      try {
+        const testResponse = await fetch('/api/auth/test-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (testResponse.ok) {
+          const { user } = await testResponse.json();
+          console.log('테스트 로그인 성공:', user.username);
+          return user;
+        }
+      } catch (testError) {
+        console.log('테스트 로그인 실패, 일반 로그인 시도:', testError);
+      }
+      
+      // 테스트 로그인 실패 시 일반 로그인 시도
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
