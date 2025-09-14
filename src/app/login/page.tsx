@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Building2, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
@@ -16,9 +17,28 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [saveId, setSaveId] = useState(false)
+  const [savePassword, setSavePassword] = useState(false)
   
   const { login, user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
+
+  // 저장된 ID/비밀번호 불러오기
+  useEffect(() => {
+    const savedId = localStorage.getItem('savedUsername')
+    const savedPassword = localStorage.getItem('savedPassword')
+    const saveIdChecked = localStorage.getItem('saveId') === 'true'
+    const savePasswordChecked = localStorage.getItem('savePassword') === 'true'
+    
+    if (savedId && saveIdChecked) {
+      setUsername(savedId)
+      setSaveId(true)
+    }
+    if (savedPassword && savePasswordChecked) {
+      setPassword(savedPassword)
+      setSavePassword(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,6 +52,23 @@ export default function LoginPage() {
       console.log('현재 사용자 상태:', { user, isAuthenticated, authLoading })
       
       if (success) {
+        // ID/비밀번호 저장 처리
+        if (saveId) {
+          localStorage.setItem('savedUsername', username)
+          localStorage.setItem('saveId', 'true')
+        } else {
+          localStorage.removeItem('savedUsername')
+          localStorage.removeItem('saveId')
+        }
+        
+        if (savePassword) {
+          localStorage.setItem('savedPassword', password)
+          localStorage.setItem('savePassword', 'true')
+        } else {
+          localStorage.removeItem('savedPassword')
+          localStorage.removeItem('savePassword')
+        }
+        
         console.log('대시보드로 이동 시도')
         // 여러 방법으로 이동 시도
         console.log('즉시 대시보드로 이동')
@@ -116,6 +153,30 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* 저장 옵션 */}
+              <div className="flex items-center justify-between space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="saveId"
+                    checked={saveId}
+                    onCheckedChange={(checked) => setSaveId(checked as boolean)}
+                  />
+                  <Label htmlFor="saveId" className="text-sm text-gray-700 cursor-pointer">
+                    ID 저장
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="savePassword"
+                    checked={savePassword}
+                    onCheckedChange={(checked) => setSavePassword(checked as boolean)}
+                  />
+                  <Label htmlFor="savePassword" className="text-sm text-gray-700 cursor-pointer">
+                    비밀번호 저장
+                  </Label>
+                </div>
+              </div>
+
               {/* 에러 메시지 */}
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
@@ -156,14 +217,6 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* 테스트 계정 안내 */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">테스트 계정</h3>
-              <div className="text-xs text-blue-700 space-y-1">
-                <p><strong>사용자명:</strong> admin</p>
-                <p><strong>비밀번호:</strong> admin123</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
