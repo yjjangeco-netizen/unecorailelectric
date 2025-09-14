@@ -53,7 +53,7 @@ export default function StockEditModal({
     if (isOpen && item) {
       const today = new Date()
       const formattedDate = today.toISOString().split('T')[0]
-      setEditDate(formattedDate)
+      setEditDate(formattedDate || '')
       setProduct((item.product || item.name || '').toString())
       setSpec((item.spec || item.specification || '').toString())
       setMaker((item.maker || '').toString())

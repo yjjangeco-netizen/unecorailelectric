@@ -180,7 +180,7 @@ export default function StockAdjustmentModal({
                       <div className="space-y-2">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">품명</label>
-                          <span className="text-sm font-medium text-gray-900">{item.product}</span>
+                          <span className="text-sm font-medium text-gray-900">{item.name}</span>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">위치</label>
@@ -188,7 +188,7 @@ export default function StockAdjustmentModal({
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">규격</label>
-                          <span className="text-sm text-gray-900">{item.spec || '-'}</span>
+                          <span className="text-sm text-gray-900">{item.specification || '-'}</span>
                         </div>
                       </div>
                     </div>
@@ -298,8 +298,8 @@ export default function StockAdjustmentModal({
                   <label className="block text-sm font-medium text-gray-700 mb-1">품명</label>
                   <input
                     type="text"
-                    value={selectedItem.product}
-                    onChange={(e) => setSelectedItem(prev => prev ? { ...prev, product: e.target.value } : null)}
+                    value={selectedItem.name}
+                    onChange={(e) => setSelectedItem(prev => prev ? { ...prev, name: e.target.value } : null)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                 </div>

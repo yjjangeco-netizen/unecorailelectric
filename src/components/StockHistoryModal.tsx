@@ -127,7 +127,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
 
       // 입출고 이력을 하나의 배열로 합치고 날짜순 정렬
       const allHistory = [
-        ...(stockInData?.map(inItem => ({
+        ...((stockInData as any)?.map((inItem: any) => ({
           id: `in-${inItem.id}`,
           itemName: inItem.product,
           spec: inItem.spec,
@@ -142,7 +142,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
           remaining: 0, // TODO: 누적 계산 로직 추가
           itemCondition: inItem.item_condition
         })) ?? []),
-        ...(stockOutData?.map(outItem => ({
+        ...((stockOutData as any)?.map((outItem: any) => ({
           id: `out-${outItem.id}`,
           itemName: outItem.product,
           spec: outItem.spec,
@@ -160,8 +160,8 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       ].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
 
       // 현재 재고가 있는 항목만 필터링 (입고 > 출고)
-      const stockInTotal = stockInData?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0
-      const stockOutTotal = stockOutData?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0
+      const stockInTotal = (stockInData as any)?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
+      const stockOutTotal = (stockOutData as any)?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
       const hasStock = stockInTotal > stockOutTotal
       
       if (!hasStock) {

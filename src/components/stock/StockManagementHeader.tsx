@@ -13,11 +13,11 @@ interface StockManagementHeaderProps {
 }
 
 export default function StockManagementHeader({
-  currentUser,
-  isAdmin,
-  onShowUserManagement,
-  onLogout,
-  onShowLoginModal
+  currentUser: _currentUser,
+  isAdmin: _isAdmin,
+  onShowUserManagement: _onShowUserManagement,
+  onLogout: _onLogout,
+  onShowLoginModal: _onShowLoginModal
 }: StockManagementHeaderProps) {
   const router = useRouter()
 

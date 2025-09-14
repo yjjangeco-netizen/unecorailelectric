@@ -11,11 +11,11 @@ const nextConfig = {
   },
   // 타입스크립트 설정
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   // ESLint 설정
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
 }
 

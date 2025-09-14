@@ -320,7 +320,12 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
           reason: row?.reason || '',
           ordered_by: row?.ordered_by || '',
           received_by: row?.received_by || '',
-          received_at: new Date(row?.received_date || new Date().toISOString().split('T')[0] || '').toISOString()
+          received_at: new Date(row?.received_date || new Date().toISOString().split('T')[0] || '').toISOString(),
+          created_at: new Date().toISOString(),
+          event_date: new Date().toISOString().split('T')[0] || '',
+          is_rental: false,
+          event_type: 'IN' as const,
+          disposal_status: 'active'
         }
         // 입고 데이터 준비 완료
         

@@ -24,11 +24,6 @@ export default function SimpleStockInModal({ isOpen, onClose, onSave }: SimpleSt
     remark: '',
     status: 'active',
     in_data: 0,
-    out_data: 0,
-    plus_data: 0,
-    minus_data: 0,
-    disposal_qunty: 0,
-    total_qunty: 0,
     unit_price: 0
   })
   const [isSaving, setIsSaving] = useState(false)
@@ -104,11 +99,6 @@ export default function SimpleStockInModal({ isOpen, onClose, onSave }: SimpleSt
       remark: '',
       status: 'active',
       in_data: 0,
-      out_data: 0,
-      plus_data: 0,
-      minus_data: 0,
-      disposal_qunty: 0,
-      total_qunty: 0,
       unit_price: 0
     })
     onClose()

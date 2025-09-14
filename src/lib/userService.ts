@@ -29,25 +29,25 @@ export class UserService {
 
       // User 타입에 맞게 변환 (DB 스키마에 맞게 수정)
       const user: User = {
-        id: data.id,
-        username: data.username,
-        password: data.password,
-        name: data.name,
-        department: data.depart || data.department || '',
-        position: data.position || '',
-        level: data.level || '1', // 기본값 설정
-        is_active: data.is_active !== undefined ? data.is_active : true,
-        stock_view: data.stock_view || false,
-        stock_in: data.stock_in || false,
-        stock_out: data.stock_out || false,
-        stock_disposal: data.stock_disposal || false,
-        work_tools: data.work_tools || false,
-        daily_log: data.daily_log || false,
-        work_manual: data.work_manual || false,
-        sop: data.sop || false,
-        user_management: data.user_management || false,
-        created_at: data.created_at,
-        updated_at: data.updated_at
+        id: (data as any).id,
+        username: (data as any).username,
+        password: (data as any).password,
+        name: (data as any).name,
+        department: (data as any).depart || (data as any).department || '',
+        position: (data as any).position || '',
+        level: (data as any).level || '1', // 기본값 설정
+        is_active: (data as any).is_active !== undefined ? (data as any).is_active : true,
+        stock_view: (data as any).stock_view || false,
+        stock_in: (data as any).stock_in || false,
+        stock_out: (data as any).stock_out || false,
+        stock_disposal: (data as any).stock_disposal || false,
+        work_tools: (data as any).work_tools || false,
+        daily_log: (data as any).daily_log || false,
+        work_manual: (data as any).work_manual || false,
+        sop: (data as any).sop || false,
+        user_management: (data as any).user_management || false,
+        created_at: (data as any).created_at,
+        updated_at: (data as any).updated_at
       };
 
       return user;
@@ -73,25 +73,25 @@ export class UserService {
       }
 
       const user: User = {
-        id: data.id,
-        username: data.username,
-        password: data.password,
-        name: data.name,
-        department: data.depart || data.department || '',
-        position: data.position || '',
-        level: data.level, // 원본 level 값 보존
-        is_active: data.is_active,
-        stock_view: data.stock_view || false,
-        stock_in: data.stock_in || false,
-        stock_out: data.stock_out || false,
-        stock_disposal: data.stock_disposal || false,
-        work_tools: data.work_tools || false,
-        daily_log: data.daily_log || false,
-        work_manual: data.work_manual || false,
-        sop: data.sop || false,
-        user_management: data.user_management || false,
-        created_at: data.created_at,
-        updated_at: data.updated_at
+        id: (data as any).id,
+        username: (data as any).username,
+        password: (data as any).password,
+        name: (data as any).name,
+        department: (data as any).depart || (data as any).department || '',
+        position: (data as any).position || '',
+        level: (data as any).level, // 원본 level 값 보존
+        is_active: (data as any).is_active,
+        stock_view: (data as any).stock_view || false,
+        stock_in: (data as any).stock_in || false,
+        stock_out: (data as any).stock_out || false,
+        stock_disposal: (data as any).stock_disposal || false,
+        work_tools: (data as any).work_tools || false,
+        daily_log: (data as any).daily_log || false,
+        work_manual: (data as any).work_manual || false,
+        sop: (data as any).sop || false,
+        user_management: (data as any).user_management || false,
+        created_at: (data as any).created_at,
+        updated_at: (data as any).updated_at
       };
 
       return user;

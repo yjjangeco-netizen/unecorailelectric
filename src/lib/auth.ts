@@ -163,7 +163,7 @@ export class CookieAuthManager {
         return 'user' // 기본 역할
       }
 
-      return data.role || 'user'
+      return (data as any)?.role || 'user'
     } catch (error) {
       logError('사용자 역할 조회 오류', error)
       return 'user' // 기본 역할

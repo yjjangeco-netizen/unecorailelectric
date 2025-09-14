@@ -15,7 +15,7 @@ export default function UserManagementPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState<UserType | null>(null)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [currentUser, setCurrentUser] = useState<{ username: string; name: string; role: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; level: string } | null>(null)
 
   // 사용자 목록 로드
   useEffect(() => {
@@ -27,9 +27,9 @@ export default function UserManagementPage() {
         const userData = JSON.parse(savedUser)
         console.log('사용자 관리 페이지 사용자 정보:', userData)
         setCurrentUser({
-          username: userData.username,
+          id: userData.id || userData.username,
           name: userData.name,
-          role: userData.level || '1'
+          level: userData.level || '1'
         })
       } catch (error) {
         console.error('사용자 정보 파싱 오류:', error)
@@ -156,7 +156,7 @@ export default function UserManagementPage() {
       {/* 공통 헤더 추가 */}
       <CommonHeader
         currentUser={currentUser}
-        isAdmin={currentUser?.role === 'admin'}
+        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="회원관리"
         showBackButton={true}
         backUrl="/dashboard"

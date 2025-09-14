@@ -36,7 +36,7 @@ export class DatabaseAuthManager {
       this.currentUserId = userId
       
       // 데이터베이스에 세션 사용자 ID 설정
-      const { error } = await supabase.rpc('set_session_user', {
+      const { error } = await (supabase as any).rpc('set_session_user', {
         session_id: this.sessionId,
         user_id: userId
       })
@@ -62,7 +62,7 @@ export class DatabaseAuthManager {
     }
 
     try {
-      const { data, error } = await supabase.rpc('get_session_user', {
+      const { data, error } = await (supabase as any).rpc('get_session_user', {
         session_id: this.sessionId
       })
 
@@ -97,7 +97,7 @@ export class DatabaseAuthManager {
     }
 
     try {
-      const { data, error } = await supabase.rpc('check_user_permission', {
+      const { data, error } = await (supabase as any).rpc('check_user_permission', {
         user_id: this.currentUserId,
         required_permission: requiredPermission
       })
@@ -125,7 +125,7 @@ export class DatabaseAuthManager {
     }
 
     try {
-      const { data, error } = await supabase.rpc('check_department_access', {
+      const { data, error } = await (supabase as any).rpc('check_department_access', {
         user_id: this.currentUserId,
         required_department: requiredDepartment
       })
@@ -151,7 +151,7 @@ export class DatabaseAuthManager {
     }
 
     try {
-      const { data, error } = await supabase.rpc('check_self_access', {
+      const { data, error } = await (supabase as any).rpc('check_self_access', {
         user_id: this.currentUserId,
         target_user_id: targetUserId
       })

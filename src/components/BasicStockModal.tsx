@@ -134,8 +134,8 @@ export default function BasicStockModal({
               <input
                 type="text"
                 placeholder="규격"
-                value={newItem.spec}
-                onChange={(e) => setNewItem(prev => ({ ...prev, spec: e.target.value }))}
+                value={newItem.specification || ''}
+                onChange={(e) => setNewItem(prev => ({ ...prev, specification: e.target.value }))}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm"
               />
               <input
@@ -206,7 +206,7 @@ export default function BasicStockModal({
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">규격</label>
-                          <span className="text-sm text-gray-900">{item.spec || '-'}</span>
+                          <span className="text-sm text-gray-900">{item.specification || '-'}</span>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">재질</label>

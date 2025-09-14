@@ -78,8 +78,8 @@ export default function WorkDiaryStatsPage() {
       const userLevel = user.level || '1'
       console.log('사용자 레벨:', userLevel, '타입:', typeof userLevel)
       
-      // level이 숫자인 경우 문자열로 변환
-      const levelStr = typeof userLevel === 'number' ? userLevel.toString() : userLevel
+      // level을 문자열로 변환
+      const levelStr = String(userLevel)
       
       if (levelStr !== '5' && levelStr !== 'admin') {
         console.log('권한 없음 - 대시보드로 리다이렉트')
@@ -92,7 +92,7 @@ export default function WorkDiaryStatsPage() {
   useEffect(() => {
     if (isAuthenticated && user) {
       const userLevel = user.level || '1'
-      const levelStr = typeof userLevel === 'number' ? userLevel.toString() : userLevel
+      const levelStr = String(userLevel)
       
       if (levelStr === '5' || levelStr === 'admin') {
         console.log('권한 있음 - 통계 데이터 로드')
@@ -146,7 +146,7 @@ export default function WorkDiaryStatsPage() {
   // 권한이 없는 경우
   if (user) {
     const userLevel = user.level || '1'
-    const levelStr = typeof userLevel === 'number' ? userLevel.toString() : userLevel
+    const levelStr = String(userLevel)
     
     if (levelStr !== '5' && levelStr !== 'admin') {
       return (
@@ -270,12 +270,12 @@ export default function WorkDiaryStatsPage() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="count"
                   >
-                    {stats.projectCategoryStats.map((entry, index) => (
+                    {stats.projectCategoryStats.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -339,12 +339,12 @@ export default function WorkDiaryStatsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {stats.workTypeStats.map((entry, index) => (
+                  {stats.workTypeStats.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

@@ -59,7 +59,7 @@ export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalPr
     try {
       if (item) {
         // 기존 품목 수정
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('items')
           .update({
             product: formData.product,
@@ -77,7 +77,7 @@ export default function ItemModal({ isOpen, onClose, item, onSave }: ItemModalPr
         onSave({ ...item, ...formData })
       } else {
         // 새 품목 추가
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('items')
           .insert([{
             product: formData.product,

@@ -22,7 +22,7 @@ export default function ClosingModal({ isOpen, onClose, onSave, stockItems }: Cl
     if (isOpen) {
       const today = new Date()
       const formattedDate = today.toISOString().split('T')[0]
-      setClosingDate(formattedDate)
+      setClosingDate(formattedDate || '')
       setError('')
       setShowPreview(false)
     }

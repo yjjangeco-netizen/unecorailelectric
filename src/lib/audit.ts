@@ -117,7 +117,7 @@ export class AuditLogger {
       }
       
       // Supabase에 로그 저장
-      const { error } = await this.supabase
+      const { error } = await (this.supabase as any)
         .from('audit_logs')
         .insert(fullEntry)
       

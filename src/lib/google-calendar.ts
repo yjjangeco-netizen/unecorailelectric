@@ -43,7 +43,16 @@ export const createGoogleCalendarClient = (accessToken: string) => {
 }
 
 // 업무일지를 Google Calendar 이벤트로 변환
-import type { WorkDiaryEntry } from '@/lib/supabase'
+// WorkDiaryEntry 타입 정의
+interface WorkDiaryEntry {
+  id: string
+  user_id: string
+  work_date: string
+  project_id: string
+  work_content: string
+  created_at: string
+  updated_at: string
+}
 
 interface CalendarEvent {
   summary: string
@@ -91,14 +100,14 @@ function isGoogleCalendarClient(client: unknown): client is GoogleCalendarClient
 
 export const convertDiaryToCalendarEvent = (diaryEntry: WorkDiaryEntry): CalendarEvent => {
   return {
-    summary: `업무일지: ${diaryEntry.userName}`,
-    description: diaryEntry.content,
+    summary: `업무일지: ${diaryEntry.user_id}`,
+    description: diaryEntry.work_content,
     start: {
-      date: diaryEntry.date,
+      date: diaryEntry.work_date,
       timeZone: 'Asia/Seoul'
     },
     end: {
-      date: diaryEntry.date,
+      date: diaryEntry.work_date,
       timeZone: 'Asia/Seoul'
     },
     colorId: '1', // 파란색

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 
 import { Package, Plus, Search, Trash2, Save, Download } from 'lucide-react'
-import type { CurrentStock } from '@/lib/supabase'
+import type { CurrentStock } from '@/lib/types'
 import { log } from '@/lib/logger'
 
 interface BulkStockOutRow {
@@ -50,13 +50,13 @@ export default function BulkStockOutModal({
     const newRow: BulkStockOutRow = {
       itemId: item?.id || '',
       itemName: item?.product || '',
-      spec: item?.spec || '',
+      specification: item?.spec || '',
       currentQuantity: item?.current_quantity || 0,
       requestQuantity: 1,
       unitPrice: item?.unit_price || 0,
       totalAmount: item?.unit_price || 0,
       project: '',
-      note: '',
+      notes: '',
       isRental: false,
       returnDate: ''
     }
@@ -241,8 +241,8 @@ export default function BulkStockOutModal({
                     </div>
                     <div className="col-span-2">
                       <Input
-                        value={row.spec}
-                        onChange={(e) => updateRow(index, 'spec', e.target.value)}
+                        value={row.specification}
+                        onChange={(e) => updateRow(index, 'specification', e.target.value)}
                         placeholder="규격"
                         className="text-sm"
                       />

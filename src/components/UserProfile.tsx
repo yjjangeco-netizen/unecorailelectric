@@ -14,7 +14,7 @@ export function UserProfile() {
         <p><strong>부서:</strong> {user.department}</p>
         <p><strong>직책:</strong> {user.position}</p>
         <p><strong>이메일:</strong> {user.email}</p>
-        <p><strong>권한:</strong> {user.permissions.join(', ')}</p>
+        <p><strong>권한:</strong> {user.permissions?.join(', ') || '없음'}</p>
         
         {isAdmin() && (
           <div className="mt-4 p-3 bg-blue-100 text-blue-800 rounded">

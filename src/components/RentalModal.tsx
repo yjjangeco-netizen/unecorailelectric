@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 
 import { supabase } from '@/lib/supabase'
-import type { CurrentStock } from '@/lib/supabase'
+import type { CurrentStock } from '@/lib/types'
 import { Search, Clock, Edit, Check, X } from 'lucide-react'
 
 interface RentalModalProps {
@@ -66,8 +66,18 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   const handleItemSelect = async (item: CurrentStock) => {
     setSelectedItem(item)
     setEditForm({
-              name: item.product || '',
-        spec: item.spec || '',
+      itemId: item.id || '',
+      itemName: item.product || '',
+      spec: item.spec || '',
+      currentQuantity: item.current_quantity || 0,
+      requestQuantity: 1,
+      unitPrice: item.unit_price || 0,
+      totalAmount: item.unit_price || 0,
+      project: '',
+      notes: '',
+      isRental: false,
+      returnDate: '',
+      name: item.product || '',
       maker: item.maker || '',
       purpose: item.purpose || '',
       unit_price: item.unit_price || 0
@@ -166,8 +176,18 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
   const handleCancel = () => {
     if (selectedItem) {
       setEditForm({
-        name: selectedItem.product || '',
+        itemId: selectedItem.id || '',
+        itemName: selectedItem.product || '',
         spec: selectedItem.spec || '',
+        currentQuantity: selectedItem.current_quantity || 0,
+        requestQuantity: 1,
+        unitPrice: selectedItem.unit_price || 0,
+        totalAmount: selectedItem.unit_price || 0,
+        project: '',
+        notes: '',
+        isRental: false,
+        returnDate: '',
+        name: selectedItem.product || '',
         maker: selectedItem.maker || '',
         purpose: selectedItem.purpose || '',
         unit_price: selectedItem.unit_price || 0

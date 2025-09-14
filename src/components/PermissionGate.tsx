@@ -4,7 +4,9 @@ import type { PermissionType } from '../lib/types';
 
 interface PermissionGateProps {
   children: ReactNode;
-  requiredPermission: PermissionType;
+  requiredPermission?: PermissionType;
+  requiredLevel?: number;
+  requiredFeature?: string;
   fallback?: ReactNode;
 }
 

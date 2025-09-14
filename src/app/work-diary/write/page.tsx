@@ -22,7 +22,7 @@ import {
 import ProjectSearchModal from '@/components/ProjectSearchModal'
 
 interface WorkEntry {
-  id?: number
+  id?: number | undefined
   projectId: string
   workContent: string
   workType: string // 신규, 보완, AS, SS, OV (WSMS 프로젝트만)
@@ -82,7 +82,9 @@ export default function WorkDiaryWritePage() {
       ...updated[index], 
       projectId: project.id.toString(),
       workType: '',
-      workSubType: ''
+      workSubType: '',
+      workContent: updated[index]?.workContent || '',
+      customProjectName: updated[index]?.customProjectName || ''
     }
     setWorkEntries(updated)
   }
@@ -363,7 +365,14 @@ export default function WorkDiaryWritePage() {
                             value={entry.customProjectName}
                             onChange={(e) => {
                               const updated = [...workEntries]
-                              updated[index] = { ...updated[index], customProjectName: e.target.value }
+                              updated[index] = { 
+                                ...updated[index], 
+                                customProjectName: e.target.value,
+                                projectId: updated[index]?.projectId || '',
+                                workType: updated[index]?.workType || '',
+                                workSubType: updated[index]?.workSubType || '',
+                                workContent: updated[index]?.workContent || ''
+                              }
                               setWorkEntries(updated)
                             }}
                             placeholder="프로젝트명을 입력하세요"
@@ -379,7 +388,8 @@ export default function WorkDiaryWritePage() {
                                 projectId: value,
                                 workType: '',
                                 workSubType: '',
-                                customProjectName: value === 'other' ? entry.customProjectName : ''
+                                customProjectName: value === 'other' ? entry.customProjectName : '',
+                                workContent: updated[index]?.workContent || ''
                               }
                               setWorkEntries(updated)
                             }}
@@ -422,7 +432,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workType}
                               onChange={(e) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: e.target.value }
+                                updated[index] = { ...updated[index], workType: e.target.value } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                               placeholder="작업 유형을 입력하세요"
@@ -441,7 +451,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workType}
                               onValueChange={(value) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: value, workSubType: '' }
+                                updated[index] = { ...updated[index], workType: value, workSubType: '' } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                             >
@@ -464,7 +474,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workType}
                               onChange={(e) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: e.target.value }
+                                updated[index] = { ...updated[index], workType: e.target.value } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                               placeholder="작업 유형을 입력하세요"
@@ -486,7 +496,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workSubType}
                               onChange={(e) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: e.target.value }
+                                updated[index] = { ...updated[index], workSubType: e.target.value } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                               placeholder="세부 유형을 입력하세요"
@@ -505,7 +515,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workSubType}
                               onValueChange={(value) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: value }
+                                updated[index] = { ...updated[index], workSubType: value } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                             >
@@ -528,7 +538,7 @@ export default function WorkDiaryWritePage() {
                               value={entry.workSubType}
                               onChange={(e) => {
                                 const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: e.target.value }
+                                updated[index] = { ...updated[index], workSubType: e.target.value } as WorkEntry
                                 setWorkEntries(updated)
                               }}
                               placeholder="세부 유형을 입력하세요"
@@ -547,7 +557,7 @@ export default function WorkDiaryWritePage() {
                       value={entry.workContent}
                       onChange={(e) => {
                         const updated = [...workEntries]
-                        updated[index] = { ...updated[index], workContent: e.target.value }
+                        updated[index] = { ...updated[index], workContent: e.target.value } as WorkEntry
                         setWorkEntries(updated)
                       }}
                       placeholder="업무 내용을 상세히 입력하세요"

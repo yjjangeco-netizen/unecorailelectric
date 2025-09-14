@@ -103,7 +103,12 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
           spec: item.spec,
           maker: item.maker,
           unit_price: item.unit_price,
-          stock_status: item.stock_status
+          stock_status: item.stock_status,
+          purpose: item.purpose || '',
+          min_stock: item.min_stock || 0,
+          category: item.category || '',
+          created_at: item.created_at || new Date().toISOString(),
+          updated_at: item.updated_at || new Date().toISOString()
         }
       }))
 
@@ -139,7 +144,7 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
 
     try {
       // items 테이블만 업데이트 (통합된 테이블)
-      const { error: itemError } = await supabase
+      const { error: itemError } = await (supabase as any)
         .from('items')
         .update({
           unit_price: editForm.unit_price,

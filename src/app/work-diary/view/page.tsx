@@ -121,7 +121,7 @@ export default function WorkDiaryViewPage() {
           console.log('관리자 - 모든 사용자 표시')
         } else {
           // 숫자 레벨은 해당 레벨 이하만 조회 가능
-          filteredUsers = allUsers.filter(u => {
+          filteredUsers = allUsers.filter((u: any) => {
             const userLevel = parseInt(u.level || '1')
             return userLevel <= currentUserLevel
           })
@@ -149,16 +149,16 @@ export default function WorkDiaryViewPage() {
         allowedUserIds = users.map(u => u.id)
       } else if (currentUserLevel === '5') {
         // Level 5는 Level 1~5 조회 가능
-        allowedUserIds = users.filter(u => ['1', '2', '3', '4', '5'].includes(String(u.level))).map(u => u.id)
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3', '4', '5'].includes(String(u.level))).map((u: any) => u.id)
       } else if (currentUserLevel === '4') {
         // Level 4는 Level 1~4 조회 가능
-        allowedUserIds = users.filter(u => ['1', '2', '3', '4'].includes(String(u.level))).map(u => u.id)
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3', '4'].includes(String(u.level))).map((u: any) => u.id)
       } else if (currentUserLevel === '3') {
         // Level 3은 Level 1~3 조회 가능
-        allowedUserIds = users.filter(u => ['1', '2', '3'].includes(String(u.level))).map(u => u.id)
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3'].includes(String(u.level))).map((u: any) => u.id)
       } else {
         // Level 2는 Level 1~2 조회 가능
-        allowedUserIds = users.filter(u => ['1', '2'].includes(String(u.level))).map(u => u.id)
+        allowedUserIds = users.filter((u: any) => ['1', '2'].includes(String(u.level))).map((u: any) => u.id)
       }
       
       console.log('현재 사용자 레벨:', currentUserLevel)
@@ -255,6 +255,26 @@ export default function WorkDiaryViewPage() {
       const currentUserLevel = String(user?.level || '1')
       let filteredData = []
       
+      // 현재 사용자 레벨에 따라 조회 가능한 사용자 ID 목록 생성
+      let allowedUserIds = []
+      
+      if (currentUserLevel === 'administrator') {
+        // 관리자는 모든 사용자 조회 가능
+        allowedUserIds = users.map((u: any) => u.id)
+      } else if (currentUserLevel === '5') {
+        // Level 5는 Level 1~5 조회 가능
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3', '4', '5'].includes(String(u.level))).map((u: any) => u.id)
+      } else if (currentUserLevel === '4') {
+        // Level 4는 Level 1~4 조회 가능
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3', '4'].includes(String(u.level))).map((u: any) => u.id)
+      } else if (currentUserLevel === '3') {
+        // Level 3은 Level 1~3 조회 가능
+        allowedUserIds = users.filter((u: any) => ['1', '2', '3'].includes(String(u.level))).map((u: any) => u.id)
+      } else {
+        // Level 2는 Level 1~2 조회 가능
+        allowedUserIds = users.filter((u: any) => ['1', '2'].includes(String(u.level))).map((u: any) => u.id)
+      }
+      
       console.log('현재 사용자 레벨:', currentUserLevel, typeof currentUserLevel)
       console.log('전체 데이터:', allMockData)
       console.log('조회 가능한 사용자 ID 목록:', allowedUserIds)
@@ -264,7 +284,7 @@ export default function WorkDiaryViewPage() {
       
       console.log('필터링된 데이터:', filteredData)
       
-      setWorkDiaries(filteredData)
+      setWorkDiaries(filteredData as any)
       setTotalPages(1)
     } finally {
       setLoading(false)
@@ -483,7 +503,7 @@ export default function WorkDiaryViewPage() {
                     <SelectItem value="all">전체 작성자</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.name} (Level {user.level === 'administrator' ? 'Admin' : user.level})
+                        {user.name} (Level {(user as any).level === 'administrator' ? 'Admin' : (user as any).level})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -563,9 +583,9 @@ export default function WorkDiaryViewPage() {
                           </span>
                           <span className="text-sm text-slate-600">
                             작성자: {users.find(u => u.id === diary.user_id)?.name || diary.user_id}
-                            {users.find(u => u.id === diary.user_id)?.level && (
+                            {(users.find(u => u.id === diary.user_id) as any)?.level && (
                               <span className="ml-1 text-xs bg-slate-200 text-slate-600 px-1 py-0.5 rounded">
-                                L{users.find(u => u.id === diary.user_id)?.level === 'administrator' ? 'Admin' : users.find(u => u.id === diary.user_id)?.level}
+                                L{(users.find(u => u.id === diary.user_id) as any)?.level === 'administrator' ? 'Admin' : (users.find(u => u.id === diary.user_id) as any)?.level}
                               </span>
                             )}
                           </span>
