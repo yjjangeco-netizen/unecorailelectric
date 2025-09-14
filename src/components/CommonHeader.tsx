@@ -42,11 +42,11 @@ interface CommonHeaderProps {
 export default function CommonHeader({
   currentUser,
   isAdmin,
-  onShowUserManagement,
+  onShowUserManagement: _onShowUserManagement,
   onLogout,
   onShowLoginModal,
   title = "유네코레일 전기팀 자재관리 시스템",
-  backUrl = "/", // eslint-disable-line @typescript-eslint/no-unused-vars
+  backUrl: _backUrl,
   customButtons = [],
   showUserSpecificMenus = false
 }: CommonHeaderProps) {
@@ -96,17 +96,17 @@ export default function CommonHeader({
         case 'dashboard':
           return true // 대시보드는 항상 표시
         case 'stock_view':
-          return currentUser.stock_view === true
+          return currentUser['stock_view'] === true
         case 'daily_log':
-          return currentUser.daily_log === true
+          return currentUser['daily_log'] === true
         case 'work_tools':
-          return currentUser.work_tools === true
+          return currentUser['work_tools'] === true
         case 'sop':
-          return currentUser.sop === true
+          return currentUser['sop'] === true
         case 'nara':
           return true // Nara는 항상 표시
         case 'settings':
-          return currentUser.user_management === true || isAdmin
+          return currentUser['user_management'] === true || isAdmin
         default:
           return true
       }

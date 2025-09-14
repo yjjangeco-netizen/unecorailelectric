@@ -34,57 +34,57 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
   // 레벨별 기본 권한 설정
   const getDefaultPermissionsByLevel = (level: string) => {
     const permissions: { [key: string]: boolean } = {
-      stock_view: false,
-      stock_in: false,
-      stock_out: false,
-      stock_disposal: false,
-      work_tools: false,
-      daily_log: false,
-      work_manual: false,
-      sop: false,
-      user_management: false,
+      'stock_view': false,
+      'stock_in': false,
+      'stock_out': false,
+      'stock_disposal': false,
+      'work_tools': false,
+      'daily_log': false,
+      'work_manual': false,
+      'sop': false,
+      'user_management': false,
     }
 
     switch (level) {
       case '1':
         // Level 1: 기본 조회 권한만
-        permissions.stock_view = true
-        permissions.daily_log = true
+        permissions['stock_view'] = true
+        permissions['daily_log'] = true
         break
       case '2':
         // Level 2: Level 1 + 업무도구
-        permissions.stock_view = true
-        permissions.daily_log = true
-        permissions.work_tools = true
+        permissions['stock_view'] = true
+        permissions['daily_log'] = true
+        permissions['work_tools'] = true
         break
       case '3':
         // Level 3: Level 2 + 재고 입출고
-        permissions.stock_view = true
-        permissions.stock_in = true
-        permissions.stock_out = true
-        permissions.daily_log = true
-        permissions.work_tools = true
+        permissions['stock_view'] = true
+        permissions['stock_in'] = true
+        permissions['stock_out'] = true
+        permissions['daily_log'] = true
+        permissions['work_tools'] = true
         break
       case '4':
         // Level 4: Level 3 + 메뉴얼 관리
-        permissions.stock_view = true
-        permissions.stock_in = true
-        permissions.stock_out = true
-        permissions.stock_disposal = true
-        permissions.daily_log = true
-        permissions.work_tools = true
-        permissions.work_manual = true
+        permissions['stock_view'] = true
+        permissions['stock_in'] = true
+        permissions['stock_out'] = true
+        permissions['stock_disposal'] = true
+        permissions['daily_log'] = true
+        permissions['work_tools'] = true
+        permissions['work_manual'] = true
         break
       case '5':
         // Level 5: Level 4 + SOP
-        permissions.stock_view = true
-        permissions.stock_in = true
-        permissions.stock_out = true
-        permissions.stock_disposal = true
-        permissions.daily_log = true
-        permissions.work_tools = true
-        permissions.work_manual = true
-        permissions.sop = true
+        permissions['stock_view'] = true
+        permissions['stock_in'] = true
+        permissions['stock_out'] = true
+        permissions['stock_disposal'] = true
+        permissions['daily_log'] = true
+        permissions['work_tools'] = true
+        permissions['work_manual'] = true
+        permissions['sop'] = true
         break
       case 'admin':
         // Admin: 모든 권한
@@ -107,17 +107,17 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
         department: user.department || '',
         position: user.position || '',
         level: level,
-        is_active: user.is_active,
+        is_active: user.is_active || false,
         // 기존 권한이 있으면 유지, 없으면 레벨별 기본값 사용
-        stock_view: user.stock_view !== undefined ? user.stock_view : defaultPermissions.stock_view,
-        stock_in: user.stock_in !== undefined ? user.stock_in : defaultPermissions.stock_in,
-        stock_out: user.stock_out !== undefined ? user.stock_out : defaultPermissions.stock_out,
-        stock_disposal: user.stock_disposal !== undefined ? user.stock_disposal : defaultPermissions.stock_disposal,
-        work_tools: user.work_tools !== undefined ? user.work_tools : defaultPermissions.work_tools,
-        daily_log: user.daily_log !== undefined ? user.daily_log : defaultPermissions.daily_log,
-        work_manual: user.work_manual !== undefined ? user.work_manual : defaultPermissions.work_manual,
-        sop: user.sop !== undefined ? user.sop : defaultPermissions.sop,
-        user_management: user.user_management !== undefined ? user.user_management : defaultPermissions.user_management,
+        stock_view: user.stock_view ?? defaultPermissions['stock_view'],
+        stock_in: user.stock_in ?? defaultPermissions['stock_in'],
+        stock_out: user.stock_out ?? defaultPermissions['stock_out'],
+        stock_disposal: user.stock_disposal ?? defaultPermissions['stock_disposal'],
+        work_tools: user.work_tools ?? defaultPermissions['work_tools'],
+        daily_log: user.daily_log ?? defaultPermissions['daily_log'],
+        work_manual: user.work_manual ?? defaultPermissions['work_manual'],
+        sop: user.sop ?? defaultPermissions['sop'],
+        user_management: user.user_management ?? defaultPermissions['user_management'],
       }
       setFormData(initialData)
       setOriginalData(initialData)

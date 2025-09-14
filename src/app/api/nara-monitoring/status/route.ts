@@ -34,7 +34,7 @@ const mockBidItems = [
   }
 ]
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // TODO: 실제 모니터링 상태 확인 로직 구현
     // - 모니터링 서비스 상태 확인

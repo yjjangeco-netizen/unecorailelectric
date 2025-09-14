@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // TODO: 실제 모니터링 서비스 중지 로직 구현
     // - 크롤링 중지
