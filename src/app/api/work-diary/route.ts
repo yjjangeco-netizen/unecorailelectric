@@ -82,70 +82,11 @@ export async function GET(request: NextRequest) {
 
     // 환경 변수 확인
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.warn('Supabase 환경 변수가 설정되지 않음, Mock 데이터 사용')
-      // Mock 데이터 반환
-      const mockData = [
-        {
-          id: 1,
-          workDate: '2024-01-15',
-          workContent: 'A동 전기실 정기점검 및 배전반 상태 확인',
-          workType: '정기점검',
-          workSubType: '현장작업',
-          customProjectName: null,
-          projectId: 1,
-          userId: 'user1',
-          createdAt: '2024-01-15T09:00:00Z',
-          updatedAt: '2024-01-15T09:00:00Z',
-          project: {
-            id: 1,
-            projectName: '전기설비 유지보수',
-            projectNumber: 'EL-2024-001',
-            description: 'A동 전기설비 정기점검',
-            assemblyDate: '2024-01-10',
-            factoryTestDate: '2024-01-12',
-            siteTestDate: '2024-01-15'
-          },
-          user: {
-            id: 'user1',
-            name: '김전기',
-            level: '3'
-          }
-        },
-        {
-          id: 2,
-          workDate: '2024-01-14',
-          workContent: 'B동 신규 전기설비 설치 및 배선 작업',
-          workType: '신규설치',
-          workSubType: '현장작업',
-          customProjectName: null,
-          projectId: 2,
-          userId: 'user2',
-          createdAt: '2024-01-14T10:30:00Z',
-          updatedAt: '2024-01-14T10:30:00Z',
-          project: {
-            id: 2,
-            projectName: '신규 설치',
-            projectNumber: 'EL-2024-002',
-            description: 'B동 신규 전기설비 설치',
-            assemblyDate: '2024-01-08',
-            factoryTestDate: '2024-01-10',
-            siteTestDate: '2024-01-14'
-          },
-          user: {
-            id: 'user2',
-            name: '이전기',
-            level: '2'
-          }
-        }
-      ]
-      
-      return NextResponse.json({
-        data: mockData,
-        total: mockData.length,
-        page,
-        limit,
-        totalPages: Math.ceil(mockData.length / limit)
-      })
+      console.error('Supabase 환경 변수가 설정되지 않음')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
     }
 
     // RLS가 적용된 쿼리 - 사용자 레벨에 따라 자동 필터링
@@ -205,70 +146,11 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query
 
     if (error) {
-      console.warn('업무일지 조회 오류, Mock 데이터 사용:', error)
-      // Mock 데이터 반환
-      const mockData = [
-        {
-          id: 1,
-          workDate: '2024-01-15',
-          workContent: 'A동 전기실 정기점검 및 배전반 상태 확인',
-          workType: '정기점검',
-          workSubType: '현장작업',
-          customProjectName: null,
-          projectId: 1,
-          userId: 'user1',
-          createdAt: '2024-01-15T09:00:00Z',
-          updatedAt: '2024-01-15T09:00:00Z',
-          project: {
-            id: 1,
-            projectName: '전기설비 유지보수',
-            projectNumber: 'EL-2024-001',
-            description: 'A동 전기설비 정기점검',
-            assemblyDate: '2024-01-10',
-            factoryTestDate: '2024-01-12',
-            siteTestDate: '2024-01-15'
-          },
-          user: {
-            id: 'user1',
-            name: '김전기',
-            level: '3'
-          }
-        },
-        {
-          id: 2,
-          workDate: '2024-01-14',
-          workContent: 'B동 신규 전기설비 설치 및 배선 작업',
-          workType: '신규설치',
-          workSubType: '현장작업',
-          customProjectName: null,
-          projectId: 2,
-          userId: 'user2',
-          createdAt: '2024-01-14T10:30:00Z',
-          updatedAt: '2024-01-14T10:30:00Z',
-          project: {
-            id: 2,
-            projectName: '신규 설치',
-            projectNumber: 'EL-2024-002',
-            description: 'B동 신규 전기설비 설치',
-            assemblyDate: '2024-01-08',
-            factoryTestDate: '2024-01-10',
-            siteTestDate: '2024-01-14'
-          },
-          user: {
-            id: 'user2',
-            name: '이전기',
-            level: '2'
-          }
-        }
-      ]
-      
-      return NextResponse.json({
-        data: mockData,
-        total: mockData.length,
-        page,
-        limit,
-        totalPages: Math.ceil(mockData.length / limit)
-      })
+      console.error('업무일지 조회 오류:', error)
+      return NextResponse.json(
+        { error: '업무일지 조회에 실패했습니다' },
+        { status: 500 }
+      )
     }
 
     // 데이터 변환 (프론트엔드 호환성)

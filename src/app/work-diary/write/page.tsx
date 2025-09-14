@@ -118,29 +118,12 @@ export default function WorkDiaryWritePage() {
         const data = await response.json()
         setProjects(data)
       } else {
-        // 임시 데이터 (API가 없을 경우)
-        const mockProjects: Project[] = [
-          { id: 1, project_name: '브라질 CSP', project_number: 'CNCWL-1204', description: '브라질 CSP 프로젝트' },
-          { id: 2, project_name: '제천', project_number: 'CNCWL-1501', description: '제천 Dsl 프로젝트' },
-          { id: 3, project_name: '도봉', project_number: 'CNCWL-1601', description: '도봉 Dsl 프로젝트' },
-          { id: 4, project_name: '군자', project_number: 'CNCWL-1701', description: '군자 Dsl 프로젝트' },
-          { id: 5, project_name: '덕하', project_number: 'CNCWL-1702', description: '덕하 DSL 프로젝트' },
-          { id: 6, project_name: '고덕', project_number: 'CNCWL-1801', description: '고덕 DSL 프로젝트' },
-          { id: 7, project_name: '대단', project_number: 'CNCWL-1901', description: '대단 Dsl 프로젝트' },
-          { id: 8, project_name: '대전시설장비', project_number: 'CNCWL-2101', description: '대전시설장비 840D SL 프로젝트' },
-          { id: 9, project_name: '시흥', project_number: 'CNCWL-2102', description: '시흥 Dsl 프로젝트' },
-          { id: 10, project_name: '대단', project_number: 'CNCWL-2201', description: '대단 Fanuc 프로젝트' },
-          { id: 11, project_name: 'GTX A', project_number: 'CNCWL-2202', description: 'GTX A 840D SL 프로젝트' },
-          { id: 12, project_name: '호포', project_number: 'CNCWL-2301', description: '호포 840D sL 프로젝트' },
-          { id: 13, project_name: '귤현', project_number: 'CNCWL-2302', description: '귤현 840D sL 프로젝트' },
-          { id: 14, project_name: '인도네시아 PT.ABHIPRAYA', project_number: 'CNCWL-2304', description: '인도네시아 PT.ABHIPRAYA Fanuc 프로젝트' },
-          { id: 15, project_name: '월배', project_number: 'CNCWL-2401', description: '월배 Fanuc 프로젝트' },
-          { id: 16, project_name: '시흥2호기', project_number: 'CNCWL-2402', description: '시흥2호기 Sinuone 프로젝트' }
-        ]
-        setProjects(mockProjects)
+        console.error('프로젝트 로드 실패:', response.status, response.statusText)
+        alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
       }
     } catch (error) {
       console.error('프로젝트 로드 실패:', error)
+      alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
     }
   }
 
