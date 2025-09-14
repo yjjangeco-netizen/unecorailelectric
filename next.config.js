@@ -25,8 +25,6 @@ const nextConfig = {
   output: 'standalone',
   // 강제 동적 렌더링
   trailingSlash: false,
-  // 빌드 시 정적 생성 비활성화
-  generateStaticParams: false,
 }
 
 module.exports = nextConfig
