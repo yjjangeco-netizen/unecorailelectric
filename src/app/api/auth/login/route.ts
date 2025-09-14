@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '미설정',
       supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정',
       nodeEnv: process.env.NODE_ENV,
-      vercelEnv: process.env.VERCEL_ENV
+      vercelEnv: process.env['VERCEL_ENV']
     })
 
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
             hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
             hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
             nodeEnv: process.env.NODE_ENV,
-            vercelEnv: process.env.VERCEL_ENV
+            vercelEnv: process.env['VERCEL_ENV']
           }
         },
         { status: 500 }
