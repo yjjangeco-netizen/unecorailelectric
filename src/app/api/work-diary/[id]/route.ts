@@ -71,6 +71,15 @@ export async function DELETE(
       )
     }
 
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn('Supabase 환경 변수가 설정되지 않음, 삭제 실패')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
+    }
+
     // 데이터베이스에서 업무일지 삭제
     const { error } = await supabase
       .from('work_diary')
@@ -85,6 +94,7 @@ export async function DELETE(
       )
     }
 
+    console.log('업무일지 삭제 성공:', diaryId)
     return NextResponse.json(
       { message: '업무일지가 성공적으로 삭제되었습니다' },
       { status: 200 }
