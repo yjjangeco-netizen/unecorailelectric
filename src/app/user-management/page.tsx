@@ -71,6 +71,27 @@ export default function UserManagementPage() {
     setShowEditModal(true)
   }
 
+  const handleDeleteUser = async (user: UserType) => {
+    if (confirm(`사용자 "${user.name}"을(를) 삭제하시겠습니까?`)) {
+      try {
+        const response = await fetch(`/api/users?id=${user.id}`, {
+          method: 'DELETE',
+        })
+
+        if (response.ok) {
+          alert('사용자가 성공적으로 삭제되었습니다.')
+          loadUsers() // 목록 새로고침
+        } else {
+          const errorData = await response.json()
+          alert(`삭제 실패: ${errorData.error}`)
+        }
+      } catch (error) {
+        console.error('사용자 삭제 오류:', error)
+        alert('사용자 삭제 중 오류가 발생했습니다.')
+      }
+    }
+  }
+
   const handleSaveUser = async (updatedUser: UserType) => {
     try {
       setLoading(true)
@@ -277,6 +298,7 @@ export default function UserManagementPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleDeleteUser(user)}
                             className="text-red-600 border-red-300 hover:bg-red-50"
                           >
                             <Trash2 className="h-3 w-3 mr-1" />

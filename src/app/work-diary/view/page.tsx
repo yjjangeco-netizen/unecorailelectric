@@ -61,6 +61,9 @@ export default function WorkDiaryViewPage() {
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [selectedDiary, setSelectedDiary] = useState<any>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   // 인증 상태 확인 및 리다이렉트
   useEffect(() => {
@@ -322,13 +325,21 @@ export default function WorkDiaryViewPage() {
 
   const handleView = useCallback((diaryId: number) => {
     console.log('상세보기', diaryId)
-    alert(`업무일지 ${diaryId}번 상세보기 기능이 구현되었습니다!`)
-  }, [])
+    const diary = workDiaries.find(d => d.id === diaryId)
+    if (diary) {
+      setSelectedDiary(diary)
+      setShowDetailModal(true)
+    }
+  }, [workDiaries])
 
   const handleEdit = useCallback((diaryId: number) => {
     console.log('수정', diaryId)
-    alert(`업무일지 ${diaryId}번 수정 기능이 구현되었습니다!`)
-  }, [])
+    const diary = workDiaries.find(d => d.id === diaryId)
+    if (diary) {
+      setSelectedDiary(diary)
+      setShowEditModal(true)
+    }
+  }, [workDiaries])
 
   const handleDelete = useCallback(async (diaryId: number) => {
     console.log('삭제 시도:', diaryId)
@@ -654,6 +665,172 @@ export default function WorkDiaryViewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 상세보기 모달 */}
+      {showDetailModal && selectedDiary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">업무일지 상세보기</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDetailModal(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">작성자</label>
+                <p className="text-sm text-gray-900">
+                  {users.find(u => u.id === selectedDiary.userId)?.name || '알 수 없음'}
+                </p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">작업일</label>
+                <p className="text-sm text-gray-900">{selectedDiary.workDate}</p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">프로젝트</label>
+                <p className="text-sm text-gray-900">
+                  {selectedDiary.project?.projectName || selectedDiary.customProjectName || '프로젝트 없음'}
+                </p>
+              </div>
+              
+              {selectedDiary.workType && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">작업유형</label>
+                  <p className="text-sm text-gray-900">{selectedDiary.workType}</p>
+                </div>
+              )}
+              
+              {selectedDiary.workSubType && (
+                <div>
+                  <label className="text-sm font-medium text-gray-700">세부유형</label>
+                  <p className="text-sm text-gray-900">{selectedDiary.workSubType}</p>
+                </div>
+              )}
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">작업내용</label>
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedDiary.workContent}</p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">작성일시</label>
+                <p className="text-sm text-gray-900">
+                  {new Date(selectedDiary.createdAt).toLocaleString('ko-KR')}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowDetailModal(false)}
+              >
+                닫기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 수정 모달 */}
+      {showEditModal && selectedDiary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">업무일지 수정</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEditModal(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">작업내용</label>
+                <textarea
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  rows={4}
+                  defaultValue={selectedDiary.workContent}
+                  onChange={(e) => setSelectedDiary({...selectedDiary, workContent: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">작업유형</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  defaultValue={selectedDiary.workType || ''}
+                  onChange={(e) => setSelectedDiary({...selectedDiary, workType: e.target.value})}
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">세부유형</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  defaultValue={selectedDiary.workSubType || ''}
+                  onChange={(e) => setSelectedDiary({...selectedDiary, workSubType: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowEditModal(false)}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    const response = await fetch(`/api/work-diary/${selectedDiary.id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        workContent: selectedDiary.workContent,
+                        workType: selectedDiary.workType,
+                        workSubType: selectedDiary.workSubType,
+                        workDate: selectedDiary.workDate,
+                        projectId: selectedDiary.projectId,
+                        customProjectName: selectedDiary.customProjectName
+                      })
+                    })
+                    
+                    if (response.ok) {
+                      alert('업무일지가 수정되었습니다.')
+                      setShowEditModal(false)
+                      loadWorkDiaries() // 목록 새로고침
+                    } else {
+                      alert('수정에 실패했습니다.')
+                    }
+                  } catch (error) {
+                    console.error('수정 오류:', error)
+                    alert('수정 중 오류가 발생했습니다.')
+                  }
+                }}
+              >
+                저장
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

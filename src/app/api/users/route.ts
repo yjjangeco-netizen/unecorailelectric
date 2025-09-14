@@ -20,45 +20,11 @@ export async function GET(_request: NextRequest) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      console.warn('사용자 목록 조회 오류, Mock 데이터 사용:', error)
-      // Mock 데이터 반환
-      const mockUsers = [
-        {
-          id: 'user1',
-          name: '김전기',
-          email: 'kim@example.com',
-          department: '전기팀',
-          position: '선임기술자',
-          level: '3',
-          is_active: true,
-          createdAt: '2024-01-01T09:00:00Z',
-          updatedAt: '2024-01-15T09:00:00Z'
-        },
-        {
-          id: 'user2',
-          name: '이전기',
-          email: 'lee@example.com',
-          department: '전기팀',
-          position: '기술자',
-          level: '2',
-          is_active: true,
-          createdAt: '2024-01-02T09:00:00Z',
-          updatedAt: '2024-01-14T10:30:00Z'
-        },
-        {
-          id: 'user3',
-          name: '박전기',
-          email: 'park@example.com',
-          department: '전기팀',
-          position: '주임기술자',
-          level: '4',
-          is_active: true,
-          createdAt: '2024-01-03T09:00:00Z',
-          updatedAt: '2024-01-13T14:20:00Z'
-        }
-      ]
-      
-      return NextResponse.json({ users: mockUsers })
+      console.error('사용자 목록 조회 오류:', error)
+      return NextResponse.json(
+        { error: '사용자 목록을 가져오는데 실패했습니다.' },
+        { status: 500 }
+      )
     }
 
     const formattedUsers = users.map(user => ({
@@ -164,6 +130,48 @@ export async function PUT(request: NextRequest) {
     console.error('사용자 정보 업데이트 오류:', error)
     return NextResponse.json(
       { error: '사용자 정보를 업데이트하는데 실패했습니다.', details: error instanceof Error ? error.message : '알 수 없는 오류' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('id')
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: '사용자 ID가 필요합니다.' },
+        { status: 400 }
+      )
+    }
+
+    console.log('사용자 삭제 요청:', userId)
+
+    // 사용자 삭제
+    const { error } = await supabaseServer
+      .from('users')
+      .delete()
+      .eq('id', userId)
+
+    if (error) {
+      console.error('사용자 삭제 오류:', error)
+      return NextResponse.json(
+        { error: '사용자 삭제에 실패했습니다.', details: error.message },
+        { status: 500 }
+      )
+    }
+
+    console.log('사용자 삭제 성공:', userId)
+
+    return NextResponse.json({ 
+      message: '사용자가 성공적으로 삭제되었습니다.'
+    })
+  } catch (error) {
+    console.error('사용자 삭제 오류:', error)
+    return NextResponse.json(
+      { error: '사용자 삭제에 실패했습니다.', details: error instanceof Error ? error.message : '알 수 없는 오류' },
       { status: 500 }
     )
   }
