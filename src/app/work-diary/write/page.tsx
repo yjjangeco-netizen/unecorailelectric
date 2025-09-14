@@ -116,6 +116,7 @@ export default function WorkDiaryWritePage() {
       const response = await fetch('/api/projects')
       if (response.ok) {
         const data = await response.json()
+        console.log('프로젝트 API 응답:', data)
         setProjects(data)
       } else {
         console.error('프로젝트 로드 실패:', response.status, response.statusText)
