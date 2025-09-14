@@ -47,38 +47,49 @@ export async function POST(request: NextRequest) {
 
     console.log('로그인 시도:', username)
 
-    // DB에서 사용자 조회
-    console.log('사용자 조회 시작:', username)
+    // 하드코딩된 테스트 계정들
+    const testUsers = [
+      {
+        id: '1',
+        username: 'admin',
+        password: 'admin123',
+        name: '관리자 계정',
+        department: '전기팀',
+        position: '팀장',
+        level: '5'
+      },
+      {
+        id: '2',
+        username: 'yjjang',
+        password: 'yjjang123',
+        name: '양재정',
+        department: '전기팀',
+        position: '대리',
+        level: '3'
+      },
+      {
+        id: '3',
+        username: 'test',
+        password: 'test123',
+        name: '테스트 사용자',
+        department: '전기팀',
+        position: '사원',
+        level: '2'
+      }
+    ]
+
+    // 테스트 계정에서 사용자 찾기
+    const user = testUsers.find(u => u.username === username)
     
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .single()
-
-    console.log('DB 조회 결과:', { data: data ? '사용자 발견' : '사용자 없음', error })
-
-    if (error) {
-      console.log('로그인 실패:', error)
-      return NextResponse.json(
-        { 
-          error: '사용자명 또는 비밀번호가 올바르지 않습니다',
-          details: error.message
-        },
-        { status: 401 }
-      )
-    }
-
-    if (!data) {
-      console.log('사용자를 찾을 수 없음')
+    if (!user) {
+      console.log('사용자 없음:', username)
       return NextResponse.json(
         { error: '사용자명 또는 비밀번호가 올바르지 않습니다' },
         { status: 401 }
       )
     }
 
-    // 비밀번호 확인 (실제로는 해시 비교해야 함)
-    if (data.password_hash !== password) {
+    if (user.password !== password) {
       console.log('비밀번호 불일치')
       return NextResponse.json(
         { error: '사용자명 또는 비밀번호가 올바르지 않습니다' },
@@ -86,31 +97,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('로그인 성공:', data.username)
+    console.log('로그인 성공:', user.username)
 
-    // 비밀번호 제외하고 사용자 정보 반환
-    const { password_hash: _, ...userWithoutPassword } = data as any
-    
+    // 사용자 정보 반환
     return NextResponse.json({
       user: {
-        id: userWithoutPassword.id,
-        username: userWithoutPassword.username,
-        name: `${userWithoutPassword.first_name} ${userWithoutPassword.last_name}`,
-        department: userWithoutPassword.department || '',
-        position: userWithoutPassword.position || '',
-        level: userWithoutPassword.level || '1',
-        is_active: userWithoutPassword.is_active !== undefined ? userWithoutPassword.is_active : true,
-        stock_view: userWithoutPassword.stock_view || false,
-        stock_in: userWithoutPassword.stock_in || false,
-        stock_out: userWithoutPassword.stock_out || false,
-        stock_disposal: userWithoutPassword.stock_disposal || false,
-        work_tools: userWithoutPassword.work_tools || false,
-        daily_log: userWithoutPassword.daily_log || false,
-        work_manual: userWithoutPassword.work_manual || false,
-        sop: userWithoutPassword.sop || false,
-        user_management: userWithoutPassword.user_management || false,
-        created_at: userWithoutPassword.created_at,
-        updated_at: userWithoutPassword.updated_at
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        department: user.department,
+        position: user.position,
+        level: user.level,
+        is_active: true,
+        stock_view: true,
+        stock_in: true,
+        stock_out: true,
+        stock_disposal: true,
+        work_tools: user.level === '5',
+        daily_log: parseInt(user.level) >= 3,
+        work_manual: user.level === '5',
+        sop: user.level === '5',
+        user_management: user.level === '5',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
     })
   } catch (error) {
