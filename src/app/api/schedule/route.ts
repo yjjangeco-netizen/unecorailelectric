@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 // 일정 목록 조회
 export async function GET(request: NextRequest) {
   try {
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase 환경 변수가 설정되지 않음')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
+    }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
@@ -184,6 +194,21 @@ export async function GET(request: NextRequest) {
 // 일정 생성
 export async function POST(request: NextRequest) {
   try {
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase 환경 변수가 설정되지 않음')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
+    }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     const body = await request.json()
     const { type, ...eventData } = body
 
@@ -266,6 +291,21 @@ export async function POST(request: NextRequest) {
 // 일정 수정
 export async function PUT(request: NextRequest) {
   try {
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase 환경 변수가 설정되지 않음')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
+    }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     const body = await request.json()
     const { type, id, ...updateData } = body
 
@@ -329,6 +369,21 @@ export async function PUT(request: NextRequest) {
 // 일정 삭제
 export async function DELETE(request: NextRequest) {
   try {
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Supabase 환경 변수가 설정되지 않음')
+      return NextResponse.json(
+        { error: '데이터베이스 연결이 설정되지 않았습니다' },
+        { status: 500 }
+      )
+    }
+
+    // Supabase 클라이언트 생성
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    )
+
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const id = searchParams.get('id')
