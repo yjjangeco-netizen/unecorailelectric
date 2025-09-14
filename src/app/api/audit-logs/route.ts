@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createClient(
@@ -8,7 +10,7 @@ export async function GET(request: NextRequest) {
       process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']!
     )
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const action = searchParams.get('action')
     const itemId = searchParams.get('item_id')
     const userId = searchParams.get('user_id')

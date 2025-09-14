@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 // 일정 목록 조회
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
     const category = searchParams.get('category')
@@ -384,7 +386,7 @@ export async function DELETE(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const type = searchParams.get('type')
     const id = searchParams.get('id')
 

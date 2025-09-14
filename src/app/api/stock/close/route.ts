@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
+
+export const dynamic = 'force-dynamic'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger, AuditAction } from '@/lib/audit'
 import { z } from 'zod'
@@ -260,7 +262,7 @@ export async function GET(request: NextRequest) {
     }
 
     // URL 파라미터 파싱
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const year = searchParams.get('year')
     const quarter = searchParams.get('quarter')
     const month = searchParams.get('month')
@@ -319,5 +321,4 @@ export async function GET(request: NextRequest) {
 }
 
 // 정적 생성을 위한 설정
-export const dynamic = 'force-static'
 export const revalidate = false

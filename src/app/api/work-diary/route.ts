@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+export const dynamic = 'force-dynamic'
+
 // 작업유형/세부유형 검증 함수
 async function validateWorkTypeAndSubType(body: any, supabase: any): Promise<string | null> {
   try {
@@ -54,7 +56,7 @@ async function validateWorkTypeAndSubType(body: any, supabase: any): Promise<str
 // 업무일지 목록 조회
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
     const projectId = searchParams.get('projectId')
