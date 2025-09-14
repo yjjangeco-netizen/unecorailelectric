@@ -13,6 +13,12 @@ export async function POST() {
         { status: 500 }
       )
     }
+
+    // 임시로 비활성화 (빌드 오류 방지)
+    return NextResponse.json(
+      { error: '이 API는 현재 비활성화되어 있습니다' },
+      { status: 503 }
+    )
     
     // 테스트 사용자 데이터
     const testUsers = [
