@@ -39,14 +39,14 @@ export async function GET(_request: NextRequest) {
 
     const projects = data?.map(item => ({
       id: item.id,
-      project_name: item.project_name || item.projectName || '',
-      project_number: item.project_number || item.projectNumber || '',
+      project_name: item.projectName || item.project_name || '',
+      project_number: item.projectNumber || item.project_number || '',
       description: item.description || '',
-      assemblyDate: item.assembly_date || item.assemblyDate || '',
-      factoryTestDate: item.factory_test_date || item.factoryTestDate || '',
-      siteTestDate: item.site_test_date || item.siteTestDate || '',
-      createdAt: item.created_at || item.createdAt,
-      updatedAt: item.updated_at || item.updatedAt,
+      assemblyDate: item.assemblyDate || item.assembly_date || '',
+      factoryTestDate: item.factoryTestDate || item.factory_test_date || '',
+      siteTestDate: item.siteTestDate || item.site_test_date || '',
+      createdAt: item.createdAt || item.created_at,
+      updatedAt: item.updatedAt || item.updated_at,
     })) || []
 
     console.log('변환된 프로젝트:', projects)
