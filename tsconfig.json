@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "types": ["jest", "node", "@playwright/test", "@tanstack/react-query"],
+    "types": ["node", "@tanstack/react-query"],
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
@@ -44,8 +44,7 @@
     "src/types/env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "playwright.config.ts"
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

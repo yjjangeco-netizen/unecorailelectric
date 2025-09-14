@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, ExternalLink } from 'lucide-react'
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, ExternalLink, CalendarDays } from 'lucide-react'
 import CommonHeader from '@/components/CommonHeader'
+import FullCalendarComponent from '@/components/FullCalendarComponent'
 // 로컬 이벤트 타입 정의
 interface LocalEvent {
   id: string
@@ -123,6 +124,7 @@ export default function SchedulePage() {
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'1month' | '2months' | '3months'>('1month')
+  const [calendarView, setCalendarView] = useState<'list' | 'calendar'>('list')
   const [events, setEvents] = useState<LocalEvent[]>([])
   const [projectEvents, setProjectEvents] = useState<ProjectEvent[]>([])
   const [loadingEvents, setLoadingEvents] = useState(false)
@@ -209,6 +211,38 @@ export default function SchedulePage() {
     if (!yearData) return null
     
     return (yearData as any)[key] || null
+  }
+
+  // FullCalendar용 이벤트 변환 함수
+  const convertToFullCalendarEvents = (events: LocalEvent[]) => {
+    return events.map(event => ({
+      id: event.id,
+      title: event.summary,
+      start: event.start.dateTime || event.start.date,
+      end: event.end.dateTime || event.end.date,
+      backgroundColor: getEventColor(event.category),
+      borderColor: getEventColor(event.category),
+      extendedProps: {
+        category: event.category,
+        subCategory: event.subCategory,
+        description: event.description,
+        location: event.location,
+        participant: event.participant,
+        companions: event.companions
+      }
+    }))
+  }
+
+  // 이벤트 카테고리별 색상 반환
+  const getEventColor = (category: string) => {
+    const colors: { [key: string]: string } = {
+      '출장/외근': '#3B82F6',
+      '반차/연차': '#10B981',
+      '회의': '#F59E0B',
+      '교육': '#8B5CF6',
+      '기타': '#6B7280'
+    }
+    return colors[category] || '#6B7280'
   }
   const [showAddEventModal, setShowAddEventModal] = useState(false)
   const [showEditEventModal, setShowEditEventModal] = useState(false)
