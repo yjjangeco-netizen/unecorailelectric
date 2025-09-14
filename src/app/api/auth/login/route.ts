@@ -3,10 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== 로그인 API 호출 시작 ===')
+    
     // 환경 변수 확인
     console.log('환경 변수 확인:', {
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '설정됨' : '미설정',
-      supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정'
+      supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '설정됨' : '미설정',
+      nodeEnv: process.env.NODE_ENV,
+      vercelEnv: process.env.VERCEL_ENV
     })
 
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -14,7 +18,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: '데이터베이스 연결이 설정되지 않았습니다',
-          details: 'Vercel 환경 변수를 확인해주세요'
+          details: 'Vercel 환경 변수를 확인해주세요',
+          debug: {
+            hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+            hasKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            nodeEnv: process.env.NODE_ENV,
+            vercelEnv: process.env.VERCEL_ENV
+          }
         },
         { status: 500 }
       )

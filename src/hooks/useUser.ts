@@ -15,8 +15,11 @@ export function useUser() {
       setLoading(true);
       setError(null);
       
+      console.log('로그인 시도:', username);
+      
       const user = await UserService.login(username, password);
       if (user) {
+        console.log('로그인 성공:', user.username);
         setUser(user);
         
         // 데이터베이스 권한 관리에 세션 설정
@@ -35,7 +38,9 @@ export function useUser() {
         return false;
       }
     } catch (err) {
-      setError('로그인 중 오류가 발생했습니다.');
+      console.error('로그인 오류:', err);
+      const errorMessage = err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.';
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);

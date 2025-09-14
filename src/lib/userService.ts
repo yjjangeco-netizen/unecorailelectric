@@ -2,31 +2,11 @@ import type { User, UserPublic, PermissionType } from './types';
 import { supabase } from './supabaseClient';
 
 export class UserService {
-  // API를 통한 로그인
+  // API를 통한 로그인 (Supabase만 사용)
   static async login(username: string, password: string): Promise<User | null> {
     try {
-      console.log('로그인 시도:', username);
+      console.log('Supabase 로그인 시도:', username);
       
-      // 먼저 테스트 로그인 시도
-      try {
-        const testResponse = await fetch('/api/auth/test-login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, password }),
-        });
-
-        if (testResponse.ok) {
-          const { user } = await testResponse.json();
-          console.log('테스트 로그인 성공:', user.username);
-          return user;
-        }
-      } catch (testError) {
-        console.log('테스트 로그인 실패, 일반 로그인 시도:', testError);
-      }
-      
-      // 테스트 로그인 실패 시 일반 로그인 시도
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -37,17 +17,17 @@ export class UserService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log('로그인 실패:', errorData.error);
-        return null;
+        console.log('로그인 실패:', errorData);
+        throw new Error(errorData.error || '로그인에 실패했습니다');
       }
 
       const { user } = await response.json();
-      console.log('로그인 성공:', user.username);
+      console.log('Supabase 로그인 성공:', user.username);
 
       return user;
     } catch (error) {
-      console.error('로그인 오류:', error);
-      return null;
+      console.error('Supabase 로그인 오류:', error);
+      throw error;
     }
   }
 
