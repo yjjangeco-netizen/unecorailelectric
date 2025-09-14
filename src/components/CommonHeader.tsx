@@ -37,7 +37,7 @@ export default function CommonHeader({
   onLogout,
   onShowLoginModal,
   title = "유네코레일 전기팀 자재관리 시스템",
-  backUrl = "/" // eslint-disable-line @typescript-eslint/no-unused-vars
+  backUrl = "/" // 사용되지 않는 매개변수
 }: CommonHeaderProps) {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
