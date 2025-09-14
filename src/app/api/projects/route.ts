@@ -11,6 +11,48 @@ export async function GET(_request: NextRequest) {
   try {
     console.log('프로젝트 조회 시작...')
     
+    // 환경 변수 확인
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.warn('Supabase 환경 변수가 설정되지 않음, Mock 데이터 사용')
+      const mockProjects = [
+        {
+          id: 1,
+          project_name: '전기설비 유지보수',
+          project_number: 'EL-2024-001',
+          description: 'A동 전기설비 정기점검',
+          assemblyDate: '2024-01-10',
+          factoryTestDate: '2024-01-12',
+          siteTestDate: '2024-01-15',
+          createdAt: '2024-01-10T09:00:00Z',
+          updatedAt: '2024-01-15T09:00:00Z'
+        },
+        {
+          id: 2,
+          project_name: '신규 설치',
+          project_number: 'EL-2024-002',
+          description: 'B동 신규 전기설비 설치',
+          assemblyDate: '2024-01-08',
+          factoryTestDate: '2024-01-10',
+          siteTestDate: '2024-01-14',
+          createdAt: '2024-01-08T10:00:00Z',
+          updatedAt: '2024-01-14T10:30:00Z'
+        },
+        {
+          id: 3,
+          project_name: '고장 수리',
+          project_number: 'EL-2024-003',
+          description: 'C동 조명 고장 수리',
+          assemblyDate: '2024-01-05',
+          factoryTestDate: '2024-01-07',
+          siteTestDate: '2024-01-13',
+          createdAt: '2024-01-05T14:00:00Z',
+          updatedAt: '2024-01-13T14:20:00Z'
+        }
+      ]
+      
+      return NextResponse.json(mockProjects, { status: 200 })
+    }
+    
     const { data, error } = await supabase
       .from('projects')
       .select('*')
