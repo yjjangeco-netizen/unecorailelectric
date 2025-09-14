@@ -2,53 +2,27 @@ import type { User, UserPublic, PermissionType } from './types';
 import { supabase } from './supabaseClient';
 
 export class UserService {
-  // DB에서 실제 사용자 정보로 로그인
+  // API를 통한 로그인
   static async login(username: string, password: string): Promise<User | null> {
     try {
-      console.log('로그인 시도:', username, password);
+      console.log('로그인 시도:', username);
       
-      // DB에서 사용자 조회
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-        .single();
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      if (error) {
-        console.log('로그인 실패:', error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log('로그인 실패:', errorData.error);
         return null;
       }
 
-      if (!data) {
-        console.log('사용자를 찾을 수 없음');
-        return null;
-      }
-
-      console.log('로그인 성공:', data);
-
-      // User 타입에 맞게 변환 (DB 스키마에 맞게 수정)
-      const user: User = {
-        id: (data as any).id,
-        username: (data as any).username,
-        password: (data as any).password,
-        name: (data as any).name,
-        department: (data as any).depart || (data as any).department || '',
-        position: (data as any).position || '',
-        level: (data as any).level || '1', // 기본값 설정
-        is_active: (data as any).is_active !== undefined ? (data as any).is_active : true,
-        stock_view: (data as any).stock_view || false,
-        stock_in: (data as any).stock_in || false,
-        stock_out: (data as any).stock_out || false,
-        stock_disposal: (data as any).stock_disposal || false,
-        work_tools: (data as any).work_tools || false,
-        daily_log: (data as any).daily_log || false,
-        work_manual: (data as any).work_manual || false,
-        sop: (data as any).sop || false,
-        user_management: (data as any).user_management || false,
-        created_at: (data as any).created_at,
-        updated_at: (data as any).updated_at
-      };
+      const { user } = await response.json();
+      console.log('로그인 성공:', user.username);
 
       return user;
     } catch (error) {
