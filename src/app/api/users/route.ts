@@ -3,8 +3,27 @@ import { supabaseServer } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // 헤더에서 사용자 정보 확인
+    const userId = request.headers.get('x-user-id')
+    const userLevel = request.headers.get('x-user-level')
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized: 인증이 필요합니다.' }, { status: 401 })
+    }
+
+    // 권한 확인: Level 5 또는 Admin만 조회 가능
+    const isLevel5 = userLevel === '5'
+    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+
+    if (!isLevel5 && !isAdmin) {
+      console.log('사용자 목록 조회 권한 없음:', { userId, userLevel })
+      return NextResponse.json({ 
+        error: 'Forbidden: Level 5 또는 관리자만 사용자 목록을 조회할 수 있습니다.' 
+      }, { status: 403 })
+    }
+
     // 모든 사용자 정보 조회 (RLS 적용)
     const { data: users, error } = await supabaseServer
       .from('users')

@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
 export async function DELETE(request: NextRequest) {
   try {
     console.log('=== 재고 삭제 API 호출됨 ===')
+    
+    // 헤더에서 사용자 정보 확인
+    const userId = request.headers.get('x-user-id')
+    const userLevel = request.headers.get('x-user-level')
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized: 인증이 필요합니다.' }, { status: 401 })
+    }
+
+    // 권한 확인: Level 5 또는 Admin만 삭제 가능
+    const isLevel5 = userLevel === '5'
+    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+
+    if (!isLevel5 && !isAdmin) {
+      console.log('재고 삭제 권한 없음:', { userId, userLevel })
+      return NextResponse.json({ 
+        error: 'Forbidden: Level 5 또는 관리자만 재고를 삭제할 수 있습니다.' 
+      }, { status: 403 })
+    }
     
     // 요청 데이터 파싱
     const body = await request.json()
@@ -20,14 +40,45 @@ export async function DELETE(request: NextRequest) {
 
     console.log('삭제할 itemId:', itemId)
 
-    // 임시로 성공 응답 (데이터베이스 연결 없이)
+    const supabase = createServerSupabaseClient()
+    
+    // 재고 존재 확인
+    const { data: item, error: fetchError } = await supabase
+      .from('items')
+      .select('id, item_name')
+      .eq('id', itemId)
+      .single()
+
+    if (fetchError || !item) {
+      console.error('재고 조회 오류:', fetchError)
+      return NextResponse.json({ 
+        error: '재고 품목을 찾을 수 없습니다.',
+        details: fetchError?.message
+      }, { status: 404 })
+    }
+
+    // 삭제 실행
+    const { error: deleteError } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', itemId)
+
+    if (deleteError) {
+      console.error('재고 삭제 오류:', deleteError)
+      return NextResponse.json({ 
+        error: '재고 삭제 중 오류가 발생했습니다.',
+        details: deleteError.message
+      }, { status: 500 })
+    }
+
+    console.log('✅ 재고 삭제 성공:', item)
+
     return NextResponse.json({ 
       success: true,
       message: '재고 품목이 성공적으로 삭제되었습니다.',
       deletedItem: {
-        id: itemId,
-        product: '테스트 제품',
-        spec: '테스트 규격'
+        id: item.id,
+        name: item.item_name
       }
     })
 

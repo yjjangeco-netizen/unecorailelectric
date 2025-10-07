@@ -190,12 +190,44 @@ export async function DELETE(
   try {
     const projectId = params.id
 
+    // 헤더에서 사용자 정보 확인
+    const userId = request.headers.get('x-user-id')
+    const userLevel = request.headers.get('x-user-level')
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized: 인증이 필요합니다.' }, { status: 401 })
+    }
+
+    // 권한 확인: Level 5 또는 Admin만 삭제 가능
+    const isLevel5 = userLevel === '5'
+    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+
+    if (!isLevel5 && !isAdmin) {
+      console.log('프로젝트 삭제 권한 없음:', { userId, userLevel })
+      return NextResponse.json({ 
+        error: 'Forbidden: Level 5 또는 관리자만 프로젝트를 삭제할 수 있습니다.' 
+      }, { status: 403 })
+    }
+
     // Supabase 직접 연결
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
     
     const supabase = createClient(supabaseUrl, supabaseKey)
 
+    // 프로젝트 존재 확인
+    const { data: project, error: fetchError } = await supabase
+      .from('projects')
+      .select('id, project_number')
+      .eq('id', projectId)
+      .single()
+
+    if (fetchError || !project) {
+      console.error('프로젝트 조회 오류:', fetchError)
+      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    // 삭제 실행
     const { error } = await supabase
       .from('projects')
       .delete()
