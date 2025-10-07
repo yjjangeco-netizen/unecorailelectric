@@ -124,6 +124,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '프로젝트명과 프로젝트번호는 필수입니다' }, { status: 400 })
     }
 
+    // 프로젝트 번호 중복 체크
+    const { data: existingProject, error: checkError } = await supabase
+      .from('projects')
+      .select('id, project_number')
+      .eq('project_number', projectData.project_number)
+      .maybeSingle()
+
+    if (checkError) {
+      console.error('프로젝트 중복 확인 오류:', checkError)
+    }
+
+    if (existingProject) {
+      return NextResponse.json({ 
+        error: `프로젝트 번호 "${projectData.project_number}"가 이미 존재합니다.`,
+        existingProjectId: existingProject.id
+      }, { status: 409 })
+    }
+
     const { data, error } = await supabase
       .from('projects')
       .insert([

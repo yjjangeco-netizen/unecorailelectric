@@ -199,15 +199,26 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Trip ID is required' }, { status: 400 })
     }
 
-    // 출장/외근 존재 확인
+    // 출장/외근 존재 확인 및 권한 체크
     const { data: existingTrip, error: fetchError } = await supabase
       .from('business_trips')
-      .select('id')
+      .select('id, user_id, status')
       .eq('id', id)
       .single()
 
     if (fetchError) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
+    }
+
+    // 권한 확인: 본인 또는 admin만 삭제 가능
+    const isAdmin = user.user_metadata?.level === 'admin' || user.user_metadata?.level === 'administrator' || user.user_metadata?.level === '5'
+    const isOwner = existingTrip.user_id === user.id
+    
+    if (!isOwner && !isAdmin) {
+      console.log('삭제 권한 없음:', { userId: user.id, tripUserId: existingTrip.user_id, userLevel: user.user_metadata?.level })
+      return NextResponse.json({ 
+        error: 'Forbidden: 본인의 출장/외근이거나 관리자만 삭제할 수 있습니다' 
+      }, { status: 403 })
     }
 
     // 삭제 실행

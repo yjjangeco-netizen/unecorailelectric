@@ -20,6 +20,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // 수량 검증: 양수여야 함
+    if (typeof quantity !== 'number' || quantity <= 0) {
+      return NextResponse.json({ 
+        error: '수량은 0보다 큰 숫자여야 합니다.',
+        receivedQuantity: quantity
+      }, { status: 400 })
+    }
+
+    // 수량 검증: 정수여야 함 (필요시)
+    if (!Number.isInteger(quantity)) {
+      return NextResponse.json({ 
+        error: '수량은 정수여야 합니다.',
+        receivedQuantity: quantity
+      }, { status: 400 })
+    }
+
     const supabase = createServerSupabaseClient()
     
     // 현재 재고 조회
