@@ -25,17 +25,27 @@ import {
 
 interface WorkDiaryEntry {
   id: number
-  user_id: string
-  work_date: string
-  project_id: number
-  work_content: string
-  created_at: string
-  updated_at: string
-  projects?: {
+  userId: string
+  workDate: string
+  projectId: number
+  workContent: string
+  createdAt: string
+  updatedAt: string
+  workType?: string
+  workSubType?: string
+  customProjectName?: string
+  project?: {
     id: number
     project_name: string
     project_number: string
     description?: string
+  }
+  user?: {
+    id: string
+    name: string
+    level: string
+    department?: string
+    position?: string
   }
 }
 
@@ -188,6 +198,8 @@ export default function WorkDiaryViewPage() {
       if (response.ok) {
         const result = await response.json()
         console.log('API 응답 데이터:', result.data)
+        
+        // API가 이미 완전한 데이터를 반환하므로 그대로 사용
         setWorkDiaries(result.data || [])
         setTotalPages(result.totalPages || 1)
       } else {
@@ -200,57 +212,102 @@ export default function WorkDiaryViewPage() {
         {
           id: 1,
           userId: 'user1',
-          userLevel: '1',
           workDate: '2024-01-15',
           projectId: 1,
-          projectName: '전기설비 유지보수',
           workContent: 'A동 전기실 정기점검 및 배전반 상태 확인',
           createdAt: '2024-01-15T09:00:00Z',
-          updatedAt: '2024-01-15T09:00:00Z'
+          updatedAt: '2024-01-15T09:00:00Z',
+          project: {
+            id: 1,
+            project_name: '전기설비 유지보수',
+            project_number: 'ELEC-001',
+            description: 'A동 전기설비 유지보수'
+          },
+          user: {
+            id: 'user1',
+            name: '사용자1',
+            level: '1'
+          }
         },
         {
           id: 2,
           userId: 'user2',
-          userLevel: '2',
           workDate: '2024-01-15',
           projectId: 2,
-          projectName: '신규 설치',
           workContent: 'B동 신규 전기설비 설치 및 배선 작업',
           createdAt: '2024-01-15T10:30:00Z',
-          updatedAt: '2024-01-15T10:30:00Z'
+          updatedAt: '2024-01-15T10:30:00Z',
+          project: {
+            id: 2,
+            project_name: '신규 설치',
+            project_number: 'ELEC-002',
+            description: 'B동 신규 전기설비 설치'
+          },
+          user: {
+            id: 'user2',
+            name: '사용자2',
+            level: '2'
+          }
         },
         {
           id: 3,
           userId: 'user3',
-          userLevel: '3',
           workDate: '2024-01-14',
           projectId: 3,
-          projectName: '고장 수리',
           workContent: 'C동 조명 고장 수리 및 교체 작업',
           createdAt: '2024-01-14T14:20:00Z',
-          updatedAt: '2024-01-14T14:20:00Z'
+          updatedAt: '2024-01-14T14:20:00Z',
+          project: {
+            id: 3,
+            project_name: '고장 수리',
+            project_number: 'ELEC-003',
+            description: 'C동 조명 고장 수리'
+          },
+          user: {
+            id: 'user3',
+            name: '사용자3',
+            level: '3'
+          }
         },
         {
           id: 4,
           userId: 'user4',
-          userLevel: '4',
           workDate: '2024-01-13',
           projectId: 4,
-          projectName: '시스템 점검',
           workContent: 'D동 전력 시스템 정기 점검 및 보수',
           createdAt: '2024-01-13T11:00:00Z',
-          updatedAt: '2024-01-13T11:00:00Z'
+          updatedAt: '2024-01-13T11:00:00Z',
+          project: {
+            id: 4,
+            project_name: '시스템 점검',
+            project_number: 'ELEC-004',
+            description: 'D동 전력 시스템 점검'
+          },
+          user: {
+            id: 'user4',
+            name: '사용자4',
+            level: '4'
+          }
         },
         {
           id: 5,
           userId: 'user5',
-          userLevel: '5',
           workDate: '2024-01-12',
           projectId: 5,
-          projectName: '관리 업무',
           workContent: '전체 전기설비 현황 점검 및 보고서 작성',
           createdAt: '2024-01-12T15:30:00Z',
-          updatedAt: '2024-01-12T15:30:00Z'
+          updatedAt: '2024-01-12T15:30:00Z',
+          project: {
+            id: 5,
+            project_name: '관리 업무',
+            project_number: 'ELEC-005',
+            description: '전체 전기설비 관리'
+          },
+          user: {
+            id: 'user5',
+            name: '사용자5',
+            level: '5'
+          }
         }
       ]
       
@@ -587,23 +644,23 @@ export default function WorkDiaryViewPage() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-4 mb-3">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
-                            {diary.projects?.project_name || '프로젝트 없음'} ({diary.projects?.project_number || 'N/A'})
+                            {diary.project?.project_name || '프로젝트 없음'} ({diary.project?.project_number || 'N/A'})
                           </span>
                           <span className="text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
-                            {formatDate(diary.work_date)}
+                            {formatDate(diary.workDate)}
                           </span>
                           <span className="text-sm text-slate-600">
-                            작성자: {users.find(u => u.id === diary.user_id)?.name || diary.user_id}
-                            {(users.find(u => u.id === diary.user_id) as any)?.level && (
+                            작성자: {diary.user?.name || diary.userId || '알 수 없음'}
+                            {diary.user?.level && (
                               <span className="ml-1 text-xs bg-slate-200 text-slate-600 px-1 py-0.5 rounded">
-                                L{(users.find(u => u.id === diary.user_id) as any)?.level === 'administrator' ? 'Admin' : (users.find(u => u.id === diary.user_id) as any)?.level}
+                                L{diary.user.level === 'administrator' ? 'Admin' : diary.user.level}
                               </span>
                             )}
                           </span>
                         </div>
-                        <p className="text-slate-800 mb-3 text-base leading-relaxed">{diary.work_content}</p>
+                        <p className="text-slate-800 mb-3 text-base leading-relaxed">{diary.workContent}</p>
                         <p className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md inline-block">
-                          작성일: {formatDateTime(diary.created_at)}
+                          작성일: {formatDateTime(diary.createdAt)}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
@@ -685,7 +742,7 @@ export default function WorkDiaryViewPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">작성자</label>
                 <p className="text-sm text-gray-900">
-                  {users.find(u => u.id === selectedDiary.userId)?.name || '알 수 없음'}
+                  {selectedDiary.user?.name || selectedDiary.userId || '알 수 없음'}
                 </p>
               </div>
               
@@ -697,7 +754,7 @@ export default function WorkDiaryViewPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">프로젝트</label>
                 <p className="text-sm text-gray-900">
-                  {selectedDiary.project?.projectName || selectedDiary.customProjectName || '프로젝트 없음'}
+                  {selectedDiary.project?.project_name || selectedDiary.customProjectName || '프로젝트 없음'}
                 </p>
               </div>
               

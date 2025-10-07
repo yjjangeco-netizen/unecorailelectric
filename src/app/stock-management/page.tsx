@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import AuthGuard from '@/components/AuthGuard'
 import { Package, Search, ArrowLeft, User, Settings, Plus, Edit, Trash2, Filter, Download, Upload, RefreshCw, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 import StockInModal from '@/components/StockInModal'
 import StockOutModal from '@/components/StockOutModal'
@@ -475,18 +476,34 @@ export default function StockManagementPage() {
     )
   }
 
+  // 사용자 레벨 확인
+  const userLevel = user?.level || '1'
+  const isLevel1 = userLevel === '1'
+  const isLevel2 = userLevel === '2'
+  const isLevel3 = userLevel === '3'
+  const isLevel4 = userLevel === '4'
+  const isLevel5 = userLevel === '5'
+  const isAdmin = userLevel?.toLowerCase() === 'administrator'
+
+  // Level 1 사용자는 읽기만 가능
+  const canReadOnly = isLevel1
+  const canAdd = isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin
+  const canEdit = isLevel4 || isLevel5 || isAdmin
+  const canDelete = isLevel4 || isLevel5 || isAdmin
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* 공통 헤더 */}
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'admin'}
-        title="재고 관리"
-        backUrl="/"
-        onShowUserManagement={() => setShowUserManagement(true)}
-        onLogout={logout}
-        onShowLoginModal={() => router.push('/')}
-      />
+    <AuthGuard requiredLevel={1}>
+      <div className="min-h-screen bg-white">
+        {/* 공통 헤더 */}
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.level === 'admin'}
+          title="재고 관리"
+          backUrl="/"
+          onShowUserManagement={() => setShowUserManagement(true)}
+          onLogout={logout}
+          onShowLoginModal={() => router.push('/')}
+        />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}
@@ -499,8 +516,16 @@ export default function StockManagementPage() {
               <div className="flex items-center gap-4">
                 <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
                 
-                {/* Level3 이상에서만 입고, 출고 버튼 표시 */}
-                {(user?.level === '3' || user?.level === '4' || user?.level === '5' || user?.level === 'administrator') && (
+                {/* Level 1 사용자는 읽기 전용 메시지 표시 */}
+                {canReadOnly && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-700 font-medium">읽기 전용 모드 (Level 1)</span>
+                  </div>
+                )}
+                
+                {/* Level 2 이상에서 입고, 출고 버튼 표시 */}
+                {canAdd && (
                   <div className="flex gap-3 items-center">
                     <Button 
                       onClick={() => {
@@ -673,8 +698,8 @@ export default function StockManagementPage() {
                         {getStatusText(item.status)}
                       </span>
                     </div>
-                    {/* Level3 이상에서만 수정 버튼 표시 */}
-                    {(user?.level === '3' || user?.level === '4' || user?.level === '5' || user?.level === 'administrator') && (
+                    {/* Level 4 이상에서만 수정 버튼 표시 */}
+                    {canEdit && (
                       <div>
                         <Button 
                           size="sm" 
@@ -764,9 +789,10 @@ export default function StockManagementPage() {
             closing_quantity: item.currentStock,
             unit_price: 10000,
             location: item.location
-          }))}
+          }        ))}
       />
     </div>
+    </AuthGuard>
   )
 }
 

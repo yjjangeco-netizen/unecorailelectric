@@ -1,7 +1,79 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+
+// 개별 프로젝트 조회
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const projectId = params.id
+
+    console.log('개별 프로젝트 조회 요청:', { projectId })
+
+    // Supabase 직접 연결
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single()
+
+    if (error) {
+      console.error('Supabase 조회 오류:', error)
+      return NextResponse.json({
+        error: '프로젝트 조회에 실패했습니다',
+        details: error
+      }, { status: 500 })
+    }
+
+    if (!data) {
+      return NextResponse.json({
+        error: '프로젝트를 찾을 수 없습니다'
+      }, { status: 404 })
+    }
+
+    // 데이터 변환
+    const project = {
+      id: data.id.toString(),
+      project_number: data.project_number || '',
+      name: data.project_name || '',
+      description: data.description || '',
+      status: data.ProjectStatus || 'Manufacturing',
+      priority: data.priority || 'medium',
+      start_date: data.start_date || '',
+      end_date: data.end_date || '',
+      assembly_date: data.assembly_date || '',
+      factory_test_date: data.factory_test_date || '',
+      site_test_date: data.site_test_date || '',
+      completion_date: data.completion_date || '',
+      warranty_period: data.warranty_period || '',
+      budget: data.budget || 0,
+      manager_id: data.manager_id || '',
+      client_name: data.client_name || '',
+      client_contact: data.client_contact || '',
+      created_by: data.created_by || '',
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || ''
+    }
+
+    console.log('조회된 프로젝트:', project)
+
+    return NextResponse.json(project, { status: 200 })
+  } catch (error) {
+    console.error('프로젝트 조회 오류:', error)
+    return NextResponse.json({
+      error: '프로젝트 조회 중 오류가 발생했습니다.',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
 
 // 프로젝트 수정
 export async function PUT(
@@ -9,93 +81,134 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 환경 변수 확인
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Supabase 환경 변수가 설정되지 않음')
-      return NextResponse.json(
-        { error: '데이터베이스 연결이 설정되지 않았습니다' },
-        { status: 500 }
-      )
+    const projectId = params.id
+    const projectData = await request.json()
+
+    console.log('프로젝트 업데이트 요청:', { projectId, projectData })
+
+    // Supabase 직접 연결
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // 업데이트할 데이터 준비
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
     }
 
-    // Supabase 클라이언트 생성
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-
-    const { id } = params
-    const { projectName, projectNumber, assemblyDate, factoryTestDate, siteTestDate, remarks } = await request.json()
-    if (!projectName || !projectNumber) {
-      return NextResponse.json({ error: '프로젝트명과 프로젝트번호는 필수입니다.' }, { status: 400 })
+    // 모든 필드 업데이트 (프론트엔드 필드명과 API 필드명 매핑)
+    if (projectData.project_number) updateData.project_number = projectData.project_number
+    if (projectData.name !== undefined) updateData.project_name = projectData.name
+    if (projectData.description !== undefined) updateData.description = projectData.description
+    if (projectData.status) {
+      updateData.ProjectStatus = projectData.status
     }
+    if (projectData.priority) updateData.priority = projectData.priority
+    if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date || null
+    if (projectData.end_date !== undefined) updateData.end_date = projectData.end_date || null
+    if (projectData.assembly_date !== undefined) updateData.assembly_date = projectData.assembly_date || null
+    if (projectData.factory_test_date !== undefined) updateData.factory_test_date = projectData.factory_test_date || null
+    if (projectData.site_test_date !== undefined) updateData.site_test_date = projectData.site_test_date || null
+    if (projectData.completion_date !== undefined) updateData.completion_date = projectData.completion_date || null
+    if (projectData.warranty_period !== undefined) updateData.warranty_period = projectData.warranty_period
+    if (projectData.budget !== undefined) updateData.budget = projectData.budget
+    if (projectData.manager_id !== undefined) updateData.manager_id = projectData.manager_id
+    if (projectData.client_name !== undefined) updateData.client_name = projectData.client_name
+    if (projectData.client_contact !== undefined) updateData.client_contact = projectData.client_contact
+    
+    // 기본 필드들만 업데이트 (실제 DB에 존재하는 컬럼들)
+    if (projectData.base_name !== undefined) updateData.base_name = projectData.base_name
+    if (projectData.hardware_version !== undefined) updateData.hardware_version = projectData.hardware_version
+    if (projectData.has_disk !== undefined) updateData.has_disk = projectData.has_disk
+    if (projectData.incoming_power !== undefined) updateData.incoming_power = projectData.incoming_power
+    if (projectData.primary_breaker !== undefined) updateData.primary_breaker = projectData.primary_breaker
+    if (projectData.pvr_ampere !== undefined) updateData.pvr_ampere = projectData.pvr_ampere
+    if (projectData.frequency !== undefined) updateData.frequency = projectData.frequency
+    if (projectData.spindle_spec !== undefined) updateData.spindle_spec = projectData.spindle_spec
+    if (projectData.tool_post_spec !== undefined) updateData.tool_post_spec = projectData.tool_post_spec
+    if (projectData.pump_low_spec !== undefined) updateData.pump_low_spec = projectData.pump_low_spec
+    if (projectData.pump_high_spec !== undefined) updateData.pump_high_spec = projectData.pump_high_spec
+    if (projectData.crusher_spec !== undefined) updateData.crusher_spec = projectData.crusher_spec
+    if (projectData.conveyor_spec !== undefined) updateData.conveyor_spec = projectData.conveyor_spec
+    if (projectData.dust_collector_spec !== undefined) updateData.dust_collector_spec = projectData.dust_collector_spec
+    if (projectData.vehicle_transfer_device !== undefined) updateData.vehicle_transfer_device = projectData.vehicle_transfer_device
+    if (projectData.oil_heater !== undefined) updateData.oil_heater = projectData.oil_heater
+    if (projectData.cooling_fan !== undefined) updateData.cooling_fan = projectData.cooling_fan
+    if (projectData.chiller !== undefined) updateData.chiller = projectData.chiller
+    if (projectData.lubrication !== undefined) updateData.lubrication = projectData.lubrication
+    if (projectData.grease !== undefined) updateData.grease = projectData.grease
+    if (projectData.cctv_spec !== undefined) updateData.cctv_spec = projectData.cctv_spec
+    // automatic_cover 컬럼이 존재하지 않으므로 제거
+    if (projectData.ups_spec !== undefined) updateData.ups_spec = projectData.ups_spec
+    if (projectData.configuration !== undefined) updateData.configuration = projectData.configuration
+    if (projectData.main_color !== undefined) updateData.main_color = projectData.main_color
+    if (projectData.auxiliary_color !== undefined) updateData.auxiliary_color = projectData.auxiliary_color
+    if (projectData.warning_light !== undefined) updateData.warning_light = projectData.warning_light
+    if (projectData.buzzer !== undefined) updateData.buzzer = projectData.buzzer
+    if (projectData.speaker !== undefined) updateData.speaker = projectData.speaker
+    if (projectData.automatic_rail !== undefined) updateData.automatic_rail = projectData.automatic_rail
 
-    const { data, error } = await supabase
+    console.log('업데이트할 데이터:', updateData)
+
+    const { data: updatedData, error } = await supabase
       .from('projects')
-      .update({
-        project_name: projectName,
-        project_number: projectNumber,
-        assembly_date: assemblyDate || null,
-        factory_test_date: factoryTestDate || null,
-        site_test_date: siteTestDate || null,
-        remarks: remarks || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
+      .update(updateData)
+      .eq('id', projectId)
       .select()
 
     if (error) {
       console.error('Supabase 수정 오류:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({
+        error: error.message,
+        details: error,
+        projectId,
+        updateData
+      }, { status: 500 })
     }
 
-    if (!data || data.length === 0) {
-      return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다.' }, { status: 404 })
-    }
+    console.log('업데이트 성공:', updatedData)
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: '프로젝트가 성공적으로 수정되었습니다.',
-      data: data[0]
+      data: updatedData?.[0]
     }, { status: 200 })
   } catch (error) {
     console.error('프로젝트 수정 오류:', error)
-    return NextResponse.json({ error: '프로젝트 수정 중 오류가 발생했습니다.' }, { status: 500 })
+    return NextResponse.json({
+      error: '프로젝트 수정 중 오류가 발생했습니다.',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 
 // 프로젝트 삭제
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // 환경 변수 확인
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Supabase 환경 변수가 설정되지 않음')
-      return NextResponse.json(
-        { error: '데이터베이스 연결이 설정되지 않았습니다' },
-        { status: 500 }
-      )
-    }
+    const projectId = params.id
 
-    // Supabase 클라이언트 생성
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
+    // Supabase 직접 연결
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
+    
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { id } = params
     const { error } = await supabase
       .from('projects')
       .delete()
-      .eq('id', id)
+      .eq('id', projectId)
 
     if (error) {
       console.error('Supabase 삭제 오류:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ message: '프로젝트가 성공적으로 삭제되었습니다.' }, { status: 200 })
+    return NextResponse.json({ 
+      message: '프로젝트가 성공적으로 삭제되었습니다.'
+    }, { status: 200 })
   } catch (error) {
     console.error('프로젝트 삭제 오류:', error)
     return NextResponse.json({ error: '프로젝트 삭제 중 오류가 발생했습니다.' }, { status: 500 })

@@ -1,8 +1,10 @@
 'use client'
 
 import { useUser } from '@/hooks/useUser'
+import { useAccessLog } from '@/hooks/useAccessLog'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
+import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -60,6 +62,7 @@ interface LocalEvent {
 
 export default function DashboardPage() {
   const { user, isAuthenticated, canAccessFeature, loading } = useUser()
+  const { logPageView } = useAccessLog()
   const router = useRouter()
   
   // 출장/외근 일정 상태 관리
@@ -84,8 +87,11 @@ export default function DashboardPage() {
     // 로딩이 완료된 후에만 리다이렉트 체크
     if (!loading && !isAuthenticated) {
       router.push('/');
+    } else if (isAuthenticated && user) {
+      // 페이지 접속 로그 기록
+      logPageView('/dashboard', `Level ${user.level} 사용자 접속`)
     }
-  }, [loading, isAuthenticated, router]); // loading 상태 추가
+  }, [loading, isAuthenticated, router, user, logPageView]); // loading 상태 추가
 
   // 출장/외근 일정 로드
   const loadBusinessTrips = useCallback(async () => {
@@ -93,29 +99,23 @@ export default function DashboardPage() {
     
     setLoadingTrips(true)
     try {
-      // 레벨 5 이상은 모든 사용자의 미보고 항목 조회, 그 외는 자신의 것만
-      const isLevel5OrAdmin = user.level === '5' || user.level === 'administrator'
-      const apiUrl = isLevel5OrAdmin 
-        ? '/api/business-trips?status=pending' 
-        : `/api/business-trips?userId=${user.id}&status=pending`
+      // 모든 출장/외근 조회 (필터 없이)
+      const apiUrl = '/api/business-trips'
       
       const response = await fetch(apiUrl)
-      console.log('출장/외근 API 응답 상태:', response.status)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('출장/외근 API 응답 데이터:', data)
-        console.log('API 응답 전체 구조:', JSON.stringify(data, null, 2))
         const trips = data.trips || []
-        console.log('전체 출장/외근 개수:', trips.length)
-        console.log('trips 배열 내용:', trips)
         
-        // 미보고 항목만 필터링 (report_status가 'pending'인 것)
-        const unreportedTrips = trips.filter((trip: any) => trip.report_status === 'pending')
-        console.log('미보고 출장/외근 개수:', unreportedTrips.length)
+        // 레벨 5 이상은 모든 사용자의 항목, 그 외는 자신의 것만
+        const isLevel5OrAdmin = user.level === '5' || user.level?.toLowerCase() === 'administrator'
+        const filteredTrips = isLevel5OrAdmin 
+          ? trips 
+          : trips.filter((trip: any) => trip.user_id === user.id)
         
         // LocalEvent 형식으로 변환
-        const formattedTrips: LocalEvent[] = unreportedTrips.map((trip: any) => ({
+        const formattedTrips: LocalEvent[] = filteredTrips.map((trip: any) => ({
           id: trip.id,
           category: '출장/외근',
           subCategory: trip.trip_type === 'business' ? '출장' : '외근',
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             level: trip.created_by_level || trip.user_level || '1'
           },
           createdAt: trip.created_at,
-          reported: trip.report_status === 'submitted'
+          reported: false // 기본적으로 미보고로 설정
         }))
         
         // localStorage의 businessTrips도 함께 조회
@@ -151,7 +151,6 @@ export default function DashboardPage() {
         
         if (storedBusinessTrips) {
           const businessTripsData = JSON.parse(storedBusinessTrips)
-          console.log('localStorage businessTrips 데이터:', businessTripsData)
           
           localStorageTrips = businessTripsData.map((trip: any) => ({
             id: trip.id,
@@ -186,186 +185,175 @@ export default function DashboardPage() {
         
         // API 데이터와 localStorage 데이터 합치기
         const allTrips = [...formattedTrips, ...localStorageTrips]
-        console.log('합쳐진 출장/외근 데이터:', allTrips)
         
-        // 데이터가 없으면 localStorage의 localEvents에서도 조회
+        // DB에서 모든 이벤트 조회 (localStorage 대신)
         if (allTrips.length === 0) {
-          console.log('API와 localStorage businessTrips에 데이터가 없음, localEvents에서 조회')
-          const storedEvents = localStorage.getItem('localEvents')
-          if (storedEvents) {
-            const allEvents: LocalEvent[] = JSON.parse(storedEvents)
-            console.log('localStorage localEvents에서 로드된 모든 이벤트:', allEvents)
-            
-            const businessTripEvents = allEvents.filter(event => {
-              if (event.category !== '출장/외근' && event.category !== '출장' && event.category !== '외근' && event.subCategory !== '출장' && event.subCategory !== '외근') {
-                return false
+          try {
+            const eventsResponse = await fetch('/api/events', {
+              headers: {
+                'x-user-level': user?.level || '1',
+                'x-user-id': user?.id || ''
               }
-              
-              const isLevel5OrAdmin = user?.level === '5' || user?.level === 'administrator'
-              if (!isLevel5OrAdmin && event.participant.id !== user?.id) {
-                return false
-              }
-              
-              // reported 속성이 false이거나 없는 경우 모두 표시 (미보고로 간주)
-              return !event.reported
             })
             
-            console.log('localEvents에서 필터링된 출장/외근 이벤트:', businessTripEvents)
-            setBusinessTrips(businessTripEvents)
-          } else {
+            if (eventsResponse.ok) {
+              const eventsData = await eventsResponse.json()
+              
+              const allEvents: LocalEvent[] = eventsData.map((event: any) => ({
+                id: `event_${event.id}`,
+                category: event.category,
+                subCategory: event.sub_category,
+                subSubCategory: event.sub_sub_category,
+                summary: event.summary,
+                description: event.description,
+                start: {
+                  date: event.start_date,
+                  dateTime: event.start_time ? `${event.start_date}T${event.start_time}` : event.start_date
+                },
+                end: {
+                  date: event.end_date,
+                  dateTime: event.end_time ? `${event.end_date}T${event.end_time}` : event.end_date
+                },
+                location: event.location,
+                participant: {
+                  id: event.participant_id,
+                  name: event.participant_name,
+                  level: event.participant_level
+                },
+                createdBy: {
+                  id: event.created_by_id,
+                  name: event.created_by_name,
+                  level: event.created_by_level
+                },
+                createdAt: event.created_at
+              }))
+              
+            
+              const businessTripEvents = allEvents.filter(event => {
+                if (event.category !== '출장/외근' && event.category !== '출장' && event.category !== '외근' && event.subCategory !== '출장' && event.subCategory !== '외근') {
+                  return false
+                }
+                
+                const isLevel5OrAdmin = user?.level === '5' || user?.level?.toLowerCase() === 'administrator'
+                if (!isLevel5OrAdmin && event.participant.id !== user?.id) {
+                  return false
+                }
+                
+                // reported 속성이 false이거나 없는 경우 모두 표시 (미보고로 간주)
+                return !event.reported
+              })
+              
+              setBusinessTrips(businessTripEvents)
+            } else {
+              console.error('events API 호출 실패:', eventsResponse.status)
+              setBusinessTrips(allTrips)
+            }
+          } catch (eventsError) {
+            console.error('events API 호출 오류:', eventsError)
             setBusinessTrips(allTrips)
           }
         } else {
           setBusinessTrips(allTrips)
         }
       } else {
-        console.warn('출장/외근 API 실패, localStorage에서 로드')
-        // API 실패 시 localStorage에서 로드
-        const storedEvents = localStorage.getItem('localEvents')
-        if (storedEvents) {
-          const allEvents: LocalEvent[] = JSON.parse(storedEvents)
-          console.log('localStorage에서 로드된 모든 이벤트:', allEvents)
-          
-          // 출장/외근 카테고리만 필터링
-          const businessTripEvents = allEvents.filter(event => {
-            console.log('이벤트 필터링 체크:', {
-              id: event.id,
-              category: event.category,
-              subCategory: event.subCategory,
-              summary: event.summary,
-              participant: event.participant,
-              reported: event.reported
-            })
-            
-            if (event.category !== '출장/외근' && event.category !== '출장' && event.category !== '외근' && event.subCategory !== '출장' && event.subCategory !== '외근') {
-              console.log('카테고리 불일치로 제외:', event.category, event.subCategory)
-              return false
-            }
-            
-            // 레벨 5 이상이 아니면 자신의 것만
-            if (!isLevel5OrAdmin && event.participant.id !== user.id) {
-              console.log('사용자 불일치로 제외:', event.participant.id, user.id)
-              return false
-            }
-            
-            // 미보고만 표시 (reported 속성이 false이거나 없는 것)
-            const isUnreported = !event.reported
-            console.log('미보고 체크:', event.reported, '결과:', isUnreported)
-            return isUnreported
-          })
-          
-          console.log('필터링된 출장/외근 이벤트:', businessTripEvents)
-          
-          // 날짜순으로 정렬
-          businessTripEvents.sort((a, b) => {
-            const dateA = new Date(a.start.dateTime || a.start.date || new Date())
-            const dateB = new Date(b.start.dateTime || b.start.date || new Date())
-            return dateA.getTime() - dateB.getTime()
-          })
-          
-          setBusinessTrips(businessTripEvents)
-        } else {
-          setBusinessTrips([])
-        }
+        console.warn('출장/외근 API 실패')
+        setBusinessTrips([])
       }
     } catch (error) {
       console.error('출장/외근 일정 로드 오류:', error)
-      // 오류 발생 시에도 localStorage에서 로드 시도
-      try {
-        const storedEvents = localStorage.getItem('localEvents')
-        if (storedEvents) {
-          const allEvents: LocalEvent[] = JSON.parse(storedEvents)
-          
-          const businessTripEvents = allEvents.filter(event => {
-            if (event.category !== '출장/외근' && event.category !== '출장' && event.category !== '외근' && event.subCategory !== '출장' && event.subCategory !== '외근') {
-              return false
-            }
-            
-            const isLevel5OrAdmin = user?.level === '5' || user?.level === 'administrator'
-            if (!isLevel5OrAdmin && event.participant.id !== user?.id) {
-              return false
-            }
-            
-            return !event.reported
-          })
-          
-          businessTripEvents.sort((a, b) => {
-            const dateA = new Date(a.start.dateTime || a.start.date || new Date())
-            const dateB = new Date(b.start.dateTime || b.start.date || new Date())
-            return dateA.getTime() - dateB.getTime()
-          })
-          
-          setBusinessTrips(businessTripEvents)
-        } else {
-          setBusinessTrips([])
-        }
-      } catch (localStorageError) {
-        console.error('localStorage 로드 오류:', localStorageError)
-        setBusinessTrips([])
-      }
+      setBusinessTrips([])
     } finally {
       setLoadingTrips(false)
     }
   }, [user?.id, user?.level])
 
-  useEffect(() => {
-    loadBusinessTrips()
-    loadVacationEvents()
-  }, [loadBusinessTrips])
-
-  // 연월차 일정 로드
+  // 연월차 일정 로드 (DB에서)
   const loadVacationEvents = useCallback(async () => {
-    if (!user?.id) return
+    if (!user?.id) {
+      return
+    }
     
     try {
-      // localStorage에서 연월차 데이터 로드
-      const storedEvents = localStorage.getItem('localEvents')
-      if (storedEvents) {
-        const allEvents: LocalEvent[] = JSON.parse(storedEvents)
-        
-        // 오늘 날짜
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        
-        // 연월차 카테고리만 필터링 (오늘 이후)
-        const vacationEvents = allEvents.filter(event => {
-          if (event.category !== '반/연차') {
-            return false
-          }
-          
-          // 레벨 5 이상이 아니면 자신의 것만
-          const isLevel5OrAdmin = user?.level === '5' || user?.level === 'administrator'
-          if (!isLevel5OrAdmin && event.participant.id !== user.id) {
-            return false
-          }
-          
-          // 오늘 이후 날짜만
-          const eventDate = new Date(event.start.dateTime || event.start.date || new Date())
+      // DB에서 연월차 데이터 로드
+      const response = await fetch('/api/leave-requests', {
+        headers: {
+          'x-user-level': user.level || '1'
+        }
+      })
+      
+      if (!response.ok) {
+        console.error('연월차 API 오류:', response.status)
+        setVacationEvents([])
+        return
+      }
+      
+      const leaveRequests = await response.json()
+      
+      // 오늘 날짜
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      // LocalEvent 형식으로 변환
+      const vacationEvents = leaveRequests
+        .filter((request: any) => {
+          const eventDate = new Date(request.start_date)
           eventDate.setHours(0, 0, 0, 0)
-          
           return eventDate >= today
         })
-        
-        // 날짜순으로 정렬
-        vacationEvents.sort((a, b) => {
+        .map((request: any) => ({
+          id: request.id,
+          title: `${request.leave_type === 'annual' ? '연차' : '반차'} - ${request.reason || '개인사유'}`,
+          start: {
+            date: request.start_date,
+            dateTime: request.start_time ? `${request.start_date}T${request.start_time}` : request.start_date
+          },
+          end: {
+            date: request.end_date,
+            dateTime: request.end_time ? `${request.end_date}T${request.end_time}` : request.end_date
+          },
+          category: '반/연차',
+          participant: {
+            id: request.user_id,
+            name: request.user_name || 'Unknown'
+          }
+        }))
+        .sort((a: any, b: any) => {
           const dateA = new Date(a.start.dateTime || a.start.date || new Date())
           const dateB = new Date(b.start.dateTime || b.start.date || new Date())
           return dateA.getTime() - dateB.getTime()
         })
-        
-        setVacationEvents(vacationEvents)
-      } else {
-        setVacationEvents([])
-      }
+      
+      setVacationEvents(vacationEvents)
+      
     } catch (error) {
       console.error('연월차 일정 로드 오류:', error)
       setVacationEvents([])
     }
   }, [user?.id, user?.level])
 
+  // useEffect들
+  useEffect(() => {
+    loadBusinessTrips()
+  }, [loadBusinessTrips])
+  
+  useEffect(() => {
+    loadVacationEvents()
+  }, [loadVacationEvents])
+
   // 프로젝트 일정 로드 (오늘 기준 3개월치)
   const loadProjectEvents = useCallback(async () => {
-    if (!user?.id || parseInt(user.level || '0') < 3) return
+    console.log('대시보드 프로젝트 일정 로드 시작:', { userId: user?.id, level: user?.level })
+    console.log('레벨 체크:', { 
+      isAdmin: user?.level?.toLowerCase() === 'administrator', 
+      numericLevel: parseInt(user?.level || '0'),
+      condition: user?.level?.toLowerCase() !== 'administrator' && parseInt(user?.level || '0') < 1,
+      userLevel: user?.level,
+      userId: user?.id
+    })
+    if (!user?.id) {
+      console.log('대시보드 프로젝트 일정 로드 중단: 사용자 없음')
+      return
+    }
     
     setLoadingProjects(true)
     try {
@@ -407,48 +395,51 @@ export default function DashboardPage() {
           
           projects.forEach((project: any) => {
             // 조완일
-            if (project.assemblyDate) {
-              const assemblyDate = new Date(project.assemblyDate)
+            if (project.assembly_date) {
+              const [year, month, day] = project.assembly_date.split('-').map(Number)
+              const assemblyDate = new Date(year, month - 1, day)
               if (assemblyDate >= today && assemblyDate <= threeMonthsLater) {
                 projectEvents.push({
                   id: `assembly-${project.id}`,
                   projectId: project.id,
-                  projectName: project.projectName,
-                  projectNumber: project.projectNumber,
+                  projectName: project.name,
+                  projectNumber: project.project_number,
                   type: '조완',
-                  date: project.assemblyDate,
+                  date: project.assembly_date,
                   description: project.description || ''
                 })
               }
             }
             
             // 공시일
-            if (project.factoryTestDate) {
-              const factoryDate = new Date(project.factoryTestDate)
+            if (project.factory_test_date) {
+              const [year, month, day] = project.factory_test_date.split('-').map(Number)
+              const factoryDate = new Date(year, month - 1, day)
               if (factoryDate >= today && factoryDate <= threeMonthsLater) {
                 projectEvents.push({
                   id: `factory-${project.id}`,
                   projectId: project.id,
-                  projectName: project.projectName,
-                  projectNumber: project.projectNumber,
+                  projectName: project.name,
+                  projectNumber: project.project_number,
                   type: '공시',
-                  date: project.factoryTestDate,
+                  date: project.factory_test_date,
                   description: project.description || ''
                 })
               }
             }
             
             // 현시일
-            if (project.siteTestDate) {
-              const siteDate = new Date(project.siteTestDate)
+            if (project.site_test_date) {
+              const [year, month, day] = project.site_test_date.split('-').map(Number)
+              const siteDate = new Date(year, month - 1, day)
               if (siteDate >= today && siteDate <= threeMonthsLater) {
                 projectEvents.push({
                   id: `site-${project.id}`,
                   projectId: project.id,
-                  projectName: project.projectName,
-                  projectNumber: project.projectNumber,
+                  projectName: project.name,
+                  projectNumber: project.project_number,
                   type: '현시',
-                  date: project.siteTestDate,
+                  date: project.site_test_date,
                   description: project.description || ''
                 })
               }
@@ -624,55 +615,35 @@ export default function DashboardPage() {
   const isLevel3 = userLevel === '3'
   const isLevel4 = userLevel === '4'
   const isLevel5 = userLevel === '5'
-  const isAdmin = userLevel === 'administrator'
+  const isAdmin = userLevel?.toLowerCase() === 'administrator'
 
-  // LEVEL1 사용자는 승인대기중 메시지 표시
-  if (isLevel1) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 max-w-md shadow-lg">
-            <div className="flex items-center justify-center w-16 h-16 bg-yellow-100 rounded-full mx-auto mb-4">
-              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-yellow-800 mb-2">승인대기중입니다</h2>
-            <p className="text-yellow-700 mb-4">
-              관리자의 승인을 기다리고 있습니다.<br />
-              승인 후 시스템을 이용하실 수 있습니다.
-            </p>
-            <div className="text-sm text-yellow-600">
-              현재 레벨: {userLevel} ({user.name}님)
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Level 1 사용자는 제한된 기능만 표시
 
   // 레벨별 접근 가능한 기능 확인
-  const canViewStock = isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level2 이상에서 재고 조회 가능
-  const canManageStock = isLevel3 || isLevel4 || isLevel5 || isAdmin // Level3 이상에서 재고 관리 가능
+  const canViewStock = isLevel1 || isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level1 이상에서 재고 조회 가능
+  const canManageStock = isLevel4 || isLevel5 || isAdmin // Level4 이상에서 재고 관리 가능
   const canDeleteStock = isLevel4 || isLevel5 || isAdmin // Level4 이상에서 재고 삭제 가능
   const canCloseStock = isLevel5 || isAdmin // Level5 이상에서 재고 마감 가능
   const canManageUsers = isLevel5 || isAdmin // Level5 이상에서 사용자 관리 가능
   const canAccessAdmin = isAdmin // Admin만 관리자 기능 접근 가능
+  const canWriteWorkDiary = isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level2 이상에서 업무일지 작성 가능
+  const canViewWorkDiary = isLevel1 || isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level1 이상에서 업무일지 조회 가능
 
   return (
-    <div className="min-h-screen bg-white">
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.permissions?.includes('administrator') || false}
-        title="대시보드"
-        backUrl="/"
-      />
+    <AuthGuard requiredLevel={1}>
+      <div className="min-h-screen bg-white">
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.permissions?.includes('administrator') || false}
+          title="대시보드"
+          backUrl="/"
+        />
       
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">대시보드</h1>
-          <p className="text-gray-600 mt-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">대시보드</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
             안녕하세요, {user.name}님! (Level {userLevel})
           </p>
         </div>
@@ -687,7 +658,7 @@ export default function DashboardPage() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full flex items-center justify-center mr-3">
                   <Calendar className="h-5 w-5 text-blue-600" />
                 </div>
-                {user && (user.level === '5' || user.level === 'administrator') 
+                {user && (user.level === '5' || user.level?.toLowerCase() === 'administrator') 
                   ? '전체 출장/외근 내역 (미보고)' 
                   : '나의 출장/외근 내역 (미보고)'}
               </CardTitle>
@@ -705,108 +676,154 @@ export default function DashboardPage() {
                   <p className="text-gray-400 text-sm mt-2">일정 관리에서 출장/외근 일정을 등록해보세요.</p>
             </div>
               ) : (
-                <div className="space-y-2">
-                  {/* 헤더 */}
-                  <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
-                        {user && (user.level === '5' || user.level === 'administrator') && (
-                          <div className="w-20 text-xs font-semibold text-gray-800">사용자</div>
-                        )}
-                        <div className="w-16 text-xs font-semibold text-gray-800">구분</div>
-                        <div className="w-20 text-xs font-semibold text-gray-800">세부구분</div>
-                        <div className="flex-1 text-xs font-semibold text-gray-800">제목</div>
-                        <div className="w-24 text-xs font-semibold text-gray-800 text-left">날짜</div>
-                        <div className="w-16 text-xs font-semibold text-gray-800">상태</div>
-                    </div>
-                      <div className="w-20 text-xs font-semibold text-gray-800 ml-4">작업</div>
-                    </div>
-                  </div>
-                  
-                  {/* 데이터 행들 */}
-                    {businessTrips.map((trip) => (
-                      <div key={trip.id} className="bg-white rounded-lg p-4 border-2 border-gray-300 hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1">
-                          {/* 구분 */}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <div className="space-y-3">
+                  {businessTrips.map((trip) => (
+                    <div key={trip.id} className="bg-white rounded-lg border-2 border-gray-300 hover:shadow-lg transition-all duration-200">
+                      {/* 모바일 레이아웃 */}
+                      <div className="block lg:hidden p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              trip.subCategory === '출장' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {trip.subCategory}
+                            </span>
+                            {trip.subSubCategory && (
+                              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                                {trip.subSubCategory}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            {trip.reported ? (
+                              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-1">
+                                <CheckCircle className="h-4 w-4" />
+                                완료
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                                미보고
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-semibold text-base text-gray-900 mb-1">
+                            {trip.summary}
+                          </div>
+                          {trip.description && (
+                            <div className="text-sm text-gray-600">
+                              {trip.description}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          {formatDate(trip.start.dateTime || trip.start.date)}
+                        </div>
+                        
+                        <div className="pt-2 border-t border-gray-200">
+                          {trip.reported ? (
+                            <Button 
+                              variant="outline" 
+                              disabled
+                              className="w-full min-h-[44px] text-green-600 border-green-300 text-base"
+                            >
+                              <CheckCircle className="h-5 w-5 mr-2" />
+                              보고 완료
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleOpenReportModal(trip)
+                              }}
+                              className="w-full min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-base"
+                            >
+                              <FileText className="h-5 w-5 mr-2" />
+                              보고서 작성
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* 데스크톱 레이아웃 */}
+                      <div className="hidden lg:flex items-center p-4 gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${
                             trip.subCategory === '출장' 
                               ? 'bg-blue-100 text-blue-800' 
                               : 'bg-green-100 text-green-800'
                           }`}>
                             {trip.subCategory}
                           </span>
-                          
-                          {/* 세부구분 */}
                           {trip.subSubCategory && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                            <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap">
                               {trip.subSubCategory}
                             </span>
                           )}
-                          
-                          {/* 제목 */}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {trip.summary}
-              </div>
-                            {trip.description && (
-                              <div className="text-sm text-gray-600 truncate">
-                                {trip.description}
-              </div>
-                            )}
-              </div>
-                          
-                          {/* 날짜 */}
-                          <div className="text-sm text-gray-600 whitespace-nowrap flex justify-start">
-              <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {formatDate(trip.start.dateTime || trip.start.date)}
-              </div>
-            </div>
-                          
-                          {/* 상태 */}
-                          <div className="whitespace-nowrap">
-                            {trip.reported ? (
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs flex items-center">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                보고완료
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                                미보고
-                              </span>
-                            )}
-                </div>
-              </div>
+                        </div>
                         
-                        {/* 작업 버튼 */}
-                        <div className="ml-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate">
+                            {trip.summary}
+                          </div>
+                          {trip.description && (
+                            <div className="text-sm text-gray-600 truncate">
+                              {trip.description}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 whitespace-nowrap flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDate(trip.start.dateTime || trip.start.date)}
+                        </div>
+                        
+                        <div>
                           {trip.reported ? (
-              <Button 
-                variant="outline" 
-                size="sm" 
+                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
+                              <CheckCircle className="h-4 w-4" />
+                              보고완료
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm whitespace-nowrap">
+                              미보고
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex-shrink-0">
+                          {trip.reported ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
                               disabled
-                              className="text-green-600 border-green-300"
-              >
+                              className="min-h-[44px] px-4 text-green-600 border-green-300"
+                            >
                               <CheckCircle className="h-4 w-4 mr-1" />
                               완료
-              </Button>
+                            </Button>
                           ) : (
-              <Button 
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleOpenReportModal(trip)
-                }}
-                size="sm" 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
+                            <Button 
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleOpenReportModal(trip)
+                              }}
+                              size="sm" 
+                              className="min-h-[44px] px-4 bg-blue-600 hover:bg-blue-700 text-white"
+                            >
                               <FileText className="h-4 w-4 mr-1" />
                               보고서 작성
-              </Button>
+                            </Button>
                           )}
-              </div>
-                </div>
-                </div>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -839,7 +856,9 @@ export default function DashboardPage() {
                 </div>
                 
                 {/* 연월차 데이터 표시 */}
-                {vacationEvents.length === 0 ? (
+                {(() => {
+                  return vacationEvents.length === 0
+                })() ? (
                   <div className="text-center py-8">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500 text-lg">등록된 연월차 일정이 없습니다.</p>
@@ -901,8 +920,8 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* 프로젝트 일정 (레벨 3 이상만 표시) */}
-        {user && parseInt(user.level || '0') >= 3 && (
+        {/* 프로젝트 일정 (로그인 사용자만 표시) */}
+        {user && (
           <Card className="mb-8 bg-gray-50 border-2 border-gray-300">
               <CardHeader className="bg-white border-b-2 border-gray-300">
                 <CardTitle className="flex items-center text-gray-800">
@@ -1002,5 +1021,6 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+    </AuthGuard>
   )
 }

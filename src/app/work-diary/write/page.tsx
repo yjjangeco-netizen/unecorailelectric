@@ -29,11 +29,15 @@ interface WorkEntry {
   workType: string // 신규, 보완, AS, SS, OV (WSMS 프로젝트만)
   workSubType: string // 출장, 외근, 전화 (WSMS 프로젝트만)
   customProjectName: string // 기타 프로젝트명
+  startTime?: string // 출근시간 (HH:MM)
+  endTime?: string // 퇴근시간 (HH:MM)
+  workHours?: number // 계산된 근무시간 (퇴근시간 - 출근시간 - 1시간)
+  overtimeHours?: number // 초과근무시간
 }
 
 interface Project {
   id: number
-  project_name: string
+  name: string
   project_number: string
   description?: string
 }
@@ -44,9 +48,9 @@ export default function WorkDiaryWritePage() {
   
   // 상태 관리
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0])
+  const [dailyStartTime, setDailyStartTime] = useState('09:00')
+  const [dailyEndTime, setDailyEndTime] = useState('18:00')
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
-    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
     { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
     { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
     { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' }
@@ -55,6 +59,27 @@ export default function WorkDiaryWritePage() {
   const [loading, setLoading] = useState(false)
   const [isProjectSearchOpen, setIsProjectSearchOpen] = useState(false)
   const [currentSearchIndex, setCurrentSearchIndex] = useState<number | null>(null)
+
+  // 근무시간 계산 함수 (퇴근시간 - 출근시간 - 1시간)
+  const calculateWorkHours = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 0
+    
+    const start = new Date(`2000-01-01T${startTime}:00`)
+    const end = new Date(`2000-01-01T${endTime}:00`)
+    
+    // 퇴근시간이 출근시간보다 이른 경우 (다음날까지 일한 경우)
+    if (end < start) {
+      end.setDate(end.getDate() + 1)
+    }
+    
+    const diffMs = end.getTime() - start.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    
+    // 점심시간 1시간 제외
+    const workHours = Math.max(0, diffHours - 1)
+    
+    return Math.round(workHours * 10) / 10 // 소수점 첫째자리까지
+  }
 
   // 프로젝트명에 따른 작업유형/세부유형 설정 함수
   const getWorkTypeOptions = (projectName: string) => {
@@ -66,7 +91,7 @@ export default function WorkDiaryWritePage() {
     if (hasWsmsKeyword) {
       return {
         workTypes: ['신규', '보완', 'AS', 'SS', 'OV'],
-        workSubTypes: ['출장', '외근', '전화']
+        workSubTypes: ['내근', '출장', '외근', '전화']
       }
     }
     
@@ -117,14 +142,11 @@ export default function WorkDiaryWritePage() {
       const response = await fetch('/api/projects')
       if (response.ok) {
         const data = await response.json()
-        console.log('프로젝트 API 응답:', data)
         setProjects(data)
       } else {
-        console.error('프로젝트 로드 실패:', response.status, response.statusText)
         alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
       }
     } catch (error) {
-      console.error('프로젝트 로드 실패:', error)
       alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
     }
   }
@@ -164,10 +186,6 @@ export default function WorkDiaryWritePage() {
         return
       }
 
-      console.log('업무일지 제출:', {
-        date: workDate,
-        entries: validEntries
-      })
 
       // 각 업무 항목을 개별적으로 API에 전송
       for (const entry of validEntries) {
@@ -183,7 +201,9 @@ export default function WorkDiaryWritePage() {
             workContent: entry.workContent.trim(),
             workType: entry.workType,
             workSubType: entry.workSubType,
-            customProjectName: entry.projectId === 'other' ? entry.customProjectName : null
+            customProjectName: entry.projectId === 'other' ? entry.customProjectName : null,
+            startTime: dailyStartTime,
+            endTime: dailyEndTime
           })
         })
 
@@ -198,7 +218,6 @@ export default function WorkDiaryWritePage() {
       // 일일업무일지 메인 페이지로 이동
       router.push('/work-diary')
     } catch (error) {
-      console.error('업무일지 제출 실패:', error)
       alert(`업무일지 제출 중 오류가 발생했습니다: ${error}`)
     } finally {
       setLoading(false)
@@ -206,9 +225,9 @@ export default function WorkDiaryWritePage() {
   }
 
   const resetForm = () => {
+    setDailyStartTime('09:00')
+    setDailyEndTime('18:00')
     setWorkEntries([
-      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
       { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
       { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
       { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' }
@@ -293,6 +312,8 @@ export default function WorkDiaryWritePage() {
                   <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600" />
                   <Input
                     type="time"
+                    value={dailyStartTime}
+                    onChange={(e) => setDailyStartTime(e.target.value)}
                     className="pl-10 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
                     placeholder="09:00"
                   />
@@ -304,12 +325,15 @@ export default function WorkDiaryWritePage() {
                   <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600" />
                   <Input
                     type="time"
+                    value={dailyEndTime}
+                    onChange={(e) => setDailyEndTime(e.target.value)}
                     className="pl-10 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
                     placeholder="18:00"
                   />
                 </div>
               </div>
             </div>
+
 
             {/* 업무 내용 입력 */}
             <div className="space-y-4">
@@ -385,7 +409,7 @@ export default function WorkDiaryWritePage() {
                             <SelectContent>
                               {projects.map((project) => (
                                 <SelectItem key={project.id} value={project.id.toString()}>
-                                  {project.project_name} ({project.project_number})
+                                  {project.name} ({project.project_number})
                                 </SelectItem>
                               ))}
                               <SelectItem value="other">기타</SelectItem>
@@ -534,6 +558,7 @@ export default function WorkDiaryWritePage() {
                       })()}
                     </div>
                   </div>
+                  
                   
                   <div>
                     <Label className="text-black font-bold">업무 내용</Label>

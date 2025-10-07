@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
+import AuthGuard from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -12,10 +13,10 @@ import CommonHeader from '@/components/CommonHeader'
 // 로컬 이벤트 타입 정의
 interface LocalEvent {
   id: string
-  category: string
+  workstyle: '외근' | '출장' | '반/연차' // 유효한 workstyle
   subCategory?: string // 출장/외근, 반차/연차 구분
   subSubCategory?: string // 출장 세부구분 (시운전, 현장답사, 보완작업, AS, SS)
-  projectType?: string // 프로젝트, AS/SS, 기타
+  projectType?: '프로젝트' | 'AS/SS' | '기타' // 유효한 프로젝트 타입
   projectId?: string // 선택된 프로젝트 ID
   customProject?: string // 기타 프로젝트명
   summary: string
@@ -68,7 +69,7 @@ interface ProjectEvent {
 const sampleEvents: LocalEvent[] = [
   {
     id: '1',
-    category: '기타일정',
+    workstyle: '기타일정',
     summary: '팀 미팅',
     description: '주간 팀 미팅',
     start: { dateTime: '2024-01-15T10:00:00+09:00' },
@@ -80,7 +81,7 @@ const sampleEvents: LocalEvent[] = [
   },
   {
     id: '2',
-    category: '조완',
+    workstyle: '조완',
     summary: '프로젝트 리뷰',
     description: '프로젝트 진행 상황 리뷰',
     start: { dateTime: '2024-01-16T14:00:00+09:00' },
@@ -92,7 +93,7 @@ const sampleEvents: LocalEvent[] = [
   },
   {
     id: '3',
-    category: '출장/외근',
+    workstyle: '출장',
     subCategory: '출장',
     summary: '연수 프로그램',
     description: '5일간의 연수 프로그램',
@@ -105,7 +106,7 @@ const sampleEvents: LocalEvent[] = [
   },
   {
     id: '4',
-    category: '반/연차',
+    workstyle: '반/연차',
     subCategory: '연차',
     summary: '휴가',
     description: '개인 휴가',
@@ -128,6 +129,8 @@ export default function SchedulePage() {
   const [projectEvents, setProjectEvents] = useState<ProjectEvent[]>([])
   const [loadingEvents, setLoadingEvents] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [filters, setFilters] = useState({
     project: true,
     vacation: true,
@@ -219,10 +222,10 @@ export default function SchedulePage() {
       title: event.summary,
       start: event.start.dateTime || event.start.date,
       end: event.end.dateTime || event.end.date,
-      backgroundColor: getEventColor(event.category),
-      borderColor: getEventColor(event.category),
+      backgroundColor: getEventColor(event.workstyle),
+      borderColor: getEventColor(event.workstyle),
       extendedProps: {
-        category: event.category,
+        workstyle: event.workstyle,
         subCategory: event.subCategory,
         description: event.description,
         location: event.location,
@@ -232,23 +235,24 @@ export default function SchedulePage() {
     }))
   }
 
-  // 이벤트 카테고리별 색상 반환
-  const getEventColor = (category: string) => {
+  // 이벤트 workstyle별 색상 반환
+  const getEventColor = (workstyle: string) => {
     const colors: { [key: string]: string } = {
-      '출장/외근': '#3B82F6',
-      '반차/연차': '#10B981',
+      '외근': '#3B82F6',
+      '출장': '#8B5CF6',
+      '반/연차': '#10B981',
       '회의': '#F59E0B',
       '교육': '#8B5CF6',
       '기타': '#6B7280'
     }
-    return colors[category] || '#6B7280'
+    return colors[workstyle] || '#6B7280'
   }
   const [showAddEventModal, setShowAddEventModal] = useState(false)
   const [showEditEventModal, setShowEditEventModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<LocalEvent | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>('')
   const [newEvent, setNewEvent] = useState({
-    category: '',
+    workstyle: '',
     subCategory: '',
     subSubCategory: '',
     projectType: '',
@@ -371,15 +375,27 @@ export default function SchedulePage() {
 
   // 프로젝트명 업데이트 함수
   const getUpdatedProjectName = (project: any) => {
-    let updatedName = project.projectName || project.project_name
+    let baseName = project.name || project.project_name || project.projectName
     
-    if (project.projectNumber && project.projectNumber.startsWith('CNCWL')) {
-      updatedName = `${project.projectName || project.project_name} 선반`
-    } else if (project.projectNumber && project.projectNumber.startsWith('CNCUWL')) {
-      updatedName = `${project.projectName || project.project_name} 전삭기`
+    // "선반" 제거
+    if (baseName.includes('선반')) {
+      baseName = baseName.replace('선반', '')
     }
     
-    return updatedName
+    // "전삭기" 제거
+    if (baseName.includes('전삭기')) {
+      baseName = baseName.replace('전삭기', '')
+    }
+    
+    if (project.project_number && project.project_number.startsWith('CNCWL')) {
+      // 선반은 A 추가
+      return `${baseName}A`
+    } else if (project.project_number && project.project_number.startsWith('CNCUWL')) {
+      // 전삭기는 U 추가
+      return `${baseName}U`
+    }
+    
+    return baseName
   }
 
   // 프로젝트 검색
@@ -389,7 +405,7 @@ export default function SchedulePage() {
       setFilteredProjects(projects)
       } else {
       const filtered = projects.filter(project => 
-        project.project_name.toLowerCase().includes(term.toLowerCase()) ||
+        project.name.toLowerCase().includes(term.toLowerCase()) ||
         project.project_number.toLowerCase().includes(term.toLowerCase()) ||
         getUpdatedProjectName(project).toLowerCase().includes(term.toLowerCase())
       )
@@ -407,6 +423,8 @@ export default function SchedulePage() {
   // 프로젝트 이벤트 로딩 (일정 API 활용)
   const loadProjectEvents = async () => {
     try {
+      console.log('프로젝트 이벤트 로딩 시작...')
+      
       // 현재 보기 모드에 따라 날짜 범위 계산
       const today = new Date()
       let startDate: Date
@@ -423,10 +441,20 @@ export default function SchedulePage() {
         endDate = new Date(today.getFullYear(), today.getMonth() + 3, 0)
       }
       
-      // 일정 API 호출
-      const response = await fetch(`/api/schedule?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`)
+      console.log('날짜 범위 계산 완료:', { startDate, endDate })
+      
+      // 일정 API 호출 (인증 헤더 추가)
+      console.log('일정 API 호출 시작...')
+      const response = await fetch(`/api/schedule?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`, {
+        headers: {
+          'x-user-level': user?.level || '1'
+        }
+      })
+      console.log('일정 API 응답 상태:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('일정 API 응답 데이터:', data)
         const projectEvents: ProjectEvent[] = []
         
         // 일정 API의 프로젝트 이벤트 처리
@@ -444,59 +472,92 @@ export default function SchedulePage() {
         }
         
         // 프로젝트 관리 API의 데이터도 처리 (기존 방식 유지)
-        const projectsResponse = await fetch('/api/projects')
+        console.log('프로젝트 API 호출 시작...')
+        const projectsResponse = await fetch('/api/projects', {
+          headers: {
+            'x-user-level': user?.level || '1'
+          }
+        })
+        console.log('프로젝트 API 응답 상태:', projectsResponse.status)
+        
         if (projectsResponse.ok) {
           const projects = await projectsResponse.json()
+        console.log('API에서 받은 프로젝트 데이터:', projects)
+        console.log('프로젝트 개수:', projects.length)
+        
+        // 프로젝트 데이터 상세 확인
+        projects.forEach((project: any, index: number) => {
+          console.log(`프로젝트 ${index + 1}:`, {
+            id: project.id,
+            name: project.name,
+            project_number: project.project_number,
+            assembly_date: project.assembly_date,
+            factory_test_date: project.factory_test_date,
+            site_test_date: project.site_test_date
+          })
+        })
           
           projects.forEach((project: any) => {
             // 조완일
-            if (project.assemblyDate) {
+            if (project.assembly_date) {
+              console.log('조완일 데이터 발견:', project.assembly_date)
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
-              const [year, month, day] = project.assemblyDate.split('-').map(Number)
+              const [year, month, day] = project.assembly_date.split('-').map(Number)
               const assemblyDate = new Date(year, month - 1, day) // month는 0부터 시작
               if (assemblyDate >= startDate && assemblyDate <= endDate) {
                 projectEvents.push({
                   id: `assembly-${project.id}`,
                   type: '조완',
                   projectName: getUpdatedProjectName(project),
-                  projectNumber: project.projectNumber,
-                  date: project.assemblyDate,
-                  description: `${project.projectName} 조완`
+                  projectNumber: project.project_number,
+                  date: project.assembly_date,
+                  description: `${project.name} 조완`,
+                  isReadOnly: true, // 수정 불가
+                  icon: '🔧' // 조완 아이콘
                 })
+                console.log('조완일 이벤트 추가됨')
               }
             }
             
             // 공시일
-            if (project.factoryTestDate) {
+            if (project.factory_test_date) {
+              console.log('공장시운전일 데이터 발견:', project.factory_test_date)
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
-              const [year, month, day] = project.factoryTestDate.split('-').map(Number)
+              const [year, month, day] = project.factory_test_date.split('-').map(Number)
               const factoryDate = new Date(year, month - 1, day) // month는 0부터 시작
               if (factoryDate >= startDate && factoryDate <= endDate) {
                 projectEvents.push({
                   id: `factory-${project.id}`,
                   type: '공시',
                   projectName: getUpdatedProjectName(project),
-                  projectNumber: project.projectNumber,
-                  date: project.factoryTestDate,
-                  description: `${project.projectName} 공시`
+                  projectNumber: project.project_number,
+                  date: project.factory_test_date,
+                  description: `${project.name} 공시`,
+                  isReadOnly: true, // 수정 불가
+                  icon: '🏭' // 공장시운전 아이콘
                 })
+                console.log('공장시운전일 이벤트 추가됨')
               }
             }
             
             // 현시일
-            if (project.siteTestDate) {
+            if (project.site_test_date) {
+              console.log('현장시운전일 데이터 발견:', project.site_test_date)
               // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
-              const [year, month, day] = project.siteTestDate.split('-').map(Number)
+              const [year, month, day] = project.site_test_date.split('-').map(Number)
               const siteDate = new Date(year, month - 1, day) // month는 0부터 시작
               if (siteDate >= startDate && siteDate <= endDate) {
                 projectEvents.push({
                   id: `site-${project.id}`,
                   type: '현시',
                   projectName: getUpdatedProjectName(project),
-                  projectNumber: project.projectNumber,
-                  date: project.siteTestDate,
-                  description: `${project.projectName} 현시`
+                  projectNumber: project.project_number,
+                  date: project.site_test_date,
+                  description: `${project.name} 현시`,
+                  isReadOnly: true, // 수정 불가
+                  icon: '🏗️' // 현장시운전 아이콘
                 })
+                console.log('현장시운전일 이벤트 추가됨')
               }
             }
           })
@@ -507,9 +568,50 @@ export default function SchedulePage() {
           index === self.findIndex(e => e.projectNumber === event.projectNumber && e.type === event.type && e.date === event.date)
         )
         
-        setProjectEvents(uniqueEvents)
-        console.log('프로젝트 이벤트 불러옴:', uniqueEvents)
+        console.log('최종 프로젝트 이벤트 설정 전:', uniqueEvents)
         console.log('프로젝트 이벤트 개수:', uniqueEvents.length)
+        setProjectEvents(uniqueEvents)
+        console.log('프로젝트 이벤트 설정 완료')
+        
+        // 프로젝트 이벤트를 LocalEvent 형태로 변환하여 events에 추가
+        const convertedProjectEvents: LocalEvent[] = uniqueEvents.map(projectEvent => ({
+          id: projectEvent.id,
+          workstyle: '프로젝트',
+          subCategory: projectEvent.type,
+          summary: `<span class="inline-block ${
+            projectEvent.type === '조완' 
+              ? 'bg-green-200 text-green-800' 
+              : projectEvent.type === '공시' 
+              ? 'bg-blue-200 text-blue-800' 
+              : 'bg-orange-200 text-orange-800'
+          } rounded-full px-2 py-1 text-xs font-semibold">${projectEvent.type}</span> ${projectEvent.projectName}`,
+          description: projectEvent.description || `${projectEvent.projectNumber} ${projectEvent.type}`,
+          start: { date: projectEvent.date },
+          end: { date: projectEvent.date },
+          location: '',
+          participant: { id: '', name: '' },
+          companions: [],
+          isReadOnly: true,
+          isProjectEvent: true
+        }))
+        
+        // 기존 events에서 프로젝트 이벤트 제거하고 새로운 프로젝트 이벤트 추가
+        setEvents(prevEvents => {
+          const nonProjectEvents = prevEvents.filter(event => !event.isProjectEvent)
+          return [...nonProjectEvents, ...convertedProjectEvents]
+        })
+        console.log('프로젝트 데이터 원본:', projects)
+        console.log('날짜 범위:', { startDate: startDate.toISOString().split('T')[0], endDate: endDate.toISOString().split('T')[0] })
+        
+        // 각 프로젝트의 날짜 필드 확인
+        projects.forEach((project, index) => {
+          console.log(`프로젝트 ${index + 1}:`, {
+            name: project.project_name,
+            assembly_date: project.assembly_date,
+            factory_test_date: project.factory_test_date,
+            site_test_date: project.site_test_date
+          })
+        })
       }
     } catch (err) {
       console.error('프로젝트 이벤트 불러오기 실패:', err)
@@ -521,59 +623,67 @@ export default function SchedulePage() {
     setError(null)
     
     try {
-      // 로컬 스토리지에서 일정 불러오기
-      const savedEvents = localStorage.getItem('localEvents')
+      // DB에서 모든 일정 불러오기 (연차는 이미 위에서 처리됨)
       let localEvents: LocalEvent[] = []
-      
-      if (savedEvents) {
-        localEvents = JSON.parse(savedEvents)
-        console.log('로컬 일정 불러옴:', localEvents)
-      } else {
-        // 기본 샘플 데이터
-        localEvents = sampleEvents
-        console.log('샘플 일정 사용')
-      }
       
       // 출장/외근 데이터를 API에서 로드하여 병합
       try {
         const businessTripResponse = await fetch('/api/business-trips')
+        
         if (businessTripResponse.ok) {
           const businessTripData = await businessTripResponse.json()
+          console.log('출장/외근 API 응답:', businessTripData)
           const businessTrips = businessTripData.trips || []
+          console.log('출장/외근 데이터 개수:', businessTrips.length)
           
           // API에서 가져온 출장/외근 데이터를 LocalEvent 형식으로 변환
-          const apiBusinessTrips: LocalEvent[] = businessTrips.map((trip: any) => ({
-            id: `api_${trip.id}`,
-            category: '출장/외근',
-            subCategory: trip.trip_type === 'business' ? '출장' : '외근',
-            subSubCategory: trip.purpose || '기타',
-            summary: trip.title,
-            description: trip.purpose,
-            start: {
-              dateTime: trip.start_date ? `${trip.start_date}T${trip.start_time || '09:00'}:00+09:00` : undefined,
-              date: trip.start_date
-            },
-            end: {
-              dateTime: trip.end_date ? `${trip.end_date}T${trip.end_time || '18:00'}:00+09:00` : undefined,
-              date: trip.end_date
-            },
-            location: trip.location || '미지정',
-            participant: {
-              id: trip.user_id,
-              name: trip.user_name,
-              level: trip.user_level || '1'
-            },
-            createdBy: {
-              id: trip.created_by || trip.user_id,
-              name: trip.created_by_name || trip.user_name,
-              level: trip.created_by_level || trip.user_level || '1'
-            },
-            createdAt: trip.created_at,
-            reported: trip.report_status === 'submitted'
-          }))
+          // 여러 날에 걸치는 경우 각 날마다 별도 이벤트 생성
+          const apiBusinessTrips: LocalEvent[] = []
+          
+          businessTrips.forEach((trip: any) => {
+            const startDate = new Date(trip.start_date)
+            const endDate = new Date(trip.end_date)
+            
+            // 시작일부터 종료일까지 모든 날에 이벤트 생성
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+              const currentDate = d.toISOString().split('T')[0]
+              const isFirstDay = currentDate === trip.start_date
+              const isLastDay = currentDate === trip.end_date
+              
+              apiBusinessTrips.push({
+                id: `api_${trip.id}_${currentDate}`,
+                workstyle: '출장',
+                subCategory: trip.trip_type === 'business_trip' ? '출장' : '외근',
+                subSubCategory: trip.sub_type || '기타',
+                summary: trip.title,
+                description: trip.description || trip.purpose,
+                start: {
+                  dateTime: isFirstDay && trip.start_time ? `${currentDate}T${trip.start_time}:00+09:00` : undefined,
+                  date: currentDate
+                },
+                end: {
+                  dateTime: isLastDay && trip.end_time ? `${currentDate}T${trip.end_time}:00+09:00` : undefined,
+                  date: currentDate
+                },
+                location: trip.location || '미지정',
+                participant: {
+                  id: trip.user_id,
+                  name: trip.user_name,
+                  level: trip.user_level || '1'
+                },
+                createdBy: {
+                  id: trip.created_by || trip.user_id,
+                  name: trip.created_by_name || trip.user_name,
+                  level: trip.created_by_level || trip.user_level || '1'
+                },
+                createdAt: trip.created_at,
+                reported: trip.report_status === 'submitted'
+              })
+            }
+          })
           
           // 기존 출장/외근 이벤트 제거하고 API 데이터로 교체
-          const nonBusinessEvents = localEvents.filter(event => event.category !== '출장/외근')
+          const nonBusinessEvents = localEvents.filter(event => event.workstyle !== '출장')
           localEvents = [...nonBusinessEvents, ...apiBusinessTrips]
           console.log('API 출장/외근 데이터 병합:', apiBusinessTrips)
         }
@@ -581,9 +691,116 @@ export default function SchedulePage() {
         console.warn('출장/외근 API 로드 실패, 로컬 데이터 사용:', apiError)
       }
       
-      // 연월차 데이터도 API에서 로드 시도 (향후 구현 예정)
-      // 현재는 localStorage 데이터만 사용
+      // 연월차 데이터를 API에서 로드
+      try {
+        const leaveResponse = await fetch('/api/leave-requests', {
+          headers: {
+            'x-user-level': user?.level || '1'
+          }
+        })
+        
+        if (leaveResponse.ok) {
+          const leaveRequests = await leaveResponse.json()
+          console.log('API 연월차 데이터:', leaveRequests.length, '개')
+          
+          const apiLeaveEvents: LocalEvent[] = leaveRequests
+            .map((request: any) => ({
+              id: `leave_${request.id}`,
+              workstyle: '반/연차',
+              subCategory: request.leave_type === 'annual' ? '연차' : '반차',
+              summary: `${request.leave_type === 'annual' ? '연차' : '반차'} - ${request.reason || '개인사유'}`,
+              description: request.reason || '개인사유',
+              start: {
+                date: request.start_date,
+                dateTime: request.start_time ? `${request.start_date}T${request.start_time}` : request.start_date
+              },
+              end: {
+                date: request.end_date,
+                dateTime: request.end_time ? `${request.end_date}T${request.end_time}` : request.end_date
+              },
+              participant: {
+                id: request.user_id,
+                name: request.user_name || 'Unknown',
+                level: '1'
+              },
+              createdBy: {
+                id: request.user_id,
+                name: request.user_name || 'Unknown',
+                level: '1'
+              },
+              createdAt: request.created_at
+            }))
+          
+          // 기존 연월차 이벤트 제거하고 API 데이터로 교체
+          const nonLeaveEvents = localEvents.filter(event => event.workstyle !== '반/연차')
+          localEvents = [...nonLeaveEvents, ...apiLeaveEvents]
+          console.log('연차 이벤트 수:', apiLeaveEvents.length)
+        }
+      } catch (leaveError) {
+        console.warn('연월차 API 로드 실패, 로컬 데이터 사용:', leaveError)
+      }
       
+      // 일반 이벤트 데이터를 API에서 로드
+      try {
+        const eventsResponse = await fetch('/api/events', {
+          headers: {
+            'x-user-level': user?.level || '1',
+            'x-user-id': user?.id || ''
+          }
+        })
+        
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json()
+          console.log('API 일반 이벤트 데이터:', eventsData.length, '개')
+          console.log('API 일반 이벤트 상세:', eventsData)
+          
+          const apiEvents: LocalEvent[] = eventsData.map((event: any) => ({
+            id: `event_${event.id}`,
+            workstyle: event.category,
+            subCategory: event.sub_category,
+            subSubCategory: event.sub_sub_category,
+            projectType: event.project_type,
+            projectId: event.project_id,
+            customProject: event.custom_project,
+            summary: event.summary,
+            description: event.description,
+            start: {
+              date: event.start_date,
+              dateTime: event.start_time ? `${event.start_date}T${event.start_time}` : event.start_date
+            },
+            end: {
+              date: event.end_date,
+              dateTime: event.end_time ? `${event.end_date}T${event.end_time}` : event.end_date
+            },
+            location: event.location,
+            participant: {
+              id: event.participant_id,
+              name: event.participant_name,
+              level: event.participant_level
+            },
+            companions: event.companions || [],
+            createdBy: {
+              id: event.created_by_id,
+              name: event.created_by_name,
+              level: event.created_by_level
+            },
+            createdAt: event.created_at
+          }))
+          
+          // 기존 일반 이벤트만 제거하고 API 데이터로 교체 (연차, 출장/외근은 유지)
+          const nonGeneralEvents = localEvents.filter(event => 
+            !event.id.startsWith('event_')
+          )
+          localEvents = [...nonGeneralEvents, ...apiEvents]
+          console.log('API 일반 이벤트 데이터 병합:', apiEvents)
+          console.log('최종 localEvents 개수:', localEvents.length)
+          console.log('최종 localEvents 상세:', localEvents)
+        }
+      } catch (eventsError) {
+        console.warn('일반 이벤트 API 로드 실패:', eventsError)
+      }
+      
+      console.log('최종 이벤트 설정:', localEvents.length, '개')
       setEvents(localEvents)
       
       // 프로젝트 이벤트도 함께 로딩
@@ -612,8 +829,8 @@ export default function SchedulePage() {
           workDate: event.start.dateTime?.split('T')[0] || event.start.date,
           projectId: 'other', // 외근/출장은 'other'로 설정
           workContent: workContent,
-          workType: event.subCategory === '출장' ? '출장' : '외근',
-          workSubType: event.subSubCategory || null,
+          workType: '신규', // 외근/출장은 신규로 설정
+          workSubType: event.workstyle === '외근' ? '외근' : event.workstyle === '출장' ? '출장' : null,
           customProjectName: `${event.subCategory} 업무`
         })
       })
@@ -630,13 +847,21 @@ export default function SchedulePage() {
 
   // 새 일정 추가
   const handleAddEvent = async () => {
-    if (!newEvent.category || !newEvent.participantId || !newEvent.date) {
+    console.log('일정 추가 시도:', newEvent)
+    
+    if (!newEvent.workstyle || !newEvent.participantId || !newEvent.date) {
+      console.log('필수 필드 누락:', { 
+        workstyle: newEvent.workstyle, 
+        participantId: newEvent.participantId, 
+        date: newEvent.date 
+      })
       setError('카테고리, 당사자와 시작 날짜를 입력해주세요.')
       return
     }
     
     // 연월차가 아닌 경우 제목 필수 체크
-    if (newEvent.category !== '반/연차' && !newEvent.title) {
+    if (newEvent.workstyle !== '반/연차' && !newEvent.title) {
+      console.log('제목 누락:', newEvent.title)
       setError('제목을 입력해주세요.')
       return
     }
@@ -652,23 +877,99 @@ export default function SchedulePage() {
 
     // 연월차의 경우 자동으로 제목 생성
     const generateTitle = () => {
-      if (newEvent.category === '반/연차') {
+      if (newEvent.workstyle === '반/연차') {
         const timeText = newEvent.subCategory === '반차' 
           ? (newEvent.time === '09:00' ? '오전' : '오후')
           : ''
         return `${newEvent.subCategory || '연차'}${timeText ? `-${timeText}` : ''}`
-      } else if (newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') {
-        const tripType = newEvent.subCategory || (newEvent.category === '출장' ? '출장' : '외근')
+      } else if (newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) {
+        const tripType = newEvent.subCategory || (newEvent.workstyle === '출장' ? '출장' : '외근')
         // 이미 [출장] 또는 [외근]이 포함된 경우 제거하고 새로 추가
         const cleanTitle = newEvent.title.replace(/^\[(출장|외근)\]\s*/, '')
-        return `[${tripType}] ${cleanTitle}`
+        
+        // 당사자(참여자) 성 추출 (이름에서 첫 글자)
+        const participantLastName = participant?.name ? participant.name.charAt(0) : 'U'
+        
+        return `${participantLastName}[${tripType}] ${cleanTitle}`
       }
       return newEvent.title
     }
 
+    // 연차/반차인 경우 DB에 저장
+    if (newEvent.workstyle === '반/연차') {
+      // 연차/반차 구분이 없으면 기본값 설정
+      if (!newEvent.subCategory) {
+        newEvent.subCategory = '연차'
+      }
+      
+      try {
+        const leaveData = {
+          user_id: newEvent.participantId,
+          leave_type: newEvent.subCategory === '반차' ? 'half_day' : 'annual',
+          start_date: startDate,
+          end_date: endDate,
+          start_time: newEvent.subCategory === '반차' ? newEvent.time : null,
+          end_time: newEvent.subCategory === '반차' ? (newEvent.time === '09:00' ? '13:00' : '18:00') : null,
+          total_days: newEvent.subCategory === '반차' ? 0.5 : 1,
+          reason: newEvent.description || '개인사유'
+        }
+        
+        console.log('연차 신청 데이터:', leaveData)
+
+        const response = await fetch('/api/leave-requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-level': user?.level || '1'
+          },
+          body: JSON.stringify(leaveData)
+        })
+
+        if (!response.ok) {
+          throw new Error('연차 신청 실패')
+        }
+
+        const savedLeave = await response.json()
+        console.log('연차 신청 완료:', savedLeave)
+        
+        // 성공 메시지 표시
+        setError('')
+        setSuccess('연차가 성공적으로 신청되었습니다!')
+        
+        // 폼 초기화
+        setNewEvent({
+          workstyle: '',
+          subCategory: '',
+          participantId: '',
+          date: '',
+          endDate: '',
+          time: '09:00',
+          title: '',
+          description: '',
+          location: '',
+          companions: []
+        })
+        
+        // 모달 닫기
+        setShowAddModal(false)
+        
+        // 3초 후 성공 메시지 자동 제거
+        setTimeout(() => {
+          setSuccess('')
+        }, 3000)
+        
+        return
+        
+      } catch (error) {
+        console.error('연차 신청 오류:', error)
+        setError('연차 신청 중 오류가 발생했습니다.')
+        return
+      }
+    }
+
     const event: LocalEvent = {
       id: Date.now().toString(),
-      category: newEvent.category,
+      workstyle: newEvent.workstyle,
       subCategory: newEvent.subCategory,
       subSubCategory: newEvent.subSubCategory,
       summary: generateTitle(),
@@ -677,7 +978,9 @@ export default function SchedulePage() {
         dateTime: `${startDate}T${newEvent.time || '09:00'}:00+09:00` 
       },
       end: { 
-        dateTime: `${endDate}T${newEvent.endTime || newEvent.time || '10:00'}:00+09:00` 
+        dateTime: newEvent.workstyle === '출장' || newEvent.workstyle === '외근' 
+          ? `${startDate}T${newEvent.endTime || newEvent.time || '18:00'}:00+09:00`
+          : `${endDate}T${newEvent.endTime || newEvent.time || '10:00'}:00+09:00` 
       },
       location: '사무실',
       participant: participant || { id: 'unknown', name: 'Unknown User', level: '1' },
@@ -690,12 +993,65 @@ export default function SchedulePage() {
       createdAt: new Date().toISOString()
     }
 
-    const updatedEvents = [...events, event]
-    setEvents(updatedEvents)
-    localStorage.setItem('localEvents', JSON.stringify(updatedEvents))
+    // DB에 일반 이벤트 저장 (외근/출장 포함)
+    console.log('일반 이벤트 저장 시도:', event)
+    try {
+      const eventData = {
+        category: event.workstyle, // workstyle을 category로 매핑
+        subCategory: event.subCategory,
+        subSubCategory: event.subSubCategory,
+        projectType: event.projectType,
+        projectId: event.projectId,
+        customProject: event.customProject,
+        summary: event.summary,
+        description: event.description,
+        startDate: event.start.dateTime?.split('T')[0] || event.start.date,
+        startTime: event.start.dateTime?.split('T')[1]?.split('+')[0] || null,
+        endDate: event.end.dateTime?.split('T')[0] || event.end.date,
+        endTime: event.end.dateTime?.split('T')[1]?.split('+')[0] || null,
+        location: event.location,
+        participantId: event.participant.id,
+        participantName: event.participant.name,
+        participantLevel: event.participant.level,
+        companions: event.companions || [],
+        createdById: event.createdBy.id,
+        createdByName: event.createdBy.name,
+        createdByLevel: event.createdBy.level
+      }
+      
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-level': user?.level || '1',
+          'x-user-id': user?.id || ''
+        },
+        body: JSON.stringify(eventData)
+      })
+      
+      if (response.ok) {
+        const savedEvent = await response.json()
+        console.log('일반 이벤트 저장 성공:', savedEvent)
+        
+        // 저장된 이벤트로 ID 업데이트
+        const updatedEvent = { ...event, id: `event_${savedEvent.id}` }
+        const updatedEvents = [...events, updatedEvent]
+        setEvents(updatedEvents)
+      } else {
+        console.error('일반 이벤트 저장 실패:', response.status)
+        // 실패해도 UI에는 표시
+        const updatedEvents = [...events, event]
+        setEvents(updatedEvents)
+      }
+    } catch (error) {
+      console.error('일반 이벤트 저장 오류:', error)
+      // 오류가 발생해도 UI에는 표시
+      const updatedEvents = [...events, event]
+      setEvents(updatedEvents)
+    }
     
     // 외근/출장인 경우 API에도 등록하고 업무일지에 자동 추가
-    if ((newEvent.category === '출장/외근' || newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') && participant) {
+    if ((newEvent.workstyle === '출장' || newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) && participant) {
       try {
         // 출장/외근 API에 등록
         const tripResponse = await fetch('/api/business-trips', {
@@ -710,7 +1066,7 @@ export default function SchedulePage() {
             purpose: event.description || event.summary,
             location: event.location || '미지정',
             startDate: startDate,
-            endDate: endDate,
+            endDate: endDate, // 외근/출장은 여러 날 가능
             startTime: newEvent.time || null,
             endTime: newEvent.endTime || null
           })
@@ -721,13 +1077,7 @@ export default function SchedulePage() {
           console.log('출장/외근이 API에 등록되었습니다:', tripData)
           console.log('등록된 데이터 상세:', JSON.stringify(tripData, null, 2))
           
-          // Mock 데이터인 경우 localStorage에 추가로 저장
-          if (tripData.useLocalStorage && tripData.trip) {
-            const existingTrips = JSON.parse(localStorage.getItem('businessTrips') || '[]')
-            existingTrips.push(tripData.trip)
-            localStorage.setItem('businessTrips', JSON.stringify(existingTrips))
-            console.log('출장/외근이 localStorage에 저장되었습니다:', tripData.trip)
-          }
+          // DB에 저장되므로 localStorage 불필요
         } else {
           const errorText = await tripResponse.text()
           console.warn('출장/외근 API 등록 실패:', errorText)
@@ -740,17 +1090,23 @@ export default function SchedulePage() {
       await addToWorkDiary(event, participant)
     }
     
-    setNewEvent({ category: '', subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: '', participantId: '', companions: [], title: '', date: '', endDate: '', time: '', endTime: '', description: '' })
+    setNewEvent({ workstyle: '', subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: '', participantId: '', companions: [], title: '', date: '', endDate: '', time: '', endTime: '', description: '' })
     setShowCompanionSelection(false)
     setShowAddEventModal(false)
     setError(null)
   }
 
   // 일정 수정
-  const handleEditEvent = (event: LocalEvent) => {
+  const handleEditEvent = async (event: LocalEvent) => {
+    // 프로젝트 이벤트(조완, 공시, 현시)는 수정 불가
+    if ((event as any).isReadOnly) {
+      alert('프로젝트 관련 일정은 프로젝트 설정에서만 수정할 수 있습니다.')
+      return
+    }
+    
     setEditingEvent(event)
     setNewEvent({
-      category: event.category,
+      workstyle: event.workstyle,
       subCategory: event.subCategory || '',
       subSubCategory: event.subSubCategory || '',
       projectType: event.projectType || '',
@@ -770,13 +1126,13 @@ export default function SchedulePage() {
 
   // 일정 수정 저장
   const handleUpdateEvent = async () => {
-    if (!editingEvent || !newEvent.category || !newEvent.participantId || !newEvent.date) {
+    if (!editingEvent || !newEvent.workstyle || !newEvent.participantId || !newEvent.date) {
       setError('카테고리, 당사자와 시작 날짜를 입력해주세요.')
       return
     }
     
     // 연월차가 아닌 경우 제목 필수 체크
-    if (newEvent.category !== '반/연차' && !newEvent.title) {
+    if (newEvent.workstyle !== '반/연차' && !newEvent.title) {
       setError('제목을 입력해주세요.')
       return
     }
@@ -792,23 +1148,27 @@ export default function SchedulePage() {
 
     // 연월차의 경우 자동으로 제목 생성
     const generateTitle = () => {
-      if (newEvent.category === '반/연차') {
+      if (newEvent.workstyle === '반/연차') {
         const timeText = newEvent.subCategory === '반차' 
           ? (newEvent.time === '09:00' ? '오전' : '오후')
           : ''
         return `${newEvent.subCategory || '연차'}${timeText ? `-${timeText}` : ''}`
-      } else if (newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') {
-        const tripType = newEvent.subCategory || (newEvent.category === '출장' ? '출장' : '외근')
+      } else if (newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) {
+        const tripType = newEvent.subCategory || (newEvent.workstyle === '출장' ? '출장' : '외근')
         // 이미 [출장] 또는 [외근]이 포함된 경우 제거하고 새로 추가
         const cleanTitle = newEvent.title.replace(/^\[(출장|외근)\]\s*/, '')
-        return `[${tripType}] ${cleanTitle}`
+        
+        // 당사자(참여자) 성 추출 (이름에서 첫 글자)
+        const participantLastName = participant?.name ? participant.name.charAt(0) : 'U'
+        
+        return `${participantLastName}[${tripType}] ${cleanTitle}`
       }
       return newEvent.title
     }
 
     const updatedEvent: LocalEvent = {
       ...editingEvent,
-      category: newEvent.category,
+      workstyle: newEvent.workstyle,
       subCategory: newEvent.subCategory,
       subSubCategory: newEvent.subSubCategory,
       summary: generateTitle(),
@@ -823,16 +1183,63 @@ export default function SchedulePage() {
       }
     }
 
-    const updatedEvents = events.map(e => e.id === editingEvent.id ? updatedEvent : e)
-    setEvents(updatedEvents)
-    localStorage.setItem('localEvents', JSON.stringify(updatedEvents))
+    // 일반 이벤트인 경우 DB에 저장
+    if (editingEvent.id.startsWith('event_')) {
+      try {
+        const eventId = editingEvent.id.replace('event_', '')
+        const eventData = {
+          category: updatedEvent.workstyle, // workstyle을 category로 매핑
+          subCategory: updatedEvent.subCategory,
+          subSubCategory: updatedEvent.subSubCategory,
+          projectType: updatedEvent.projectType,
+          projectId: updatedEvent.projectId,
+          customProject: updatedEvent.customProject,
+          summary: updatedEvent.summary,
+          description: updatedEvent.description,
+          startDate: updatedEvent.start.date,
+          startTime: updatedEvent.start.dateTime?.split('T')[1]?.split('+')[0] || null,
+          endDate: updatedEvent.end.date,
+          endTime: updatedEvent.end.dateTime?.split('T')[1]?.split('+')[0] || null,
+          location: updatedEvent.location,
+          companions: updatedEvent.companions || []
+        }
+        
+        const response = await fetch(`/api/events/${eventId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-level': user?.level || '1',
+            'x-user-id': user?.id || ''
+          },
+          body: JSON.stringify(eventData)
+        })
+        
+        if (response.ok) {
+          console.log('일반 이벤트 수정 성공')
+          const updatedEvents = events.map(e => e.id === editingEvent.id ? updatedEvent : e)
+          setEvents(updatedEvents)
+        } else {
+          console.error('일반 이벤트 수정 실패:', response.status)
+          alert('이벤트 수정에 실패했습니다.')
+          return
+        }
+      } catch (error) {
+        console.error('일반 이벤트 수정 오류:', error)
+        alert('이벤트 수정 중 오류가 발생했습니다.')
+        return
+      }
+    } else {
+      // 기타 이벤트는 UI에서만 업데이트
+      const updatedEvents = events.map(e => e.id === editingEvent.id ? updatedEvent : e)
+      setEvents(updatedEvents)
+    }
     
     // 외근/출장인 경우 업무일지에 자동 추가
-    if ((newEvent.category === '출장/외근' || newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') && participant) {
+    if ((newEvent.workstyle === '출장' || newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) && participant) {
       await addToWorkDiary(updatedEvent, participant)
     }
     
-    setNewEvent({ category: '', subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: '', participantId: '', companions: [], title: '', date: '', endDate: '', time: '', endTime: '', description: '' })
+    setNewEvent({ workstyle: '', subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: '', participantId: '', companions: [], title: '', date: '', endDate: '', time: '', endTime: '', description: '' })
     setShowCompanionSelection(false)
     setEditingEvent(null)
     setShowEditEventModal(false)
@@ -849,7 +1256,7 @@ export default function SchedulePage() {
     
     setSelectedDate(dateStr)
     setNewEvent({
-      category: '',
+      workstyle: '',
       subCategory: '',
       subSubCategory: '',
       projectType: '',
@@ -883,8 +1290,8 @@ export default function SchedulePage() {
     })
     
     // 카테고리별 통계
-    const categoryStats = thisMonthEvents.reduce((acc, event) => {
-      acc[event.category] = (acc[event.category] || 0) + 1
+    const workstyleStats = thisMonthEvents.reduce((acc, event) => {
+      acc[event.workstyle] = (acc[event.workstyle] || 0) + 1
       return acc
     }, {} as Record<string, number>)
     
@@ -904,7 +1311,7 @@ export default function SchedulePage() {
     
     return {
       totalEvents: thisMonthEvents.length,
-      categoryStats,
+      workstyleStats,
       userStats,
       levelStats,
       thisMonthEvents
@@ -912,10 +1319,90 @@ export default function SchedulePage() {
   }
 
   // 일정 삭제
-  const handleDeleteEvent = (eventId: string) => {
-    const updatedEvents = events.filter(event => event.id !== eventId)
-    setEvents(updatedEvents)
-    localStorage.setItem('localEvents', JSON.stringify(updatedEvents))
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      // 연차 데이터인지 확인 (leave_로 시작하는 ID)
+      if (eventId.startsWith('leave_')) {
+        const leaveId = eventId.replace('leave_', '')
+        console.log('연차 삭제 시도:', leaveId)
+        
+        // DB에서 연차 삭제
+        const response = await fetch(`/api/leave-requests?id=${leaveId}`, {
+          method: 'DELETE',
+          headers: {
+            'x-user-level': user?.level || '1'
+          }
+        })
+        
+        if (response.ok) {
+          console.log('연차 삭제 성공')
+          // UI에서 제거
+          const updatedEvents = events.filter(event => event.id !== eventId)
+          setEvents(updatedEvents)
+        } else {
+          console.error('연차 삭제 실패:', response.status)
+          alert('연차 삭제에 실패했습니다.')
+          return
+        }
+      } else if (eventId.startsWith('event_')) {
+        // 일반 이벤트는 DB에서 삭제
+        const eventIdNum = eventId.replace('event_', '')
+        console.log('일반 이벤트 삭제 시도:', eventIdNum)
+        
+        const response = await fetch(`/api/events/${eventIdNum}`, {
+          method: 'DELETE',
+          headers: {
+            'x-user-level': user?.level || '1',
+            'x-user-id': user?.id || ''
+          }
+        })
+        
+        if (response.ok) {
+          console.log('일반 이벤트 삭제 성공')
+          // UI에서 제거
+          const updatedEvents = events.filter(event => event.id !== eventId)
+          setEvents(updatedEvents)
+        } else {
+          console.error('일반 이벤트 삭제 실패:', response.status)
+          alert('이벤트 삭제에 실패했습니다.')
+          return
+        }
+      } else if (eventId.startsWith('api_')) {
+        // 출장/외근 이벤트는 business-trips API에서 삭제
+        const parts = eventId.split('_')
+        
+        if (parts.length >= 2) {
+          const tripId = parts[1]
+          
+          const response = await fetch(`/api/business-trips?id=${tripId}`, {
+            method: 'DELETE',
+            headers: {
+              'x-user-level': user?.level || '1',
+              'x-user-id': user?.id || ''
+            }
+          })
+          
+          if (response.ok) {
+            const updatedEvents = events.filter(event => event.id !== eventId)
+            setEvents(updatedEvents)
+          } else {
+            const errorText = await response.text()
+            alert(`출장/외근 삭제에 실패했습니다: ${errorText}`)
+            return
+          }
+        } else {
+          alert('이벤트 ID 형식이 올바르지 않습니다.')
+          return
+        }
+      } else {
+        // 기타 이벤트는 UI에서만 제거
+        const updatedEvents = events.filter(event => event.id !== eventId)
+        setEvents(updatedEvents)
+      }
+    } catch (error) {
+      console.error('삭제 오류:', error)
+      alert('삭제 중 오류가 발생했습니다.')
+    }
   }
 
   const formatDate = (date: Date) => {
@@ -962,35 +1449,19 @@ export default function SchedulePage() {
       return eventStart && eventEnd && dateStr && eventStart <= dateStr && eventEnd >= dateStr
     }).filter(event => {
       // 필터 적용
-      if (event.category === '조완' || event.category === '시운전') {
+      if (event.workstyle === '조완' || event.workstyle === '시운전') {
         return filters.project
-      } else if (event.category === '반/연차') {
+      } else if (event.workstyle === '반/연차') {
         return filters.vacation
-      } else if (event.category === '출장/외근') {
+      } else if (event.workstyle === '출장' || event.workstyle === '외근') {
         return filters.business
-      } else if (event.category === 'AS/SS') {
+      } else if (event.workstyle === 'AS/SS') {
         return filters.asss
       }
       return true
     })
 
-    // 프로젝트 이벤트 필터링
-    const projectEventsForDay = projectEvents.filter(projectEvent => {
-      if (!projectEvent.date) return false
-      
-      // YYYY-MM-DD 형식을 직접 비교 (시간대 문제 방지)
-      const eventDateStr = projectEvent.date
-      return eventDateStr === dateStr
-    }).filter(() => {
-      return filters.project
-    })
-
-    // 디버깅을 위한 로그
-    if (projectEventsForDay.length > 0) {
-      console.log(`날짜 ${dateStr}의 프로젝트 이벤트:`, projectEventsForDay)
-    }
-
-    return [...localEvents, ...projectEventsForDay]
+    return localEvents
   }
 
   // 기간이 긴 일정인지 확인
@@ -1149,29 +1620,43 @@ export default function SchedulePage() {
   const monthHeaders = getMonthHeaders(currentDate, viewMode)
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.permissions?.includes('administrator') || false}
-        title="일정 관리"
-        backUrl="/"
-      />
+    <AuthGuard requiredLevel={3}>
+      <div className="min-h-screen bg-blue-50">
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.permissions?.includes('administrator') || false}
+          title="일정 관리"
+          backUrl="/"
+        />
+
+      {/* 성공/에러 메시지 */}
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 mx-4 mt-4 rounded">
+          {success}
+        </div>
+      )}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mx-4 mt-4 rounded">
+          {error}
+        </div>
+      )}
 
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* 월 네비게이션 */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
           <Button
             onClick={previousMonth}
             variant="outline"
             size="sm"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-1 sm:space-x-2 min-h-[44px] px-3 sm:px-4"
           >
-            <ChevronLeft className="h-4 w-4" />
-            <span>이전 달</span>
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">이전 달</span>
+            <span className="inline sm:hidden">이전</span>
           </Button>
           
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 text-center">
             {viewMode === '1month' ? formatDate(currentDate) : 
              viewMode === '2months' ? `${formatDate(currentDate)} - ${formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}` :
              `${formatDate(currentDate)} - ${formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 1))}`}
@@ -1181,69 +1666,70 @@ export default function SchedulePage() {
             onClick={nextMonth}
             variant="outline"
             size="sm"
-            className="flex items-center space-x-2"
+            className="flex items-center space-x-1 sm:space-x-2 min-h-[44px] px-3 sm:px-4"
           >
-            <span>다음 달</span>
-            <ChevronRight className="h-4 w-4" />
+            <span className="hidden sm:inline">다음 달</span>
+            <span className="inline sm:hidden">다음</span>
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
         </div>
 
         {/* 캘린더 그리드 */}
         <Card className="mb-8">
           <CardHeader className="bg-white">
-            <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2 text-gray-900">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <CardTitle className="flex items-center space-x-2 text-base sm:text-lg text-gray-900">
               <Calendar className="h-5 w-5" />
               <span>월간 일정</span>
             </CardTitle>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
               {/* 필터 체크박스들 */}
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-1 text-sm">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={filters.project}
                     onChange={(e) => setFilters(prev => ({ ...prev, project: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
                   />
                   <span className="text-gray-900">프로젝트</span>
                 </label>
-                <label className="flex items-center space-x-1 text-sm">
+                <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={filters.vacation}
                     onChange={(e) => setFilters(prev => ({ ...prev, vacation: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
                   />
                   <span className="text-gray-900">반/연차</span>
                 </label>
-                <label className="flex items-center space-x-1 text-sm">
+                <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={filters.business}
                     onChange={(e) => setFilters(prev => ({ ...prev, business: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
                   />
                   <span className="text-gray-900">출장/외근</span>
                 </label>
-                <label className="flex items-center space-x-1 text-sm">
+                <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
                   <input
                     type="checkbox"
                     checked={filters.asss}
                     onChange={(e) => setFilters(prev => ({ ...prev, asss: e.target.checked }))}
-                    className="w-4 h-4 text-blue-600"
+                    className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
                   />
                   <span className="text-gray-900">AS/SS</span>
                 </label>
               </div>
               
               {/* 보기 모드 버튼들 */}
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <Button
                   onClick={() => setViewMode('1month')}
                   variant={viewMode === '1month' ? 'default' : 'outline'}
                   size="sm"
-                  className={`text-xs ${
+                  className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${
                     viewMode === '1month' 
                       ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg' 
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
@@ -1255,7 +1741,7 @@ export default function SchedulePage() {
                   onClick={() => setViewMode('2months')}
                   variant={viewMode === '2months' ? 'default' : 'outline'}
                   size="sm"
-                  className={`text-xs ${
+                  className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${
                     viewMode === '2months' 
                       ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg' 
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
@@ -1267,9 +1753,9 @@ export default function SchedulePage() {
                   onClick={() => setViewMode('3months')}
                   variant={viewMode === '3months' ? 'default' : 'outline'}
                   size="sm"
-                  className={`text-xs ${
+                  className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${
                     viewMode === '3months' 
-                      ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg' 
+                      ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
                       : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
                   }`}
                 >
@@ -1422,15 +1908,20 @@ export default function SchedulePage() {
                             >
                               <span className="truncate block">
                                 {position.isStart ? (
-                                  (event as LocalEvent).category === '반/연차' 
+                                  (event as LocalEvent).workstyle === '반/연차' 
                                     ? `[${(event as LocalEvent).subCategory === '반차' 
                                         ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
                                         : (event as LocalEvent).subCategory || '연차'
                                       }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
-                                    : (event as LocalEvent).category === '출장/외근' || (event as LocalEvent).category === '출장' || (event as LocalEvent).category === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
+                                    : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근'
                                     ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
                                     : (event as LocalEvent).summary
-                                ) : '⋯'}
+                                ) : (
+                                  // 외근/출장의 경우 모든 날에 동일한 제목 표시
+                                  (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
+                                    ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
+                                    : '⋯'
+                                )}
                               </span>
                               <button
                                 onClick={(e) => {
@@ -1449,22 +1940,27 @@ export default function SchedulePage() {
                           return (
                         <div
                           key={event.id}
-                              className={`text-xs p-2 bg-blue-50 text-gray-900 rounded-lg truncate cursor-pointer hover:bg-blue-100 group relative font-medium shadow-sm border`}
+                              className="text-xs p-2 bg-blue-50 text-gray-900 rounded-lg truncate cursor-pointer hover:bg-blue-100 group relative font-medium shadow-sm border"
                               title={`${(event as LocalEvent).summary} - 더블클릭으로 수정`}
                               onDoubleClick={(e) => {
                                 e.stopPropagation()
+                                // 프로젝트 이벤트(조완, 공시, 현시)는 수정 불가
+                                if ((event as any).isReadOnly) {
+                                  alert('프로젝트 관련 일정은 프로젝트 설정에서만 수정할 수 있습니다.')
+                                  return
+                                }
                                 handleEditEvent(event as LocalEvent)
                               }}
                             >
                               <span className="truncate block font-semibold">
-                                {(event as LocalEvent).category === '반/연차' 
+                                {(event as LocalEvent).workstyle === '반/연차' 
                                   ? `[${(event as LocalEvent).subCategory === '반차' 
                                       ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
                                       : (event as LocalEvent).subCategory || '연차'
                                     }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
-                                  : (event as LocalEvent).category === '출장/외근' || (event as LocalEvent).category === '출장' || (event as LocalEvent).category === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
+                                  : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
                                   ? (() => {
-                                      const tripType = (event as LocalEvent).subCategory || ((event as LocalEvent).category === '출장' ? '출장' : '외근')
+                                      const tripType = (event as LocalEvent).subCategory || ((event as LocalEvent).workstyle === '출장' ? '출장' : '외근')
                                       const summary = (event as LocalEvent).summary
                                       const companions = (event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''
                                       
@@ -1475,6 +1971,8 @@ export default function SchedulePage() {
                                       
                                       return `[${tripType}] ${summary}${companions}`
                                     })()
+                                  : (event as any).isProjectEvent
+                                  ? <span dangerouslySetInnerHTML={{ __html: (event as LocalEvent).summary }} />
                                   : (event as LocalEvent).summary
                                 }
                               </span>
@@ -1524,11 +2022,11 @@ export default function SchedulePage() {
                       카테고리 *
                     </label>
                     <select
-                      value={newEvent.category}
-                      onChange={(e) => setNewEvent({...newEvent, category: e.target.value, subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: ''})}
+                      value={newEvent.workstyle}
+                      onChange={(e) => setNewEvent({...newEvent, workstyle: e.target.value, subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: ''})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                     >
-                      <option value="">카테고리를 선택하세요</option>
+                      <option value="">업무 유형을 선택하세요</option>
                       <option value="출장">출장</option>
                       <option value="외근">외근</option>
                       <option value="반/연차">반/연차</option>
@@ -1536,7 +2034,7 @@ export default function SchedulePage() {
               </div>
                   
                   {/* 출장/외근 선택 시 프로젝트 타입 선택 */}
-                  {(newEvent.category === '출장' || newEvent.category === '외근') && (
+                  {(newEvent.workstyle === '출장' || newEvent.workstyle === '외근') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
                         프로젝트 타입 *
@@ -1614,7 +2112,7 @@ export default function SchedulePage() {
                   )}
                   
                   {/* 반/연차 선택 시 구분 선택 */}
-                  {newEvent.category === '반/연차' && (
+                  {newEvent.workstyle === '반/연차' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
                         구분 *
@@ -1882,7 +2380,7 @@ export default function SchedulePage() {
                         </option>
                       ))}
                     </select>
-                    {(newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') && (
+                    {(newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) && (
                       <button
                         type="button"
                         onClick={() => setShowCompanionSelection(!showCompanionSelection)}
@@ -1896,7 +2394,7 @@ export default function SchedulePage() {
                 </div>
                 
                 {/* 연월차가 아닌 경우에만 제목 입력 표시 */}
-                {newEvent.category !== '반/연차' && (
+                {newEvent.workstyle !== '반/연차' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1">
                       제목 *
@@ -1936,7 +2434,7 @@ export default function SchedulePage() {
                 </div>
                 
                 {/* 연월차가 아닌 경우에만 시간 입력 표시 */}
-                {newEvent.category !== '반/연차' && (
+                {newEvent.workstyle !== '반/연차' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -2010,11 +2508,11 @@ export default function SchedulePage() {
                       카테고리 *
                     </label>
                     <select
-                      value={newEvent.category}
-                      onChange={(e) => setNewEvent({...newEvent, category: e.target.value, subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: ''})}
+                      value={newEvent.workstyle}
+                      onChange={(e) => setNewEvent({...newEvent, workstyle: e.target.value, subCategory: '', subSubCategory: '', projectType: '', projectId: '', customProject: ''})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                     >
-                      <option value="">카테고리를 선택하세요</option>
+                      <option value="">업무 유형을 선택하세요</option>
                       <option value="출장">출장</option>
                       <option value="외근">외근</option>
                       <option value="반/연차">반/연차</option>
@@ -2022,7 +2520,7 @@ export default function SchedulePage() {
               </div>
                   
                   {/* 출장/외근 선택 시 프로젝트 타입 선택 */}
-                  {(newEvent.category === '출장' || newEvent.category === '외근') && (
+                  {(newEvent.workstyle === '출장' || newEvent.workstyle === '외근') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
                         프로젝트 타입 *
@@ -2100,7 +2598,7 @@ export default function SchedulePage() {
                   )}
                   
                   {/* 반/연차 선택 시 구분 선택 */}
-                  {newEvent.category === '반/연차' && (
+                  {newEvent.workstyle === '반/연차' && (
                   <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
                         구분 *
@@ -2368,7 +2866,7 @@ export default function SchedulePage() {
                         </option>
                       ))}
                     </select>
-                    {(newEvent.category === '출장' || newEvent.category === '외근' || newEvent.subCategory === '출장' || newEvent.subCategory === '외근') && (
+                    {(newEvent.workstyle === '출장' || newEvent.workstyle === '외근' ) && (
                       <button
                         type="button"
                         onClick={() => setShowCompanionSelection(!showCompanionSelection)}
@@ -2382,7 +2880,7 @@ export default function SchedulePage() {
                 </div>
                 
                 {/* 연월차가 아닌 경우에만 제목 입력 표시 */}
-                {newEvent.category !== '반/연차' && (
+                {newEvent.workstyle !== '반/연차' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1">
                       제목 *
@@ -2422,7 +2920,7 @@ export default function SchedulePage() {
                 </div>
                 
                 {/* 연월차가 아닌 경우에만 시간 입력 표시 */}
-                {newEvent.category !== '반/연차' && (
+                {newEvent.workstyle !== '반/연차' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1">
@@ -2502,9 +3000,9 @@ export default function SchedulePage() {
                     <div>
                       <h4 className="font-medium text-gray-900 mb-3">카테고리별 통계</h4>
                       <div className="space-y-2">
-                        {Object.entries(stats.categoryStats).map(([category, count]) => (
-                          <div key={category} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span className="font-medium text-gray-900">{category}</span>
+                        {Object.entries(stats.workstyleStats).map(([workstyle, count]) => (
+                          <div key={workstyle} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                            <span className="font-medium text-gray-900">{workstyle}</span>
                             <Badge variant="secondary">{count}건</Badge>
                   </div>
                         ))}
@@ -2550,7 +3048,7 @@ export default function SchedulePage() {
                                 <div>
                                   <span className="font-medium text-gray-900">{event.summary}</span>
                                   <span className="text-gray-900 ml-2">
-                                    ({event.category}
+                                    ({event.workstyle}
                                     {event.subCategory && ` - ${event.subCategory}`}
                                     {event.subSubCategory && ` - ${event.subSubCategory}`})
                                   </span>
@@ -2582,5 +3080,6 @@ export default function SchedulePage() {
 
       </div>
     </div>
+    </AuthGuard>
   )
 }

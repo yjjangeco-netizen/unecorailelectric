@@ -74,41 +74,52 @@ export default function CommonHeader({
   const allNavigationItems = [
     { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
     { name: '재고관리', href: '/stock-management', icon: Package2, key: 'stock_view' },
-    { name: '업무일지', href: '/work-diary', icon: Calendar, key: 'daily_log' },
+    { name: '업무일지', href: '/work-diary', icon: FileText, key: 'daily_log' },
+    { name: '일정관리', href: '/schedule', icon: Calendar, key: 'schedule' },
     { name: '업무도구', href: '/work-tool', icon: Settings, key: 'work_tools' },
     { name: 'SOP', href: '/sop', icon: FileText, key: 'sop' },
     { name: 'Nara', href: '/nara-monitoring', icon: BarChart3, key: 'nara' },
     { name: '설정', href: '/settings', icon: Users, key: 'settings' },
   ]
 
-  // 사용자별 메뉴 필터링
+  // 사용자별 메뉴 필터링 (레벨 기반)
   const getFilteredNavigationItems = () => {
-    if (!showUserSpecificMenus || !currentUser) {
+    if (!currentUser) {
       return allNavigationItems
     }
+
+    const userLevel = currentUser.level || '1'
+    const isLevel1 = userLevel === '1'
+    const isLevel2 = userLevel === '2'
+    const isLevel3 = userLevel === '3'
+    const isLevel4 = userLevel === '4'
+    const isLevel5 = userLevel === '5'
+    const isAdmin = userLevel?.toLowerCase() === 'administrator'
 
     return allNavigationItems.filter(item => {
       // 관리자는 모든 메뉴 접근 가능
       if (isAdmin) return true
       
-      // 사용자별 권한에 따라 필터링
+      // 레벨별 권한에 따라 필터링
       switch (item.key) {
         case 'dashboard':
-          return true // 대시보드는 항상 표시
+          return true // Level 1 이상
         case 'stock_view':
-          return currentUser['stock_view'] === true
+          return isLevel1 || isLevel2 || isLevel3 || isLevel4 || isLevel5 // Level 1 이상 (읽기만)
         case 'daily_log':
-          return currentUser['daily_log'] === true
+          return isLevel2 || isLevel3 || isLevel4 || isLevel5 // Level 2 이상 (작성/조회)
+        case 'schedule':
+          return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
         case 'work_tools':
-          return currentUser['work_tools'] === true
+          return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
         case 'sop':
-          return currentUser['sop'] === true
+          return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
         case 'nara':
-          return true // Nara는 항상 표시
+          return isLevel4 || isLevel5 // Level 4 이상
         case 'settings':
-          return currentUser['user_management'] === true || isAdmin
+          return isLevel5 // Level 5 이상
         default:
-          return true
+          return false
       }
     })
   }

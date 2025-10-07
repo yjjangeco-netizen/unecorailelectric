@@ -8,7 +8,7 @@ import { Search, Check } from 'lucide-react'
 
 interface Project {
   id: number
-  project_name: string
+  name: string
   project_number: string
   description?: string
 }
@@ -38,7 +38,7 @@ export default function ProjectSearchModal({ isOpen, onClose, onSelect }: Projec
       setFilteredProjects(projects)
     } else {
       const filtered = projects.filter(project =>
-        project.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.project_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -55,31 +55,14 @@ export default function ProjectSearchModal({ isOpen, onClose, onSelect }: Projec
         setProjects(data)
         setFilteredProjects(data)
       } else {
-        console.error('프로젝트 로드 실패:', response.statusText)
-        // 임시 데이터 (API가 없을 경우)
-        const mockProjects: Project[] = [
-          { id: 1, project_name: '브라질 CSP', project_number: 'CNCWL-1204', description: '브라질 CSP 프로젝트' },
-          { id: 2, project_name: '제천', project_number: 'CNCWL-1501', description: '제천 Dsl 프로젝트' },
-          { id: 3, project_name: '도봉', project_number: 'CNCWL-1601', description: '도봉 Dsl 프로젝트' },
-          { id: 4, project_name: '군자', project_number: 'CNCWL-1701', description: '군자 Dsl 프로젝트' },
-          { id: 5, project_name: '덕하', project_number: 'CNCWL-1702', description: '덕하 DSL 프로젝트' },
-          { id: 6, project_name: '고덕', project_number: 'CNCWL-1801', description: '고덕 DSL 프로젝트' },
-          { id: 7, project_name: '대단', project_number: 'CNCWL-1901', description: '대단 Dsl 프로젝트' },
-          { id: 8, project_name: '대전시설장비', project_number: 'CNCWL-2101', description: '대전시설장비 840D SL 프로젝트' },
-          { id: 9, project_name: '시흥', project_number: 'CNCWL-2102', description: '시흥 Dsl 프로젝트' },
-          { id: 10, project_name: '대단', project_number: 'CNCWL-2201', description: '대단 Fanuc 프로젝트' },
-          { id: 11, project_name: 'GTX A', project_number: 'CNCWL-2202', description: 'GTX A 840D SL 프로젝트' },
-          { id: 12, project_name: '호포', project_number: 'CNCWL-2301', description: '호포 840D sL 프로젝트' },
-          { id: 13, project_name: '귤현', project_number: 'CNCWL-2302', description: '귤현 840D sL 프로젝트' },
-          { id: 14, project_name: '인도네시아 PT.ABHIPRAYA', project_number: 'CNCWL-2304', description: '인도네시아 PT.ABHIPRAYA Fanuc 프로젝트' },
-          { id: 15, project_name: '월배', project_number: 'CNCWL-2401', description: '월배 Fanuc 프로젝트' },
-          { id: 16, project_name: '시흥2호기', project_number: 'CNCWL-2402', description: '시흥2호기 Sinuone 프로젝트' }
-        ]
-        setProjects(mockProjects)
-        setFilteredProjects(mockProjects)
+        alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
+        setProjects([])
+        setFilteredProjects([])
       }
     } catch (error) {
-      console.error('프로젝트 로드 오류:', error)
+      alert('프로젝트 목록을 불러올 수 없습니다. 관리자에게 문의하세요.')
+      setProjects([])
+      setFilteredProjects([])
     } finally {
       setLoading(false)
     }
@@ -135,14 +118,16 @@ export default function ProjectSearchModal({ isOpen, onClose, onSelect }: Projec
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="font-semibold text-gray-900 group-hover:text-blue-900">
-                          {project.project_name}
-                        </div>
-                        <div className="text-sm font-medium text-blue-600 mt-1">
-                          {project.project_number}
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div className="font-semibold text-gray-900 group-hover:text-blue-900">
+                            {project.name}
+                          </div>
+                          <div className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
+                            {project.project_number}
+                          </div>
                         </div>
                         {project.description && (
-                          <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          <div className="text-xs text-gray-500 line-clamp-2">
                             {project.description}
                           </div>
                         )}

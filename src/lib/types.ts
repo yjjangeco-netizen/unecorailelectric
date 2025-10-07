@@ -35,6 +35,78 @@ export interface UserPublic {
   is_active: boolean;
 }
 
+// 프로젝트 타입 정의 (실제 DB 스키마에 맞춤)
+export interface Project {
+  id: string // DB: INTEGER, API: string 변환
+  project_number: string // DB: project_number
+  name: string // DB: project_name
+  description?: string
+  status: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete'
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  start_date?: string
+  end_date?: string
+  assembly_date?: string // 조립완료일
+  factory_test_date?: string // 공장시운전일
+  site_test_date?: string // 현장시운전일
+  completion_date?: string // 준공완료일
+  warranty_period?: string // 하자보증기간
+  budget?: number
+  manager_id?: string
+  client_name?: string
+  client_contact?: string
+  created_by: string
+  created_at: string
+  updated_at: string
+  
+  // 기본 정보
+  base_name?: string // 기지명
+  
+  // 사양 정보
+  hardware_version?: string // 하드웨어 버전
+  has_disk?: boolean // 디스크 여부
+  incoming_power?: string // 인입전원
+  primary_breaker?: string // 1차 차단기
+  
+  // 전원사양
+  pvr_ampere?: number // PVR [A]
+  frequency?: number // 주파수
+  
+  // Drive 사양
+  spindle_spec?: string // 스핀들
+  tool_post_spec?: string // 공구대
+  pump_low_spec?: string // 펌프(저)
+  pump_high_spec?: string // 펌프(고)
+  crusher_spec?: string // 크러셔
+  conveyor_spec?: string // 컨베이어
+  dust_collector_spec?: string // 집진기
+  
+  // 380V motor 사양
+  vehicle_transfer_device?: string // 차량이송장치
+  oil_heater?: string // 오일히터
+  cooling_fan?: string // COOLING FAN
+  chiller?: string // CHILLER
+  
+  // 220V motor 사양
+  lubrication?: string // Luberication
+  grease?: string // Grease
+  
+  // 차륜관리시스템
+  cctv_spec?: string // CCTV
+  automatic_cover?: string // 자동덮개(도어)
+  ups_spec?: string // UPS
+  configuration?: string // 구성
+  
+  // 색상
+  main_color?: string // 메인 색상
+  auxiliary_color?: string // 보조 색상
+  
+  // 옵션
+  warning_light?: boolean // 경광등
+  buzzer?: boolean // 부저
+  speaker?: boolean // speaker
+  automatic_rail?: boolean // 자동레일
+}
+
 // 현재 데이터베이스 구조에 맞춘 타입 정의
 
 export interface CurrentStock {
@@ -192,4 +264,35 @@ export interface StockOut extends Omit<StockHistory, 'id' | 'event_type'> {
 
 export interface Disposal extends Omit<StockHistory, 'id' | 'event_type'> {
   event_type: 'DISPOSAL'
+}
+
+// 업무일지 타입 정의
+export interface WorkDiary {
+  id: string
+  user_id: string
+  work_date: string
+  work_content: string
+  work_type: string
+  work_sub_type: string
+  project_id?: number
+  custom_project_name?: string
+  start_time?: string
+  end_time?: string
+  work_hours?: number // 계산된 근무시간 (퇴근시간 - 출근시간 - 1시간)
+  overtime_hours?: number // 초과근무시간
+  created_at: string
+  updated_at: string
+}
+
+// 업무일지 작성용 폼 데이터 타입
+export interface WorkEntry {
+  projectId: string
+  workContent: string
+  workType: string
+  workSubType: string
+  customProjectName: string
+  startTime?: string
+  endTime?: string
+  workHours?: number // 계산된 근무시간
+  overtimeHours?: number // 초과근무시간
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import AuthGuard from '@/components/AuthGuard'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -230,14 +231,15 @@ export default function UserManagementPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 공통 헤더 추가 */}
-      <CommonHeader
-        currentUser={currentUser}
-        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
-        title="회원관리"
-        backUrl="/dashboard"
-      />
+    <AuthGuard requiredLevel={5} requiredPermissions={['user_management']}>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* 공통 헤더 추가 */}
+        <CommonHeader
+          currentUser={currentUser}
+          isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
+          title="회원관리"
+          backUrl="/dashboard"
+        />
       
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 헤더 */}
@@ -389,5 +391,6 @@ export default function UserManagementPage() {
         onSave={handleSaveUser}
       />
     </div>
+    </AuthGuard>
   )
 }

@@ -33,6 +33,11 @@ export function useUser() {
         
         // localStorage에 사용자 정보 저장
         localStorage.setItem('user', JSON.stringify(user));
+        
+        // 쿠키에 인증 토큰 저장 (보안 강화)
+        const authToken = btoa(JSON.stringify({ id: user.id, username: user.username, timestamp: Date.now() }));
+        document.cookie = `auth-token=${authToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+        
         console.log('사용자 상태 업데이트 완료, isAuthenticated:', !!user);
         return true;
       } else {
@@ -61,6 +66,9 @@ export function useUser() {
       
       // localStorage에서 사용자 정보 제거
       localStorage.removeItem('user');
+      
+      // 쿠키에서 인증 토큰 제거
+      document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     } catch (error) {
       console.error('로그아웃 처리 중 오류:', error);
       // 오류가 있어도 상태는 초기화

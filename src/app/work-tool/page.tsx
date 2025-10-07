@@ -3,6 +3,7 @@
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CommonHeader from '@/components/CommonHeader'
@@ -80,15 +81,16 @@ export default function WorkToolPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* 공통 헤더 */}
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'admin'}
-        title="업무도구"
-        backUrl="/"
-        onLogout={() => router.push('/login')}
-      />
+    <AuthGuard requiredLevel={5}>
+      <div className="min-h-screen bg-white">
+        {/* 공통 헤더 */}
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.level === 'admin'}
+          title="업무도구"
+          backUrl="/"
+          onLogout={() => router.push('/login')}
+        />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 헤더 */}
@@ -253,5 +255,6 @@ export default function WorkToolPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 } 

@@ -26,17 +26,70 @@ CREATE TABLE IF NOT EXISTS projects (
   project_number VARCHAR(50) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
-  status VARCHAR(50) DEFAULT 'active', -- active, completed, on_hold, cancelled
+  status VARCHAR(50) DEFAULT 'active', -- active, demolished, manufacturing, warranty
   priority VARCHAR(20) DEFAULT 'medium', -- low, medium, high, urgent
   start_date DATE,
   end_date DATE,
+  assembly_date DATE, -- 조립완료일
+  factory_test_date DATE, -- 공장시운전일
+  site_test_date DATE, -- 현장시운전일
+  completion_date DATE, -- 준공완료일
+  warranty_period VARCHAR(100), -- 하자보증기간
   budget DECIMAL(15,2),
   manager_id UUID REFERENCES users(id),
   client_name VARCHAR(255),
   client_contact VARCHAR(255),
   created_by UUID REFERENCES users(id) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- 기본 정보
+  base_name VARCHAR(255), -- 기지명
+  
+  -- 사양 정보
+  hardware_version VARCHAR(100), -- 하드웨어 버전
+  has_disk BOOLEAN DEFAULT false, -- 디스크 여부
+  incoming_power VARCHAR(100), -- 인입전원
+  primary_breaker VARCHAR(100), -- 1차 차단기
+  
+  -- 전원사양
+  pvr_ampere DECIMAL(10,2), -- PVR [A]
+  frequency DECIMAL(10,2), -- 주파수
+  
+  -- Drive 사양
+  spindle_spec VARCHAR(255), -- 스핀들
+  tool_post_spec VARCHAR(255), -- 공구대
+  pump_low_spec VARCHAR(255), -- 펌프(저)
+  pump_high_spec VARCHAR(255), -- 펌프(고)
+  crusher_spec VARCHAR(255), -- 크러셔
+  conveyor_spec VARCHAR(255), -- 컨베이어
+  dust_collector_spec VARCHAR(255), -- 집진기
+  
+  -- 380V motor 사양
+  vehicle_transfer_device VARCHAR(255), -- 차량이송장치
+  oil_heater VARCHAR(255), -- 오일히터
+  cooling_fan VARCHAR(255), -- COOLING FAN
+  chiller VARCHAR(255), -- CHILLER
+  
+  -- 220V motor 사양
+  lubrication VARCHAR(255), -- Luberication
+  grease VARCHAR(255), -- Grease
+  
+  -- 차륜관리시스템
+  cctv_spec VARCHAR(255), -- CCTV
+  automatic_cover VARCHAR(255), -- 자동덮개(도어)
+  ups_spec VARCHAR(255), -- UPS
+  configuration VARCHAR(255), -- 구성
+  
+  -- 색상
+  main_color VARCHAR(50), -- 메인 색상
+  auxiliary_color VARCHAR(50), -- 보조 색상
+  
+  -- 옵션
+  warning_light BOOLEAN DEFAULT false, -- 경광등
+  buzzer BOOLEAN DEFAULT false, -- 부저
+  speaker BOOLEAN DEFAULT false, -- speaker
+  automatic_rail BOOLEAN DEFAULT false -- 자동레일
 );
 
 -- 3. 프로젝트 멤버

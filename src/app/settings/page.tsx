@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
+import AuthGuard from '@/components/AuthGuard'
 import CommonHeader from '@/components/CommonHeader'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -76,12 +77,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'admin'}
-        title="설정"
-        backUrl="/"
+    <AuthGuard requiredLevel={3}>
+      <div className="min-h-screen bg-white">
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.level === 'admin'}
+          title="설정"
+          backUrl="/"
         onLogout={() => router.push('/login')}
       />
 
@@ -189,5 +191,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

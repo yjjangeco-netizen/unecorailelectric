@@ -3,6 +3,7 @@
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CommonHeader from '@/components/CommonHeader'
@@ -19,17 +20,27 @@ import {
 
 interface WorkDiaryEntry {
   id: number
-  user_id: string
-  work_date: string
-  project_id: number
-  work_content: string
-  created_at: string
-  updated_at: string
-  projects?: {
+  userId: string
+  workDate: string
+  projectId: number
+  workContent: string
+  createdAt: string
+  updatedAt: string
+  workType?: string
+  workSubType?: string
+  customProjectName?: string
+  project?: {
     id: number
     project_name: string
     project_number: string
     description?: string
+  }
+  user?: {
+    id: string
+    name: string
+    level: string
+    department?: string
+    position?: string
   }
 }
 
@@ -69,9 +80,14 @@ export default function WorkDiaryPage() {
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
       const userLevel = user.level || '1'
-      if (userLevel === '1') {
-        router.push('/dashboard')
-      }
+      console.log('현재 사용자 정보:', user)
+      console.log('사용자 레벨:', userLevel)
+      console.log('Level 5 체크:', userLevel === '5')
+      console.log('Administrator 체크:', userLevel === 'administrator')
+      // Level 1 사용자도 업무일지 접근 가능하도록 수정
+      // if (userLevel === '1') {
+      //   router.push('/dashboard')
+      // }
     }
   }, [authLoading, isAuthenticated, user, router])
 
@@ -122,15 +138,16 @@ export default function WorkDiaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* 공통 헤더 */}
-      <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'admin'}
-        title="업무일지"
-        backUrl="/"
-        onLogout={() => router.push('/login')}
-      />
+    <AuthGuard requiredLevel={2}>
+      <div className="min-h-screen bg-white">
+        {/* 공통 헤더 */}
+        <CommonHeader
+          currentUser={user}
+          isAdmin={user?.level === 'admin'}
+          title="업무일지"
+          backUrl="/"
+          onLogout={() => router.push('/login')}
+        />
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
@@ -263,9 +280,53 @@ export default function WorkDiaryPage() {
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   통계 보기
-              </Button>
-            </CardContent>
-          </Card>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 고급 통계 검색 카드 - 임시로 모든 사용자에게 표시 */}
+          {true && (
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-shadow duration-200 border-2 hover:border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50"
+              onClick={() => router.push('/work-diary/advanced-stats')}
+            >
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-amber-200 to-orange-200 rounded-full flex items-center justify-center mb-4 shadow-md">
+                  <Search className="h-8 w-8 text-amber-600" />
+                </div>
+                <CardTitle className="text-xl text-amber-800">고급 통계 검색</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <p className="text-amber-700 mb-6">
+                  다양한 조건으로 업무 통계를 검색합니다.
+                </p>
+                <div className="space-y-2 text-sm text-amber-600">
+                  <div className="flex items-center justify-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    사용자별 출장/내근 통계
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    주말/휴일 근무 현황
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    프로젝트별 작업량 분석
+                  </div>
+                </div>
+                <Button 
+                  className="w-full mt-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    router.push('/work-diary/advanced-stats')
+                  }}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  고급 검색
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* 출장/외근 보고 카드 */}
@@ -359,21 +420,21 @@ export default function WorkDiaryPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-3">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            {diary.projects?.project_name || '프로젝트 없음'}
+                            {diary.project?.project_name || '프로젝트 없음'}
                           </span>
                           <span className="text-sm text-gray-500">
-                            {diary.projects?.project_number || 'N/A'}
+                            {diary.project?.project_number || 'N/A'}
                           </span>
                         </div>
                         <span className="text-sm text-gray-500">
-                          {formatDate(diary.work_date)}
+                          {formatDate(diary.workDate)}
                         </span>
                       </div>
                       <p className="text-gray-700 text-sm line-clamp-2">
-                        {diary.work_content}
+                        {diary.workContent}
                       </p>
                       <div className="mt-2 text-xs text-gray-500">
-                        작성자: {diary.user_id}
+                        작성자: {diary.user?.name || diary.userId || '알 수 없음'}
                       </div>
                     </div>
                   ))}
@@ -393,5 +454,6 @@ export default function WorkDiaryPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }
