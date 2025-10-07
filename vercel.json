@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": "nextjs",
-  "git": { "deploymentEnabled": false }
+  "git": { "deploymentEnabled": true }
 }
