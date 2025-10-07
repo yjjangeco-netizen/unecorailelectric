@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import CommonHeader from '@/components/CommonHeader'
 import ProjectDetailModal from '@/components/ProjectDetailModal'
 import SpecificationGenerator from '@/components/SpecificationGenerator'
-import { Project } from '@/lib/types'
+import type { Project } from '@/lib/types'
 import { 
   ArrowLeft,
   Plus,
