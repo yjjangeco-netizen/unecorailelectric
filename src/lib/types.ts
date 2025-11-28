@@ -1,3 +1,14 @@
+export type PermissionType = string;
+export type DepartmentType = string;
+export type PositionType = string;
+
+export interface User {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  level: string | number;
+  permissions?: PermissionType[];
   department: DepartmentType;
   position: PositionType;
   is_active: boolean;
@@ -5,7 +16,7 @@
 
 // 프로젝트 타입 정의 (실제 DB 스키마에 맞춤)
 export interface Project {
-  id: string // DB: INTEGER, API: string 변환
+  id: string; // DB: INTEGER, API: string 변환
   project_number: string // DB: project_number
   name: string // DB: project_name
   description?: string
@@ -25,20 +36,20 @@ export interface Project {
   created_by: string
   created_at: string
   updated_at: string
-  
+
   // 기본 정보
   base_name?: string // 기지명
-  
+
   // 사양 정보
   hardware_version?: string // 하드웨어 버전
   has_disk?: boolean // 디스크 여부
   incoming_power?: string // 인입전원
   primary_breaker?: string // 1차 차단기
-  
+
   // 전원사양
   pvr_ampere?: number // PVR [A]
   frequency?: number // 주파수
-  
+
   // Drive 사양
   spindle_spec?: string // 스핀들
   tool_post_spec?: string // 공구대
@@ -47,27 +58,27 @@ export interface Project {
   crusher_spec?: string // 크러셔
   conveyor_spec?: string // 컨베이어
   dust_collector_spec?: string // 집진기
-  
+
   // 380V motor 사양
   vehicle_transfer_device?: string // 차량이송장치
   oil_heater?: string // 오일히터
   cooling_fan?: string // COOLING FAN
   chiller?: string // CHILLER
-  
+
   // 220V motor 사양
   lubrication?: string // Luberication
   grease?: string // Grease
-  
+
   // 차륜관리시스템
   cctv_spec?: string // CCTV
   automatic_cover?: string // 자동덮개(도어)
   ups_spec?: string // UPS
   configuration?: string // 구성
-  
+
   // 색상
   main_color?: string // 메인 색상
   auxiliary_color?: string // 보조 색상
-  
+
   // 옵션
   warning_light?: boolean // 경광등
   buzzer?: boolean // 부저

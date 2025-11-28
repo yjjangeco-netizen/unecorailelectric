@@ -11,11 +11,11 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Settings, 
-  Bell, 
-  BellOff, 
-  RefreshCw, 
+import {
+  Settings,
+  Bell,
+  BellOff,
+  RefreshCw,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -68,11 +68,11 @@ export default function NaraSettingsPage() {
   // 인증 확인
   useEffect(() => {
     console.log('Nara 설정 - 사용자 상태:', { user, isAuthenticated, authLoading })
-    
+
     // localStorage에서 직접 사용자 정보 확인
     const storedUser = localStorage.getItem('user')
     console.log('Nara 설정 - localStorage 직접 확인:', storedUser)
-    
+
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
@@ -86,7 +86,7 @@ export default function NaraSettingsPage() {
         console.error('localStorage 파싱 오류:', err)
       }
     }
-    
+
     // 로딩이 완료되고 인증되지 않은 경우에만 리다이렉트
     if (!authLoading && !isAuthenticated && !storedUser) {
       console.log('Nara 설정 - 로그인 페이지로 리다이렉트')
@@ -94,7 +94,7 @@ export default function NaraSettingsPage() {
     } else if (isAuthenticated) {
       console.log('Nara 설정 - 인증된 사용자, 페이지 표시')
     }
-  }, [authLoading, isAuthenticated, router])
+  }, [authLoading, isAuthenticated, router, user])
 
   if (authLoading) {
     return (
@@ -161,7 +161,7 @@ export default function NaraSettingsPage() {
   const handleSaveConfig = () => {
     setSuccess('설정이 저장되었습니다.')
     setTimeout(() => setSuccess(null), 3000)
-    
+
     // 설정이 변경되면 모니터링을 재시작할지 묻기
     if (isMonitoring) {
       if (confirm('설정이 변경되었습니다. 모니터링을 재시작하시겠습니까?')) {
@@ -320,7 +320,7 @@ export default function NaraSettingsPage() {
                 </div>
                 <Switch
                   checked={config.telegramEnabled}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setConfig(prev => ({ ...prev, telegramEnabled: checked }))
                   }
                 />
@@ -332,7 +332,7 @@ export default function NaraSettingsPage() {
                   <Input
                     id="telegramChatId"
                     value={config.telegramChatId}
-                    onChange={(e) => 
+                    onChange={(e) =>
                       setConfig(prev => ({ ...prev, telegramChatId: e.target.value }))
                     }
                     placeholder="채팅 ID를 입력하세요"
@@ -350,7 +350,7 @@ export default function NaraSettingsPage() {
                 id="checkInterval"
                 type="number"
                 value={config.checkInterval}
-                onChange={(e) => 
+                onChange={(e) =>
                   setConfig(prev => ({ ...prev, checkInterval: parseInt(e.target.value) || 30 }))
                 }
                 min="10"
@@ -393,7 +393,7 @@ export default function NaraSettingsPage() {
                   {config.keywords.join(', ')}
                 </p>
               </div>
-              
+
               <div className="bg-green-50 p-4 rounded-lg">
                 <h4 className="font-medium text-green-900 mb-2">텔레그램 알림</h4>
                 <p className="text-sm text-green-700">
@@ -405,7 +405,7 @@ export default function NaraSettingsPage() {
                   </p>
                 )}
               </div>
-              
+
               <div className="bg-purple-50 p-4 rounded-lg">
                 <h4 className="font-medium text-purple-900 mb-2">확인 간격</h4>
                 <p className="text-sm text-purple-700">
