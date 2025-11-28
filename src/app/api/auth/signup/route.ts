@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { hashPassword } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,86 +56,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 새 사용자 생성 - id와 username 모두 설정
+    // 비밀번호 해시화
+    const hashedPassword = await hashPassword(password)
+
+    // 이름 분리 (first_name, last_name)
+    const nameParts = name.trim().split(/\s+/)
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '.'
+    const firstName = nameParts[0]
+
+    // 새 사용자 생성
     const userData = {
-      id: username, // id 컬럼도 설정 (PRIMARY KEY)
-      username: username, // username 컬럼 설정
-      password: password,
-      name: name,
+      username: username,
+      password_hash: hashedPassword,
+      first_name: firstName,
+      last_name: lastName,
+      name: name, // 호환성을 위해 유지하거나 스키마에 없다면 제거해야 함. 스키마에 없으므로 제거.
       department: department,
       position: position,
       email: email,
-      level: level || '1',
+      level: level || 'user', // 기본값 'user'
       is_active: true
     }
 
+    // userData에서 스키마에 없는 name 필드 제거
+    delete (userData as any).name
+
     console.log('생성할 사용자 데이터:', userData)
 
-    // 첫 번째 시도: 전체 구조
-    let { data: newUser, error: insertError } = await supabase
+    const { data: newUser, error: insertError } = await supabase
       .from('users')
       .insert([userData])
       .select()
       .single()
 
-    // 첫 번째 시도 실패 시 대체 구조 시도
-    if (insertError) {
-      console.error('첫 번째 시도 실패:', insertError)
-      
-      // 두 번째 시도: id, username과 기본 필드만
-      const basicUserData = {
-        id: username,
-        username: username,
-        password: password,
-        name: name
-      }
-      
-      console.log('두 번째 시도 - 기본 데이터:', basicUserData)
-      
-      const { data: newUser2, error: insertError2 } = await supabase
-        .from('users')
-        .insert([basicUserData])
-        .select()
-        .single()
-
-      if (insertError2) {
-        console.error('두 번째 시도 실패:', insertError2)
-        
-        // 세 번째 시도: id와 username만
-        const minimalUserData = {
-          id: username,
-          username: username
-        }
-        
-        console.log('세 번째 시도 - 최소 데이터:', minimalUserData)
-        
-        const { data: newUser3, error: insertError3 } = await supabase
-          .from('users')
-          .insert([minimalUserData])
-          .select()
-          .single()
-
-        if (insertError3) {
-          console.error('모든 시도 실패:', insertError3)
-          const errorMessage = insertError3?.message || '알 수 없는 오류'
-          return NextResponse.json(
-            { message: `사용자 생성 중 오류가 발생했습니다: ${errorMessage}` },
-            { status: 500 }
-          )
-        }
-        
-        newUser = newUser3
-        insertError = null
-      } else {
-        newUser = newUser2
-        insertError = null
-      }
-    }
-
     if (insertError) {
       console.error('사용자 생성 오류:', insertError)
       return NextResponse.json(
-        { message: '사용자 생성 중 오류가 발생했습니다.' },
+        { message: `사용자 생성 중 오류가 발생했습니다: ${insertError.message}` },
         { status: 500 }
       )
     }
@@ -143,13 +101,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: '회원가입이 완료되었습니다.',
       user: {
-        id: newUser.id || username,
-        username: newUser.username || username,
-        name: newUser.name || name,
-        department: newUser.department || department,
-        position: newUser.position || position,
-        email: newUser.email || email,
-        level: newUser.level || level || '1'
+        id: newUser.id,
+        username: newUser.username,
+        name: `${newUser.first_name} ${newUser.last_name === '.' ? '' : newUser.last_name}`.trim(),
+        department: newUser.department,
+        position: newUser.position,
+        email: newUser.email,
+        level: newUser.level
       }
     }, { status: 201 })
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateToken, validateUsername, sanitizeInput } from '@/lib/security'
+import { generateToken, validateUsername, sanitizeInput, verifyPassword } from '@/lib/security'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     console.log('=== 로그인 API 호출 시작 (Supabase DB 인증) ===')
-    
+
     const { username, password } = await request.json()
 
     if (!username || !password) {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // 입력값 검증 및 XSS 방지
     const sanitizedUsername = sanitizeInput(username)
     const usernameValidation = validateUsername(sanitizedUsername)
-    
+
     if (!usernameValidation.isValid) {
       return NextResponse.json(
         { error: '사용자명 형식이 올바르지 않습니다', details: usernameValidation.errors },
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Supabase DB에서 사용자 조회
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const { data: user, error } = await supabase
@@ -59,8 +59,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 비밀번호 검증 (평문 비교)
-    if (user.password !== password) {
+    // 비밀번호 검증 (해시 비교)
+    // password_hash가 없는 경우 (구버전 사용자) 평문 비교 시도
+    let isValidPassword = false
+
+    if (user.password_hash) {
+      isValidPassword = await verifyPassword(password, user.password_hash)
+    } else if (user.password) {
+      // 하위 호환성: 평문 비밀번호가 있는 경우
+      isValidPassword = user.password === password
+
+      // TODO: 로그인 성공 시 비밀번호 해시화하여 업데이트하는 로직 추가 권장
+    }
+
+    if (!isValidPassword) {
       console.log('비밀번호 불일치:', sanitizedUsername)
       return NextResponse.json(
         { error: '사용자명 또는 비밀번호가 올바르지 않습니다' },
@@ -90,7 +102,7 @@ export async function POST(request: NextRequest) {
       created_at: user.created_at,
       updated_at: user.updated_at
     }
-    
+
     return NextResponse.json({
       user: userResponse,
       token

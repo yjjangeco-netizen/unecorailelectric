@@ -6,7 +6,7 @@ export class UserService {
   static async login(username: string, password: string): Promise<User | null> {
     try {
       console.log('Supabase 로그인 시도:', username);
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -49,7 +49,7 @@ export class UserService {
       const user: User = {
         id: (data as any).id,
         username: (data as any).username,
-        password: (data as any).password,
+        password_hash: (data as any).password_hash, // Map password_hash
         name: (data as any).name,
         department: (data as any).depart || (data as any).department || '',
         position: (data as any).position || '',
@@ -78,10 +78,10 @@ export class UserService {
   // level을 permissions로 변환하는 함수
   static mapLevelToPermissions(level: string): PermissionType[] {
     console.log('권한 매핑 - 원본 level:', level);
-    
+
     // level이 문자열인 경우 처리
     const levelStr = String(level).toLowerCase().trim();
-    
+
     // 직책 기반 권한 매핑 (우선순위 높음)
     if (levelStr === '팀장' || levelStr === 'team_leader' || levelStr === 'teamleader') {
       console.log('팀장 권한으로 administrator + level3 부여');
@@ -96,7 +96,7 @@ export class UserService {
       console.log('사원 권한으로 level1 부여');
       return ['level1'];
     }
-    
+
     // 숫자 level을 권한으로 변환
     if (levelStr === '1' || levelStr === 'level1') {
       return ['level1'];
@@ -112,7 +112,7 @@ export class UserService {
       console.log('관리자 권한으로 administrator 부여');
       return ['administrator'];
     }
-    
+
     // 기본값: level1 권한 부여
     console.log('기본 권한 level1 부여');
     return ['level1'];

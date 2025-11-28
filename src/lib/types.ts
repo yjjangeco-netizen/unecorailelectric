@@ -1,35 +1,3 @@
-export type PositionType = '사원' | '대리' | '과장' | '차장' | '부장' | '임원';
-export type DepartmentType = '전기팀' | 'AS' | '기계' | '구매' | '영업';
-export type PermissionType = 'level1' | 'level2' | 'level3' | 'level4' | 'level5' | 'administrator';
-
-export interface User {
-  id: string
-  username: string
-  password: string
-  name: string
-  email?: string
-  department?: string
-  position?: string
-  level: string
-  // Modified: permissions 속성 추가 (level과 호환성 유지)
-  permissions?: PermissionType[]
-  is_active: boolean
-  stock_view: boolean
-  stock_in: boolean
-  stock_out: boolean
-  stock_disposal: boolean
-  work_tools: boolean
-  daily_log: boolean
-  work_manual: boolean
-  sop: boolean
-  user_management: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface UserPublic {
-  id: string;
-  name: string;
   department: DepartmentType;
   position: PositionType;
   is_active: boolean;
