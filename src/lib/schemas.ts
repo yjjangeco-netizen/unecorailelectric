@@ -3,22 +3,24 @@ import type { StockStatus } from './stockStatusTypes'
 import { STOCK_STATUS } from './stockStatusTypes'
 
 // 기본 검증 규칙
+// 기본 검증 규칙
 const positiveInteger = z.number().int().positive('양의 정수여야 합니다')
 const nonNegativeInteger = z.number().int().min(0, '0 이상의 정수여야 합니다')
 const nonNegativeNumber = z.number().min(0, '0 이상의 숫자여야 합니다')
 const safeString = z.string().trim().min(1, '필수 입력 항목입니다').max(500, '500자 이하여야 합니다')
+const optionalString = z.string().trim().max(500, '500자 이하여야 합니다').optional().or(z.literal(''))
 
 // 품목 스키마 (데이터베이스와 일치)
 export const itemSchema = z.object({
   name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
   specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
-  maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  maker: optionalString,
   location: safeString.max(100, '보관위치는 100자 이하여야 합니다'),
   unit_price: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
-  purpose: safeString.max(200, '용도는 200자 이하여야 합니다'),
+  purpose: optionalString,
   min_stock: nonNegativeInteger.max(999999, '최소재고는 999,999개 이하여야 합니다'),
-  category: z.string().max(50, '카테고리는 50자 이하여야 합니다').optional(),
-  note: z.string().max(1000, '비고는 1000자 이하여야 합니다').optional(),
+  category: optionalString,
+  note: optionalString,
   status: z.enum(['사용중', '단종', '중지']).default('사용중'),
   stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
 })
@@ -27,13 +29,13 @@ export const itemSchema = z.object({
 export const stockInSchema = z.object({
   name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
   specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
-  maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  maker: optionalString,
   location: safeString.max(100, '위치는 100자 이하여야 합니다'),
   quantity: positiveInteger.max(2147483647, '수량은 2,147,483,647개 이하여야 합니다'),
   unit_price: nonNegativeNumber.max(999999999999.99, '단가는 999,999,999,999.99원 이하여야 합니다'),
   stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
-  reason: z.string().max(200, '사유는 200자 이하여야 합니다').optional(),
-  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  reason: optionalString,
+  note: optionalString,
 })
 
 // 출고 스키마 (데이터베이스와 일치)
@@ -41,11 +43,11 @@ export const stockOutSchema = z.object({
   itemId: z.string().uuid('유효한 UUID여야 합니다'), // itemId 추가
   name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
   specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
-  maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+  maker: optionalString,
   location: safeString.max(100, '위치는 100자 이하여야 합니다'),
   quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
-  project: z.string().max(100, '프로젝트는 100자 이하여야 합니다').optional(),
-  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  project: optionalString,
+  note: optionalString,
   is_rental: z.boolean().default(false),
   return_date: z.string().datetime().optional(),
 })
@@ -58,7 +60,7 @@ export const stockAdjustmentSchema = z.object({
   adjustment_type: z.enum(['PLUS', 'MINUS', 'ADJUSTMENT']),
   quantity: nonNegativeInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
   reason: safeString.max(200, '조정 사유는 200자 이하여야 합니다'),
-  note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+  note: optionalString,
 })
 
 // 대량 작업 스키마 (데이터베이스와 일치)
@@ -66,13 +68,13 @@ export const bulkOperationSchema = z.object({
   operations: z.array(z.object({
     name: safeString.max(100, '품목명은 100자 이하여야 합니다'),
     specification: safeString.max(200, '규격은 200자 이하여야 합니다'),
-    maker: safeString.max(100, '제조사는 100자 이하여야 합니다'),
+    maker: optionalString,
     location: safeString.max(100, '위치는 100자 이하여야 합니다'),
     quantity: positiveInteger.max(999999, '수량은 999,999개 이하여야 합니다'),
     unit_price: nonNegativeNumber.max(999999999, '단가는 10억원 이하여야 합니다'),
     stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
-    reason: z.string().max(200, '사유는 200자 이하여야 합니다').optional(),
-    note: z.string().max(500, '비고는 500자 이하여야 합니다').optional(),
+    reason: optionalString,
+    note: optionalString,
   })).min(1, '최소 1개 이상의 작업이 필요합니다').max(100, '최대 100개까지 처리 가능합니다'),
   operation_type: z.enum(['stock_in', 'stock_out']),
 })
