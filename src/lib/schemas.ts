@@ -8,7 +8,7 @@ const positiveInteger = z.number().int().positive('양의 정수여야 합니다
 const nonNegativeInteger = z.number().int().min(0, '0 이상의 정수여야 합니다')
 const nonNegativeNumber = z.number().min(0, '0 이상의 숫자여야 합니다')
 const safeString = z.string().trim().min(1, '필수 입력 항목입니다').max(500, '500자 이하여야 합니다')
-const optionalString = z.string().trim().max(500, '500자 이하여야 합니다').optional().or(z.literal(''))
+const optionalString = z.string().trim().max(500, '500자 이하여야 합니다').optional().nullable().or(z.literal(''))
 
 // 품목 스키마 (데이터베이스와 일치)
 export const itemSchema = z.object({
