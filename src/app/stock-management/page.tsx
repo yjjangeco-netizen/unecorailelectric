@@ -37,7 +37,6 @@ import {
   Trash2,
   Edit
 } from "lucide-react"
-import CommonHeader from '@/components/CommonHeader'
 import StockStatistics from '@/components/stock/StockStatistics'
 import AuthGuard from '@/components/AuthGuard'
 import DisposalModal from '@/components/DisposalModal'
@@ -177,56 +176,6 @@ export default function StockManagementPage() {
     loadStockData()
   }, [isAuthenticated])
 
-  // 샘플 데이터 로드 (사용하지 않음 - DB 데이터만 사용)
-  // const loadSampleData = async () => {
-  //   console.log('샘플 데이터 로드 시작')
-  //   await new Promise(resolve => setTimeout(resolve, 1000))
-  //   
-  //   const sampleData: StockItem[] = [
-  //     {
-  //       id: '1',
-  //       name: '전선 2.0SQ',
-  //       specification: '2.0SQ x 100m',
-  //       location: '창고A-01',
-  //       deadline: '2024-12-31',
-  //       inbound: 50,
-  //       outbound: 20,
-  //       currentStock: 30,
-  //       closingQuantity: 0,
-  //       status: 'new',
-  //       category: '전선류',
-  //       unit: '롤',
-  //       minStock: 10,
-  //       maxStock: 100,
-  //       supplier: '대한전선',
-  //       lastUpdated: '2024-01-15',
-  //       notes: '고품질 동전선'
-  //     },
-  //     {
-  //       id: '2',
-  //       name: '케이블 타이',
-  //       specification: '100mm',
-  //       location: '창고B-03',
-  //       deadline: '2024-11-30',
-  //       inbound: 200,
-  //       outbound: 150,
-  //       currentStock: 50,
-  //       closingQuantity: 0,
-  //       status: 'used-new',
-  //       category: '부자재',
-  //       unit: '개',
-  //       minStock: 100,
-  //       maxStock: 500,
-  //       supplier: '한국케이블',
-  //       lastUpdated: '2024-01-14',
-  //       notes: '내열성 우수'
-  //     }
-  //   ]
-  //   setStockItems(sampleData)
-  //   setFilteredItems(sampleData)
-  //   setIsLoading(false)
-  // }
-
   // 검색 및 필터링
   useEffect(() => {
     let filtered = stockItems
@@ -318,7 +267,6 @@ export default function StockManagementPage() {
 
         console.log('새로고침된 재고 데이터:', convertedData)
         setStockItems(convertedData)
-        // filteredItems는 useEffect에서 자동으로 업데이트됨
       }
     } catch (error) {
       console.error('재고 데이터 새로고침 중 예외 발생:', error)
@@ -538,27 +486,21 @@ export default function StockManagementPage() {
   return (
     <AuthGuard requiredLevel={1}>
       <div className="min-h-screen bg-white">
-        {/* 공통 헤더 */}
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={isAdmin}
-          title="재고 관리"
-          backUrl="/"
-          onShowUserManagement={() => setShowUserManagement(true)}
-          onLogout={logout}
-          onShowLoginModal={() => router.push('/')}
-        />
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7]">
+        
+          <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-[1600px] mx-auto space-y-6">
+              
+              {/* Statistics Cards */}
+              <StockStatistics {...statistics} userLevel={userLevel} />
 
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* 통계 카드 */}
-          <StockStatistics {...statistics} userLevel={userLevel} />
-
-          {/* 재고 목록 헤더 */}
-          <div className="bg-white rounded-lg shadow mb-6">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
+              {/* 재고 목록 헤더 */}
+              <div className="bg-white rounded-lg shadow mb-6">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
 
                   {/* 읽기 전용 메시지 표시 */}
                   {canReadOnly && (
@@ -620,7 +562,7 @@ export default function StockManagementPage() {
                       <Button
                         onClick={handleBulkDelete}
                         disabled={selectedItems.length === 0}
-                        className={`${selectedItems.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                        className={`${selectedItems.length === 0 ? 'bg-red-600 hover:bg-red-700'}`}
                       >
                         ❌ 삭제
                       </Button>
@@ -893,8 +835,7 @@ export default function StockManagementPage() {
           onSuccess={refreshStockData}
         />
       </div>
+      </div>
     </AuthGuard>
   )
 }
-
-

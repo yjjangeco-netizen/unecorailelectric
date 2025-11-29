@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
+import Sidebar from '@/components/Sidebar'
 
 export default function ClientLayout({
   children,
@@ -36,14 +37,30 @@ export default function ClientLayout({
       '/project-management': '프로젝트관리',
       '/nara-monitoring': 'Nara 모니터링',
       '/sop': 'SOP',
-      '/work-tool': '업무도구'
+      '/work-tool': '업무도구',
+      '/stock-management': '재고관리',
+      '/dashboard': '대시보드',
+      '/work-diary': '업무일지',
+      '/schedule': '일정관리',
+      '/settings': '설정'
     }
     return pageMap[path] || '시스템'
   }
 
   return (
-    <>
-      {children}
-    </>
+    <div className="flex h-screen bg-[#f4f5f7]">
+      {shouldShowHeader && <Sidebar />}
+      <main className="flex-1 overflow-hidden flex flex-col relative">
+        {shouldShowHeader && (
+          <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
+            <h1 className="text-xl font-bold text-gray-800">{getPageName(pathname)}</h1>
+            {/* Add top header actions here if needed */}
+          </header>
+        )}
+        <div className="flex-1 overflow-auto p-6">
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }
