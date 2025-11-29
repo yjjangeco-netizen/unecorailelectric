@@ -697,85 +697,88 @@ export default function StockManagementPage() {
             )}
 
             {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
-            <div className="rounded-md border">
+            {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
+            <div className="rounded-lg border shadow-sm bg-white overflow-hidden">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
+                  <TableRow className="hover:bg-transparent border-b border-gray-200">
                     {/* 선택 권한이 있을 때만 체크박스 헤더 표시 */}
                     {canSelect && (
-                      <TableHead className="w-[40px]">
+                      <TableHead className="w-[50px] text-center">
                         <Checkbox
                           checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
                           onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
                           aria-label="Select all"
+                          className="translate-y-[2px]"
                         />
                       </TableHead>
                     )}
-                    <TableHead>품목</TableHead>
-                    <TableHead>규격</TableHead>
-                    <TableHead>카테고리</TableHead>
-                    <TableHead>공급업체</TableHead>
-                    <TableHead>위치</TableHead>
-                    <TableHead className="text-right">마감</TableHead>
-                    <TableHead className="text-right">입고</TableHead>
-                    <TableHead className="text-right">출고</TableHead>
-                    <TableHead className="text-right">재고</TableHead>
-                    <TableHead className="text-right">단가</TableHead>
-                    <TableHead className="text-right">총액</TableHead>
-                    <TableHead>상태</TableHead>
-                    <TableHead>비고</TableHead>
+                    <TableHead className="min-w-[200px] font-semibold text-gray-700">품목</TableHead>
+                    <TableHead className="min-w-[150px] font-semibold text-gray-700">규격</TableHead>
+                    <TableHead className="min-w-[100px] font-semibold text-gray-700">카테고리</TableHead>
+                    <TableHead className="min-w-[120px] font-semibold text-gray-700">공급업체</TableHead>
+                    <TableHead className="min-w-[100px] font-semibold text-gray-700">위치</TableHead>
+                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">마감</TableHead>
+                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">입고</TableHead>
+                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">출고</TableHead>
+                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">재고</TableHead>
+                    <TableHead className="min-w-[120px] text-right font-semibold text-gray-700">단가</TableHead>
+                    <TableHead className="min-w-[120px] text-right font-semibold text-gray-700">총액</TableHead>
+                    <TableHead className="min-w-[100px] text-center font-semibold text-gray-700">상태</TableHead>
+                    <TableHead className="min-w-[150px] font-semibold text-gray-700">비고</TableHead>
                     {/* 수정 권한이 있을 때만 수정 헤더 표시 */}
-                    {canEdit && <TableHead className="w-[40px]">수정</TableHead>}
+                    {canEdit && <TableHead className="w-[50px] text-center font-semibold text-gray-700">수정</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={canSelect ? 15 : 14} className="h-24 text-center">
-                        <div className="flex justify-center items-center">
-                          <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-                          <span>재고 데이터를 불러오는 중...</span>
+                      <TableCell colSpan={canSelect ? 15 : 14} className="h-32 text-center">
+                        <div className="flex flex-col justify-center items-center gap-2">
+                          <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+                          <span className="text-sm text-gray-500 font-medium">재고 데이터를 불러오는 중...</span>
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-gray-50">
+                      <TableRow key={item.id} className="hover:bg-blue-50/50 transition-colors duration-200 group">
                         {/* 선택 권한이 있을 때만 체크박스 표시 */}
                         {canSelect && (
-                          <TableCell>
+                          <TableCell className="text-center">
                             <Checkbox
                               checked={selectedItems.includes(item.id)}
                               onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
                               aria-label={`Select ${item.name}`}
+                              className="translate-y-[2px]"
                             />
                           </TableCell>
                         )}
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell>{item.specification}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>{item.supplier}</TableCell>
-                        <TableCell>{item.location}</TableCell>
-                        <TableCell className="text-right">{item.closingQuantity}</TableCell>
-                        <TableCell className="text-right text-green-600">{item.inbound}</TableCell>
-                        <TableCell className="text-right text-red-600">{item.outbound}</TableCell>
-                        <TableCell className="text-right font-bold">{item.currentStock}</TableCell>
-                        <TableCell className="text-right">{item.unitPrice.toLocaleString()}원</TableCell>
-                        <TableCell className="text-right font-medium">{(item.currentStock * item.unitPrice).toLocaleString()}원</TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
+                        <TableCell className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors">{item.name}</TableCell>
+                        <TableCell className="text-gray-600">{item.specification}</TableCell>
+                        <TableCell className="text-gray-600">{item.category}</TableCell>
+                        <TableCell className="text-gray-600">{item.supplier}</TableCell>
+                        <TableCell className="text-gray-600">{item.location}</TableCell>
+                        <TableCell className="text-right text-gray-600 font-mono">{item.closingQuantity}</TableCell>
+                        <TableCell className="text-right text-green-600 font-medium font-mono">+{item.inbound}</TableCell>
+                        <TableCell className="text-right text-red-600 font-medium font-mono">-{item.outbound}</TableCell>
+                        <TableCell className="text-right font-bold text-gray-900 font-mono bg-gray-50/50 rounded-md px-2">{item.currentStock}</TableCell>
+                        <TableCell className="text-right text-gray-600 font-mono">{item.unitPrice.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium text-gray-900 font-mono">{(item.currentStock * item.unitPrice).toLocaleString()}</TableCell>
+                        <TableCell className="text-center">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full shadow-sm ${getStatusColor(item.status)}`}>
                             {getStatusIcon(item.status)}
                             {getStatusText(item.status)}
                           </span>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate" title={item.notes}>{item.notes}</TableCell>
+                        <TableCell className="max-w-[200px] truncate text-gray-500 text-xs" title={item.notes}>{item.notes}</TableCell>
                         {/* 수정 권한이 있을 때만 수정 버튼 표시 */}
                         {canEdit && (
-                          <TableCell>
+                          <TableCell className="text-center">
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0"
+                              className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600 rounded-full transition-colors"
                               onClick={() => handleEditItem(item)}
                             >
                               <Edit className="h-4 w-4" />
@@ -786,10 +789,13 @@ export default function StockManagementPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={canSelect ? 15 : 14} className="h-24 text-center">
+                      <TableCell colSpan={canSelect ? 15 : 14} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center text-gray-500">
-                          <Package className="h-12 w-12 mb-2 text-gray-300" />
-                          <p>데이터가 없습니다.</p>
+                          <div className="bg-gray-100 p-4 rounded-full mb-3">
+                            <Package className="h-8 w-8 text-gray-400" />
+                          </div>
+                          <p className="font-medium text-gray-900">데이터가 없습니다</p>
+                          <p className="text-sm text-gray-500 mt-1">새로운 품목을 추가하거나 검색 조건을 변경해보세요.</p>
                         </div>
                       </TableCell>
                     </TableRow>
