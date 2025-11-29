@@ -5,130 +5,136 @@ import type { CurrentStock, Item } from '@/lib/types'
 
 // 정렬 필드 정규화 함수 (utils에서 가져옴)
 // const normalizeOrderBy = (orderBy: string): string => {
-//   const ALLOW = ['product', 'spec', 'maker', 'created_at', 'current_quantity', 'unit_price']
-//   if (orderBy === 'name') return 'product'
-//   return ALLOW.includes(orderBy) ? orderBy : 'product'
+//   const ALLOW = ['name', 'specification', 'maker', 'created_at', 'current_quantity', 'unit_price']
+//   if (orderBy === 'product') return 'name'
+//   return ALLOW.includes(orderBy) ? orderBy : 'name'
 // }
 
 // 재고 데이터 조회 (items 테이블에서 조회)
-export const useStockQuery = (orderBy: string = 'product') => {
+export const useStockQuery = (orderBy: string = 'name') => {
   const normalizedOrderBy = normalizeOrderBy(orderBy)
   
-  return useQuery(['stock', 'current', normalizedOrderBy], async () => {
-    return measureAsyncPerformance('재고 데이터 조회', async () => {
-      try {
-        const { data, error } = await supabase
-          .from('items')
-          .select('*')
-          .order(normalizedOrderBy)
+  return useQuery({
+    queryKey: ['stock', 'current', normalizedOrderBy],
+    queryFn: async () => {
+      return measureAsyncPerformance('재고 데이터 조회', async () => {
+        try {
+          const { data, error } = await supabase
+            .from('items')
+            .select('*')
+            .order(normalizedOrderBy)
 
-        if (error) {
-          console.warn('Supabase 연결 실패, Mock 데이터 사용:', error)
-          // Mock 데이터 반환
-          return [
-            {
-              id: '1',
-              item_id: '1',
-              current_quantity: 50,
-              location: '창고A',
-              note: '테스트 아이템',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              product: '전기케이블',
-              spec: '2.5SQ',
-              maker: 'LS전선',
-              category: '케이블',
-              purpose: '전력공급',
-              min_stock: 10,
-              stock_status: 'active',
-              unit_price: 5000,
-              stock_in: 100,
-              stock_out: 50,
-              closing_quantity: 0,
-              total_qunty: 50
-            },
-            {
-              id: '2',
-              item_id: '2',
-              current_quantity: 30,
-              location: '창고B',
-              note: '테스트 아이템2',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              product: '전기스위치',
-              spec: '20A',
-              maker: 'LS산전',
-              category: '스위치',
-              purpose: '전력제어',
-              min_stock: 5,
-              stock_status: 'active',
-              unit_price: 15000,
-              stock_in: 50,
-              stock_out: 20,
-              closing_quantity: 0,
-              total_qunty: 30
-            }
-          ]
-        }
-
-        // items 테이블에서 직접 데이터 반환 (현재고 계산 포함)
-        return data?.map(item => {
-          // 현재고 계산: 현재고 = 마감수량 + 입고수량 - 출고수량
-          const calculatedCurrentQuantity = (item.closing_quantity || 0) + (item.stock_in || 0) - (item.stock_out || 0)
-          
-          return {
-            id: item.id,
-            item_id: item.id,
-            current_quantity: calculatedCurrentQuantity, // 계산된 현재고 사용
-            location: item.location,
-            note: item.note,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            // items 테이블의 모든 정보
-            product: item.name, // name을 product로 매핑
-            spec: item.specification || '',
-            maker: item.maker || '',
-            category: item.category || '',
-            purpose: item.purpose || '',
-            min_stock: item.min_stock || 0,
-            stock_status: item.stock_status,
-            unit_price: item.unit_price,
-            // stock_in, stock_out 추가
-            stock_in: item.stock_in || 0,
-            stock_out: item.stock_out || 0,
-            closing_quantity: item.closing_quantity || 0,
-            total_qunty: calculatedCurrentQuantity // 계산된 현재고로 설정
+          if (error) {
+            console.warn('Supabase 연결 실패, Mock 데이터 사용:', error)
+            // Mock 데이터 반환
+            return [
+              {
+                id: '1',
+                item_id: '1',
+                current_quantity: 50,
+                location: '창고A',
+                note: '테스트 아이템',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                name: '전기케이블',
+                specification: '2.5SQ',
+                maker: 'LS전선',
+                category: '케이블',
+                purpose: '전력공급',
+                min_stock: 10,
+                stock_status: 'active',
+                unit_price: 5000,
+                stock_in: 100,
+                stock_out: 50,
+                closing_quantity: 0,
+                total_qunty: 50
+              },
+              {
+                id: '2',
+                item_id: '2',
+                current_quantity: 30,
+                location: '창고B',
+                note: '테스트 아이템2',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                name: '전기스위치',
+                specification: '20A',
+                maker: 'LS산전',
+                category: '스위치',
+                purpose: '전력제어',
+                min_stock: 5,
+                stock_status: 'active',
+                unit_price: 15000,
+                stock_in: 50,
+                stock_out: 20,
+                closing_quantity: 0,
+                total_qunty: 30
+              }
+            ]
           }
-        }) ?? []
-      } catch (err) {
-        console.error('데이터베이스 연결 실패:', err)
-        throw err
-      }
-    })
+
+          // items 테이블에서 직접 데이터 반환 (현재고 계산 포함)
+          return data?.map(item => {
+            // 현재고 계산: 현재고 = 마감수량 + 입고수량 - 출고수량
+            const calculatedCurrentQuantity = (item.closing_quantity || 0) + (item.stock_in || 0) - (item.stock_out || 0)
+            
+            return {
+              id: item.id,
+              item_id: item.id,
+              current_quantity: calculatedCurrentQuantity, // 계산된 현재고 사용
+              location: item.location,
+              note: item.note,
+              created_at: item.created_at,
+              updated_at: item.updated_at,
+              // items 테이블의 모든 정보
+              name: item.name, 
+              specification: item.specification || '',
+              maker: item.maker || '',
+              category: item.category || '',
+              purpose: item.purpose || '',
+              min_stock: item.min_stock || 0,
+              stock_status: item.stock_status,
+              unit_price: item.unit_price,
+              // stock_in, stock_out 추가
+              stock_in: item.stock_in || 0,
+              stock_out: item.stock_out || 0,
+              closing_quantity: item.closing_quantity || 0,
+              total_qunty: calculatedCurrentQuantity // 계산된 현재고로 설정
+            }
+          }) ?? []
+        } catch (err) {
+          console.error('데이터베이스 연결 실패:', err)
+          throw err
+        }
+      })
+    }
   })
 }
 
 // 품목 데이터 조회 (items 테이블에서 조회)
 export const useItemsQuery = () => {
-  return useQuery(['items'], async () => {
-    return measureAsyncPerformance('품목 데이터 조회', async () => {
-      try {
-        const { data, error } = await supabase
-          .from('items')
-          .select('*')
-          .order('product')
+  return useQuery({
+    queryKey: ['items'],
+    queryFn: async () => {
+      return measureAsyncPerformance('품목 데이터 조회', async () => {
+        try {
+          const { data, error } = await supabase
+            .from('items')
+            .select('*')
+            .order('name')
 
-        if (error) {
-          console.error('품목 데이터 조회 실패:', error)
-          throw new Error(`품목 데이터 조회 실패: ${error.message}`)
+          if (error) {
+            console.error('품목 데이터 조회 실패:', error)
+            throw new Error(`품목 데이터 조회 실패: ${error.message}`)
+          }
+
+          return data ?? []
+        } catch (err) {
+          console.error('품목 데이터 조회 실패:', err)
+          throw err
         }
-
-        return data ?? []
-      } catch (err) {
-        console.error('품목 데이터 조회 실패:', err)
-        throw err
-      }
-    })
+      })
+    }
   })
 }
 
@@ -189,8 +195,8 @@ export const useStockInMutation = () => {
       return updateData
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['stock', 'current'])
-      queryClient.invalidateQueries(['stock', 'history'])
+      queryClient.invalidateQueries({ queryKey: ['stock', 'current'] })
+      queryClient.invalidateQueries({ queryKey: ['stock', 'history'] })
     }
   })
 }
@@ -255,90 +261,98 @@ export const useStockOutMutation = () => {
       return updateData
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['stock', 'current'])
-      queryClient.invalidateQueries(['stock', 'history'])
+      queryClient.invalidateQueries({ queryKey: ['stock', 'current'] })
+      queryClient.invalidateQueries({ queryKey: ['stock', 'history'] })
     }
   })
 }
 
 // 입고 이력 조회
 export const useStockInHistoryQuery = () => {
-  return useQuery(['stock', 'in', 'history'], async () => {
-    return measureAsyncPerformance('입고 이력 조회', async () => {
-      try {
-        const { data, error } = await supabase
-          .from('stock_history')
-          .select(`
-            *,
-            items(product, spec, maker)
-          `)
-          .eq('event_type', 'stock_in')
-          .order('event_date', { ascending: false })
+  return useQuery({
+    queryKey: ['stock', 'in', 'history'],
+    queryFn: async () => {
+      return measureAsyncPerformance('입고 이력 조회', async () => {
+        try {
+          const { data, error } = await supabase
+            .from('stock_history')
+            .select(`
+              *,
+              items(name, specification, maker)
+            `)
+            .eq('event_type', 'stock_in')
+            .order('event_date', { ascending: false })
 
-        if (error) {
-          console.error('입고 이력 조회 실패:', error)
-          throw new Error(`입고 이력 조회 실패: ${error.message}`)
+          if (error) {
+            console.error('입고 이력 조회 실패:', error)
+            throw new Error(`입고 이력 조회 실패: ${error.message}`)
+          }
+
+          return data ?? []
+        } catch (err) {
+          console.error('입고 이력 조회 실패:', err)
+          throw err
         }
-
-        return data ?? []
-      } catch (err) {
-        console.error('입고 이력 조회 실패:', err)
-        throw err
-      }
-    })
+      })
+    }
   })
 }
 
 // 출고 이력 조회
 export const useStockOutHistoryQuery = () => {
-  return useQuery(['stock', 'out', 'history'], async () => {
-    return measureAsyncPerformance('출고 이력 조회', async () => {
-      try {
-        const { data, error } = await supabase
-          .from('stock_history')
-          .select(`
-            *,
-            items(product, spec, maker)
-          `)
-          .eq('event_type', 'stock_out')
-          .order('event_date', { ascending: false })
+  return useQuery({
+    queryKey: ['stock', 'out', 'history'],
+    queryFn: async () => {
+      return measureAsyncPerformance('출고 이력 조회', async () => {
+        try {
+          const { data, error } = await supabase
+            .from('stock_history')
+            .select(`
+              *,
+              items(name, specification, maker)
+            `)
+            .eq('event_type', 'stock_out')
+            .order('event_date', { ascending: false })
 
-        if (error) {
-          console.error('출고 이력 조회 실패:', error)
-          throw new Error(`출고 이력 조회 실패: ${error.message}`)
+          if (error) {
+            console.error('출고 이력 조회 실패:', error)
+            throw new Error(`출고 이력 조회 실패: ${error.message}`)
+          }
+
+          return data ?? []
+        } catch (err) {
+          console.error('출고 이력 조회 실패:', err)
+          throw err
         }
-
-        return data ?? []
-      } catch (err) {
-        console.error('출고 이력 조회 실패:', err)
-        throw err
-      }
-    })
+      })
+    }
   })
 }
 
 // 검색된 재고 데이터
-export const useSearchStockQuery = (searchTerm: string, orderBy: string = 'product') => {
+export const useSearchStockQuery = (searchTerm: string, orderBy: string = 'name') => {
   const normalizedOrderBy = normalizeOrderBy(orderBy)
   
-  return useQuery(['stock', 'search', searchTerm, normalizedOrderBy], async () => {
-    return measureAsyncPerformance('재고 검색', async () => {
-      if (!searchTerm.trim()) {return []}
+  return useQuery({
+    queryKey: ['stock', 'search', searchTerm, normalizedOrderBy],
+    queryFn: async () => {
+      return measureAsyncPerformance('재고 검색', async () => {
+        if (!searchTerm.trim()) {return []}
 
-      const { data, error } = await supabase
-        .from('items')
-        .select('*')
-        .or(`product.ilike.%${searchTerm}%,spec.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`)
-        .order(normalizedOrderBy)
+        const { data, error } = await supabase
+          .from('items')
+          .select('*')
+          .or(`name.ilike.%${searchTerm}%,specification.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`)
+          .order(normalizedOrderBy)
 
-      if (error) {
-        logError('재고 검색 오류', error)
-        throw new Error(`재고 검색 실패: ${error.message}`)
-      }
+        if (error) {
+          logError('재고 검색 오류', error)
+          throw new Error(`재고 검색 실패: ${error.message}`)
+        }
 
-      return data ?? []
-    })
-  }, {
+        return data ?? []
+      })
+    },
     enabled: searchTerm.trim().length > 0
   })
 }

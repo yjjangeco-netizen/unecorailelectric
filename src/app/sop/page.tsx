@@ -32,7 +32,7 @@ export default function SOPPage() {
 
   // 레벨 4 이하 사용자는 준비중 메시지 표시
   const userLevel = currentUser?.level || '1'
-  const levelNum = parseInt(userLevel)
+  const levelNum = parseInt(String(userLevel))
   if (levelNum < 5 && userLevel !== 'administrator') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -47,7 +47,7 @@ export default function SOPPage() {
             <div className="text-sm text-gray-500">
               현재 권한: Level {userLevel}
             </div>
-            <Button 
+            <Button
               onClick={() => router.push('/dashboard')}
               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
             >
@@ -124,7 +124,7 @@ export default function SOPPage() {
   // 검색 및 필터링
   const filteredDocuments = sopDocuments.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.author.toLowerCase().includes(searchTerm.toLowerCase())
+      doc.author.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || doc.category === selectedCategory
     return matchesSearch && matchesCategory
   })
@@ -133,12 +133,12 @@ export default function SOPPage() {
     <div className="min-h-screen bg-white">
       {/* 공통 헤더 추가 */}
       <CommonHeader
-        currentUser={currentUser}
+        currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="SOP"
         backUrl="/stock-management"
       />
-      
+
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 sm:gap-6 mb-8">
@@ -195,7 +195,7 @@ export default function SOPPage() {
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
             <h2 className="text-lg font-semibold text-gray-900">SOP 문서 검색</h2>
-            
+
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
               {/* 카테고리 선택 */}
               <select
@@ -209,7 +209,7 @@ export default function SOPPage() {
                   </option>
                 ))}
               </select>
-              
+
               {/* 검색창 */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -221,7 +221,7 @@ export default function SOPPage() {
                   className="w-full sm:w-64 pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
                 />
               </div>
-              
+
               {/* 새 SOP 작성 버튼 */}
               <Button
                 size="sm"
@@ -241,7 +241,7 @@ export default function SOPPage() {
               SOP 문서 목록 ({filteredDocuments.length}개)
             </h3>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

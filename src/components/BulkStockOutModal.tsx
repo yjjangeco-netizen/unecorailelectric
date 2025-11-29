@@ -41,16 +41,16 @@ export default function BulkStockOutModal({
   const [isProcessing, setSaving] = useState(false)
   // 검색된 재고 아이템
   const filteredStockItems = stockItems.filter(item =>
-    item.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.spec?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.specification?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.maker?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const addRow = (item?: CurrentStock) => {
     const newRow: BulkStockOutRow = {
       itemId: item?.id || '',
-      itemName: item?.product || '',
-      specification: item?.spec || '',
+      itemName: item?.name || '',
+      specification: item?.specification || '',
       currentQuantity: item?.current_quantity || 0,
       requestQuantity: 1,
       unitPrice: item?.unit_price || 0,
@@ -192,8 +192,8 @@ export default function BulkStockOutModal({
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <span className="font-medium">{item.product}</span>
-                        <span className="text-gray-500 ml-2">{item.spec}</span>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-gray-500 ml-2">{item.specification}</span>
                       </div>
                       <div className="text-sm text-gray-600">
                         재고: {item.current_quantity}개 | ₩{item.unit_price.toLocaleString()}

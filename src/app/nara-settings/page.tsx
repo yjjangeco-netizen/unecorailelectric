@@ -193,7 +193,7 @@ export default function NaraSettingsPage() {
   return (
     <div className="min-h-screen bg-white">
       <CommonHeader
-        currentUser={user}
+        currentUser={user ? { ...user, level: String(user.level) } : null}
         isAdmin={user?.level === 'admin'}
         title="입찰모니터링 설정"
         backUrl="/settings"

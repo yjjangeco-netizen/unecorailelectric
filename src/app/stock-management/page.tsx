@@ -74,6 +74,7 @@ export interface StockItem {
 
 export default function StockManagementPage() {
   const router = useRouter()
+  // Force recompile check
   const { user, loading: authLoading, isAuthenticated, logout } = useUser()
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     category: '',
@@ -696,107 +697,105 @@ export default function StockManagementPage() {
             )}
 
             {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
-            <div className="overflow-x-auto">
-              <div className="min-w-[1800px]">
-                {/* 테이블 헤더 */}
-                <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-                  <div className="grid grid-cols-[40px_2fr_1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.8fr_0.8fr_1fr_1fr_0.8fr_1.5fr_40px] gap-4 text-sm font-medium text-gray-700">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {/* 선택 권한이 있을 때만 체크박스 헤더 표시 */}
-                    <div className="col-span-1">{canSelect ? '선택' : ''}</div>
-                    <div>품목</div>
-                    <div>규격</div>
-                    <div>카테고리</div>
-                    <div>공급업체</div>
-                    <div>위치</div>
-                    <div>마감</div>
-                    <div>입고</div>
-                    <div>출고</div>
-                    <div>재고</div>
-                    <div>단가</div>
-                    <div>총액</div>
-                    <div>상태</div>
-                    <div>비고</div>
+                    {canSelect && (
+                      <TableHead className="w-[40px]">
+                        <Checkbox
+                          checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
+                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
+                    )}
+                    <TableHead>품목</TableHead>
+                    <TableHead>규격</TableHead>
+                    <TableHead>카테고리</TableHead>
+                    <TableHead>공급업체</TableHead>
+                    <TableHead>위치</TableHead>
+                    <TableHead className="text-right">마감</TableHead>
+                    <TableHead className="text-right">입고</TableHead>
+                    <TableHead className="text-right">출고</TableHead>
+                    <TableHead className="text-right">재고</TableHead>
+                    <TableHead className="text-right">단가</TableHead>
+                    <TableHead className="text-right">총액</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead>비고</TableHead>
                     {/* 수정 권한이 있을 때만 수정 헤더 표시 */}
-                    <div>{canEdit ? '수정' : ''}</div>
-                  </div>
-                </div>
-
-                {/* 재고 테이블 */}
-                <div className="divide-y divide-gray-200">
+                    {canEdit && <TableHead className="w-[40px]">수정</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {isLoading ? (
-                    <div className="p-6 text-center">
-                      <RefreshCw className="h-8 w-8 mx-auto mb-4 animate-spin text-blue-600" />
-                      <p className="text-gray-600">재고 데이터를 불러오는 중...</p>
-                    </div>
+                    <TableRow>
+                      <TableCell colSpan={canSelect ? 15 : 14} className="h-24 text-center">
+                        <div className="flex justify-center items-center">
+                          <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+                          <span>재고 데이터를 불러오는 중...</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ) : filteredItems.length > 0 ? (
                     filteredItems.map((item) => (
-                      <div key={item.id} className="px-6 py-4 hover:bg-gray-50">
-                        <div className="grid grid-cols-[40px_2fr_1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.8fr_0.8fr_1fr_1fr_0.8fr_1.5fr_40px] gap-4 items-center">
-                          {/* 선택 권한이 있을 때만 체크박스 표시 */}
-                          <div className="col-span-1">
-                            {canSelect && (
-                              <input
-                                type="checkbox"
-                                checked={selectedItems.includes(item.id)}
-                                onChange={(e) => handleSelectItem(item.id, e.target.checked)}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">{item.name}</div>
-                          </div>
-                          <div className="text-sm text-gray-600">{item.specification}</div>
-                          <div className="text-sm text-gray-600">{item.category}</div>
-                          <div className="text-sm text-gray-600">{item.supplier}</div>
-                          <div className="text-sm text-gray-600">{item.location}</div>
-                          <div className="text-sm text-gray-600">{item.closingQuantity}</div>
-                          <div className="text-sm text-green-600 font-medium">{item.inbound}</div>
-                          <div className="text-sm text-red-600 font-medium">{item.outbound}</div>
-                          <div className="text-sm font-medium text-gray-900">{item.currentStock}</div>
-                          <div className="text-sm text-gray-600">{item.unitPrice.toLocaleString()}원</div>
-                          <div className="text-sm font-medium text-gray-900">{(item.currentStock * item.unitPrice).toLocaleString()}원</div>
-                          <div>
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
-                              {getStatusIcon(item.status)}
-                              {getStatusText(item.status)}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-500 truncate" title={item.notes}>{item.notes}</div>
-                          {/* 수정 권한이 있을 때만 수정 버튼 표시 */}
-                          <div>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 w-8 p-0"
-                                onClick={() => handleEditItem(item)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      <TableRow key={item.id} className="hover:bg-gray-50">
+                        {/* 선택 권한이 있을 때만 체크박스 표시 */}
+                        {canSelect && (
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedItems.includes(item.id)}
+                              onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+                              aria-label={`Select ${item.name}`}
+                            />
+                          </TableCell>
+                        )}
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.specification}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.supplier}</TableCell>
+                        <TableCell>{item.location}</TableCell>
+                        <TableCell className="text-right">{item.closingQuantity}</TableCell>
+                        <TableCell className="text-right text-green-600">{item.inbound}</TableCell>
+                        <TableCell className="text-right text-red-600">{item.outbound}</TableCell>
+                        <TableCell className="text-right font-bold">{item.currentStock}</TableCell>
+                        <TableCell className="text-right">{item.unitPrice.toLocaleString()}원</TableCell>
+                        <TableCell className="text-right font-medium">{(item.currentStock * item.unitPrice).toLocaleString()}원</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
+                            {getStatusIcon(item.status)}
+                            {getStatusText(item.status)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate" title={item.notes}>{item.notes}</TableCell>
+                        {/* 수정 권한이 있을 때만 수정 버튼 표시 */}
+                        {canEdit && (
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEditItem(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
                     ))
                   ) : (
-                    <div className="p-6 text-center text-gray-500">
-                      <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      {stockItems.length === 0 ? (
-                        <>
-                          <p>재고 데이터가 없습니다</p>
-                          <p className="text-sm">새로운 품목을 추가해보세요</p>
-                        </>
-                      ) : (
-                        <>
-                          <p>검색 결과가 없습니다</p>
-                          <p className="text-sm">다른 검색어를 시도해보세요</p>
-                        </>
-                      )}
-                    </div>
+                    <TableRow>
+                      <TableCell colSpan={canSelect ? 15 : 14} className="h-24 text-center">
+                        <div className="flex flex-col items-center justify-center text-gray-500">
+                          <Package className="h-12 w-12 mb-2 text-gray-300" />
+                          <p>데이터가 없습니다.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   )}
-                </div>
-              </div>
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>

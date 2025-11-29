@@ -261,8 +261,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
         
         // 기존 품목이 있는지 확인
         const existingItem = items.find(item => 
-            item.product?.toLowerCase() === (row?.name || '').toLowerCase() &&
-            item.spec?.toLowerCase() === (row?.spec || '').toLowerCase()
+            item.name?.toLowerCase() === (row?.name || '').toLowerCase() &&
+            item.specification?.toLowerCase() === (row?.spec || '').toLowerCase()
         )
         
         // 기존 품목 검색 완료
@@ -280,8 +280,8 @@ export default function BulkStockInModal({ isOpen, onClose, items, onSave }: Bul
             const { data: newItem, error: itemError } = await supabase
               .from('items')
               .insert([{
-                product: row?.name || '',
-                spec: row?.spec || '',
+                name: row?.name || '',
+                specification: row?.spec || '',
                 maker: row?.maker || '',
                 unit_price: row?.unit_price || 0,
                 purpose: row?.purpose || '',

@@ -135,7 +135,7 @@ export const errorResponseSchema = z.object({
   ok: z.literal(false),
   error: z.string(),
   code: z.string().optional(),
-  details: z.record(z.any()).optional(),
+  details: z.record(z.string(), z.any()).optional(),
   timestamp: z.string().datetime(),
 })
 

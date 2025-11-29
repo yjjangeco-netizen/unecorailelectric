@@ -10,16 +10,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  Edit, 
+import {
+  Calendar,
+  Clock,
+  User,
+  Plus,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Edit,
   Trash2,
   CheckCircle,
   XCircle,
@@ -63,12 +63,12 @@ interface User {
 export default function LeaveManagementPage() {
   const { user, isAuthenticated, loading } = useUser()
   const router = useRouter()
-  
+
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loadingData, setLoadingData] = useState(false)
   const [error, setError] = useState('')
-  
+
   // 필터 및 검색
   const [filters, setFilters] = useState({
     status: 'all',
@@ -77,7 +77,7 @@ export default function LeaveManagementPage() {
     date_range: 'all'
   })
   const [searchTerm, setSearchTerm] = useState('')
-  
+
   // 모달 상태
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -120,9 +120,9 @@ export default function LeaveManagementPage() {
     const matchesStatus = filters.status === 'all' || request.status === filters.status
     const matchesType = filters.leave_type === 'all' || request.leave_type === filters.leave_type
     const matchesUser = filters.user === 'all' || request.user_id === filters.user
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       request.reason.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     return matchesStatus && matchesType && matchesUser && matchesSearch
   })
 
@@ -160,9 +160,9 @@ export default function LeaveManagementPage() {
       <Badge variant={variants[status as keyof typeof variants]}>
         <Icon className="w-3 h-3 mr-1" />
         {status === 'pending' ? '대기' :
-         status === 'approved' ? '승인' :
-         status === 'rejected' ? '거부' :
-         status === 'cancelled' ? '취소' : status}
+          status === 'approved' ? '승인' :
+            status === 'rejected' ? '거부' :
+              status === 'cancelled' ? '취소' : status}
       </Badge>
     )
   }
@@ -188,9 +188,9 @@ export default function LeaveManagementPage() {
       <Badge variant={variants[type as keyof typeof variants]}>
         <Icon className="w-3 h-3 mr-1" />
         {type === 'annual' ? '연차' :
-         type === 'half_day' ? '반차' :
-         type === 'sick' ? '병가' :
-         type === 'personal' ? '개인' : type}
+          type === 'half_day' ? '반차' :
+            type === 'sick' ? '병가' :
+              type === 'personal' ? '개인' : type}
       </Badge>
     )
   }
@@ -218,13 +218,17 @@ export default function LeaveManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CommonHeader currentUser={user} isAdmin={user?.level === 'admin'} />
-      
-      <div className="container mx-auto px-4 py-6">
-        {/* 헤더 */}
-        <div className="flex justify-between items-center mb-6">
+      <CommonHeader
+        currentUser={user ? { ...user, level: String(user.level) } : null}
+        isAdmin={user?.level === 'admin'}
+        title="연차/반차 관리"
+        backUrl="/"
+      />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">연차/반차 관리</h1>
+            <h1 className="text-3xl font-bold text-gray-900">연차 / 반차 관리</h1>
             <p className="text-gray-600">연차 및 반차 신청을 관리하고 승인하세요</p>
           </div>
           <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
@@ -246,7 +250,7 @@ export default function LeaveManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -258,7 +262,7 @@ export default function LeaveManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -270,7 +274,7 @@ export default function LeaveManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -301,7 +305,7 @@ export default function LeaveManagementPage() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label>상태</Label>
                 <Select
@@ -320,7 +324,7 @@ export default function LeaveManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>구분</Label>
                 <Select
@@ -339,7 +343,7 @@ export default function LeaveManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>사용자</Label>
                 <Select
@@ -359,7 +363,7 @@ export default function LeaveManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <Button variant="outline" onClick={() => setFilters({
                 status: 'all',
                 leave_type: 'all',
@@ -403,7 +407,7 @@ export default function LeaveManagementPage() {
                           {request.total_days}일
                         </Badge>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="w-4 h-4" />
@@ -417,14 +421,14 @@ export default function LeaveManagementPage() {
                         )}
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <User className="w-4 h-4" />
-                          <span>{request.leave_type === 'annual' ? '연차' : 
-                                 request.leave_type === 'half_day' ? '반차' :
-                                 request.leave_type === 'sick' ? '병가' : '개인'}</span>
+                          <span>{request.leave_type === 'annual' ? '연차' :
+                            request.leave_type === 'half_day' ? '반차' :
+                              request.leave_type === 'sick' ? '병가' : '개인'}</span>
                         </div>
                       </div>
-                      
+
                       <p className="text-gray-700 mb-4">{request.reason}</p>
-                      
+
                       {request.rejection_reason && (
                         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-red-700">
@@ -433,7 +437,7 @@ export default function LeaveManagementPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2 ml-4">
                       <Button
                         variant="outline"

@@ -11,13 +11,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Play, 
-  Square, 
-  Settings, 
-  Bell, 
-  BellOff, 
-  RefreshCw, 
+import {
+  Play,
+  Square,
+  Settings,
+  Bell,
+  BellOff,
+  RefreshCw,
   ExternalLink,
   AlertCircle,
   CheckCircle,
@@ -187,8 +187,8 @@ export default function NaraMonitoringPage() {
     <div className="min-h-screen bg-white">
       {/* 공통 헤더 */}
       <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'admin'}
+        currentUser={user ? { ...user, level: String(user.level) } : null}
+        isAdmin={String(user?.level) === 'admin'}
         title="Nara"
         backUrl="/"
         onLogout={() => router.push('/login')}
@@ -301,7 +301,7 @@ export default function NaraMonitoringPage() {
                 </div>
                 <Switch
                   checked={config.telegramEnabled}
-                  onCheckedChange={(checked) => 
+                  onCheckedChange={(checked) =>
                     setConfig(prev => ({ ...prev, telegramEnabled: checked }))
                   }
                 />
@@ -313,7 +313,7 @@ export default function NaraMonitoringPage() {
                   <Input
                     id="telegramChatId"
                     value={config.telegramChatId}
-                    onChange={(e) => 
+                    onChange={(e) =>
                       setConfig(prev => ({ ...prev, telegramChatId: e.target.value }))
                     }
                     placeholder="채팅 ID를 입력하세요"
@@ -329,7 +329,7 @@ export default function NaraMonitoringPage() {
                   id="checkInterval"
                   type="number"
                   value={config.checkInterval}
-                  onChange={(e) => 
+                  onChange={(e) =>
                     setConfig(prev => ({ ...prev, checkInterval: parseInt(e.target.value) || 30 }))
                   }
                   min="10"

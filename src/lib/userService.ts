@@ -1,4 +1,4 @@
-import type { User, UserPublic, PermissionType } from './types';
+import type { User, PermissionType } from './types';
 import { supabase } from './supabaseClient';
 
 export class UserService {
@@ -49,7 +49,7 @@ export class UserService {
       const user: User = {
         id: (data as any).id,
         username: (data as any).username,
-        password_hash: (data as any).password_hash, // Map password_hash
+        email: (data as any).email || '',
         name: (data as any).name,
         department: (data as any).depart || (data as any).department || '',
         position: (data as any).position || '',

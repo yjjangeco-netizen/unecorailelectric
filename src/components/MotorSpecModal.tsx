@@ -128,7 +128,7 @@ const MOTOR_SPECS = {
 const calculateCurrent = (powerKw: number, voltage: string, phase: string, pole: string): number => {
   const voltageNum = parseFloat(voltage.replace('V', ''))
   const power = powerKw * 1000 // kW to W
-  
+
   if (phase === '1상') {
     // 단상: P = V × I × cosφ
     return Math.round((power / (voltageNum * 0.8)) * 100) / 100 // 0.8 power factor
@@ -221,6 +221,8 @@ export default function MotorSpecModal({ isOpen, onClose, onSave, motor, project
         power_kw: 0,
         voltage: '220V',
         quantity: 1,
+        phase: '3상',
+        pole: '4P',
         current_amp: 0,
         breaker_size: '',
         cable_size: ''
@@ -236,7 +238,7 @@ export default function MotorSpecModal({ isOpen, onClose, onSave, motor, project
       const cableSize = getCableSize(current)
       const eocrSetting = getEOCRSetting(current)
       const breakerSetting = getBreakerSetting(current)
-      
+
       setFormData(prev => ({
         ...prev,
         current_amp: current,
@@ -293,7 +295,7 @@ export default function MotorSpecModal({ isOpen, onClose, onSave, motor, project
         <DialogHeader>
           <DialogTitle>모터 사양 {motor ? '수정' : '추가'}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>

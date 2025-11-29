@@ -2,199 +2,222 @@ export type PermissionType = string;
 export type DepartmentType = string;
 export type PositionType = string;
 
+// ACTUAL_SCHEMA.md 기반 User 정의
 export interface User {
-  id: string;
+  id: string; // DB: TEXT
   username: string;
-  name: string;
+  name: string; // DB: name (single field)
   email: string;
-  level: string | number;
+  level: string; // DB: level (TEXT)
   permissions?: PermissionType[];
   department: DepartmentType;
   position: PositionType;
   is_active: boolean;
+  // 권한 필드
+  stock_view?: boolean;
+  stock_in?: boolean;
+  stock_out?: boolean;
+  stock_disposal?: boolean;
+  work_tools?: boolean;
+  daily_log?: boolean;
+  work_manual?: boolean;
+  sop?: boolean;
+  user_management?: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-// 프로젝트 타입 정의 (실제 DB 스키마에 맞춤)
+// ACTUAL_SCHEMA.md 기반 Project 정의
 export interface Project {
-  id: string; // DB: INTEGER, API: string 변환
-  project_number: string // DB: project_number
-  name: string // DB: project_name
-  description?: string
-  status: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete'
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  start_date?: string
-  end_date?: string
-  assembly_date?: string // 조립완료일
-  factory_test_date?: string // 공장시운전일
-  site_test_date?: string // 현장시운전일
-  completion_date?: string // 준공완료일
-  warranty_period?: string // 하자보증기간
-  budget?: number
-  manager_id?: string
-  client_name?: string
-  client_contact?: string
-  created_by: string
-  created_at: string
-  updated_at: string
+  id: number; // DB: INTEGER
+  project_number: string;
+  project_name: string; // DB: project_name
+  description?: string;
+  ProjectStatus: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete'; // DB: ProjectStatus
+  is_active: boolean;
+  assembly_date?: string;
+  factory_test_date?: string;
+  site_test_date?: string;
+  remarks?: string;
+  created_at: string;
+  updated_at: string;
 
-  // 기본 정보
-  base_name?: string // 기지명
-
-  // 사양 정보
-  hardware_version?: string // 하드웨어 버전
-  has_disk?: boolean // 디스크 여부
-  incoming_power?: string // 인입전원
-  primary_breaker?: string // 1차 차단기
-
-  // 전원사양
-  pvr_ampere?: number // PVR [A]
-  frequency?: number // 주파수
-
-  // Drive 사양
-  spindle_spec?: string // 스핀들
-  tool_post_spec?: string // 공구대
-  pump_low_spec?: string // 펌프(저)
-  pump_high_spec?: string // 펌프(고)
-  crusher_spec?: string // 크러셔
-  conveyor_spec?: string // 컨베이어
-  dust_collector_spec?: string // 집진기
-
-  // 380V motor 사양
-  vehicle_transfer_device?: string // 차량이송장치
-  oil_heater?: string // 오일히터
-  cooling_fan?: string // COOLING FAN
-  chiller?: string // CHILLER
-
-  // 220V motor 사양
-  lubrication?: string // Luberication
-  grease?: string // Grease
-
-  // 차륜관리시스템
-  cctv_spec?: string // CCTV
-  automatic_cover?: string // 자동덮개(도어)
-  ups_spec?: string // UPS
-  configuration?: string // 구성
-
-  // 색상
-  main_color?: string // 메인 색상
-  auxiliary_color?: string // 보조 색상
-
-  // 옵션
-  warning_light?: boolean // 경광등
-  buzzer?: boolean // 부저
-  speaker?: boolean // speaker
-  automatic_rail?: boolean // 자동레일
+  // UI에서 사용되는 추가 필드 (DB에는 없을 수 있음, 호환성 유지)
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  start_date?: string;
+  end_date?: string;
+  completion_date?: string;
+  warranty_period?: string;
+  budget?: number;
+  manager_id?: string;
+  client_name?: string;
+  client_contact?: string;
+  created_by?: string;
+  base_name?: string;
+  hardware_version?: string;
+  has_disk?: boolean;
+  incoming_power?: string;
+  primary_breaker?: string;
+  pvr_ampere?: number;
+  frequency?: number;
+  spindle_spec?: string;
+  tool_post_spec?: string;
+  pump_low_spec?: string;
+  pump_high_spec?: string;
+  crusher_spec?: string;
+  conveyor_spec?: string;
+  dust_collector_spec?: string;
+  vehicle_transfer_device?: string;
+  oil_heater?: string;
+  cooling_fan?: string;
+  chiller?: string;
+  lubrication?: string;
+  grease?: string;
+  cctv_spec?: string;
+  automatic_cover?: string;
+  ups_spec?: string;
+  configuration?: string;
+  main_color?: string;
+  auxiliary_color?: string;
+  warning_light?: boolean;
+  buzzer?: boolean;
+  speaker?: boolean;
+  automatic_rail?: boolean;
 }
 
-// 현재 데이터베이스 구조에 맞춘 타입 정의
-
-export interface CurrentStock {
-  id: string
-  product: string
-  spec?: string
-  maker?: string
-  category?: string
-  unit_price: number
-  purpose?: string
-  min_stock: number
-  note?: string
-  stock_status: string
-  current_quantity: number
-  location?: string
-  created_at: string
-  updated_at: string
+// ACTUAL_SCHEMA.md 기반 WorkDiary 정의
+export interface WorkDiary {
+  id: number; // DB: INTEGER
+  user_id: string; // DB: VARCHAR
+  work_date: string;
+  project_id?: number; // DB: INTEGER
+  work_content: string;
+  work_type?: string;
+  work_sub_type?: string;
+  custom_project_name?: string;
+  created_at: string;
+  updated_at: string;
+  
+  // UI 편의를 위한 확장 필드
+  start_time?: string;
+  end_time?: string;
+  work_hours?: number;
+  overtime_hours?: number;
 }
 
-// items 테이블 기반 ProfessionalStockItem
-export interface ProfessionalStockItem {
-  id: number
-  name: string
-  specification: string
-  maker: string
-  location: string
-  status: string
-  stock_status: string
-  note: string
-  unit_price: number
-  current_quantity: number
-  in_data: number
-  out_data: number
-  plus_data: number
-  minus_data: number
-  total_qunty: number
+// ACTUAL_SCHEMA.md 기반 BusinessTrip 정의
+export interface BusinessTrip {
+  id: string; // DB: UUID
+  user_id: string; // DB: TEXT
+  user_name: string;
+  title: string;
+  location: string;
+  purpose: string;
+  start_date: string;
+  end_date: string;
+  start_time?: string;
+  end_time?: string;
+  status: 'scheduled' | 'ongoing' | 'completed' | 'cancelled';
+  report_status: 'pending' | 'submitted' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at: string;
 }
 
-// SimpleStockInModal용 타입
-export interface SimpleStockItem {
-  name: string
-  specification: string
-  maker: string
-  location: string
-  remark: string
-  status: string
-  in_data: number
-  unit_price: number
+// ACTUAL_SCHEMA.md 기반 BusinessTripReport 정의
+export interface BusinessTripReport {
+  id: string; // DB: UUID
+  trip_id: string; // DB: UUID
+  user_id: string;
+  user_name: string;
+  title: string;
+  content: string;
+  attachments?: any[]; // JSONB
+  status: 'submitted' | 'approved' | 'rejected';
+  submitted_at: string;
+  approved_by?: string;
+  approved_at?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// 입고/출고 수량을 포함한 완전한 재고 정보
-export interface StockItemWithHistory {
-  id: string
-  product: string
-  spec?: string
-  maker?: string
-  category?: string
-  unit_price: number
-  purpose: string
-  min_stock: number
-  note?: string
-  stock_status: string
-  current_quantity: number
-  location?: string
-  total_amount: number
-  stock_in_quantity: number
-  stock_out_quantity: number
-  created_at: string
-  updated_at: string
+// ACTUAL_SCHEMA.md 기반 Item (StockItem) 정의
+export interface StockItem {
+  id: string; // DB: UUID
+  name: string;
+  specification?: string;
+  maker?: string;
+  category: string;
+  location?: string;
+  purpose?: string;
+  min_stock: number;
+  current_quantity: number;
+  closing_quantity?: number;
+  stock_in?: number;
+  stock_out?: number;
+  disposal_qunty?: number;
+  total_qunty?: number;
+  unit_price: number;
+  note?: string;
+  stock_status: string;
+  status: string;
+  date_index?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface Item {
-  id: string
-  product: string
-  spec?: string
-  maker?: string
-  note?: string
-  unit_price: number
-  purpose: string
-  min_stock: number
-  category: string
-  stock_status: string
-  created_at: string
-  updated_at: string
-}
-
+// ACTUAL_SCHEMA.md 기반 StockHistory 정의
 export interface StockHistory {
-  id: string
-  item_id: string
-  event_type: string
-  quantity: number
-  unit_price?: number
-  reason?: string
-  ordered_by?: string
-  received_by?: string
-  project?: string
-  notes?: string
-  return_date?: string
-  disposal_reason?: string
-  requester?: string
-  approver?: string
-  approval_date?: string
-  approval_notes?: string
-  evidence_url?: string
-  condition_type: string
-  is_rental: boolean
-  disposal_status: string
-  event_date: string
-  created_at: string
+  id: string; // DB: UUID
+  item_id: string; // DB: UUID
+  event_type: 'IN' | 'OUT' | 'DISPOSAL' | 'ADJUSTMENT' | 'PLUS' | 'MINUS';
+  quantity: number;
+  unit_price?: number;
+  reason?: string;
+  ordered_by?: string;
+  received_by?: string;
+  project?: string;
+  notes?: string;
+  return_date?: string;
+  disposal_reason?: string;
+  requester?: string;
+  approver?: string;
+  approval_date?: string;
+  approval_notes?: string;
+  evidence_url?: string;
+  condition_type?: string;
+  is_rental?: boolean;
+  disposal_status?: string;
+  date_index?: string;
+  event_date: string;
+  created_at: string;
+}
+
+// 호환성 유지를 위한 별칭 및 기존 인터페이스
+export type Item = StockItem;
+export type CurrentStock = StockItem;
+
+export interface ProfessionalStockItem extends StockItem {
+  in_data: number;
+  out_data: number;
+  plus_data: number;
+  minus_data: number;
+}
+
+export interface SimpleStockItem {
+  name: string;
+  specification: string;
+  maker: string;
+  location: string;
+  remark: string;
+  status: string;
+  in_data: number;
+  unit_price: number;
+}
+
+export interface StockItemWithHistory extends StockItem {
+  total_amount: number;
+  stock_in_quantity: number;
+  stock_out_quantity: number;
 }
 
 export interface Disposal {
@@ -207,71 +230,120 @@ export interface Disposal {
 
 // 폼 데이터 타입
 export interface StockInFormData {
-  name: string
-  specification: string
-  maker: string
-  location: string
-  note: string
-  quantity: number
-  unit_price: number
-  stock_status: string
-  reason?: string
-  received_by: string
+  name: string;
+  specification: string;
+  maker: string;
+  location: string;
+  note: string;
+  quantity: number;
+  unit_price: number;
+  stock_status: string;
+  reason?: string;
+  received_by: string;
 }
 
 export interface StockOutFormData {
-  name: string
+  name: string;
   specification: string
-  maker: string
+  maker: string;
   location: string
-  note: string
-  quantity: number
-  project?: string
+  note: string;
+  quantity: number;
+  project?: string;
   is_rental: boolean
   return_date?: string
-  issued_by: string
+  issued_by: string;
 }
 
-// 기존 타입들 유지 (호환성)
 export interface StockIn extends Omit<StockHistory, 'id' | 'event_type'> {
-  event_type: 'IN'
+  event_type: 'IN';
 }
 
 export interface StockOut extends Omit<StockHistory, 'id' | 'event_type'> {
-  event_type: 'OUT'
-}
-
-export interface Disposal extends Omit<StockHistory, 'id' | 'event_type'> {
-  event_type: 'DISPOSAL'
-}
-
-// 업무일지 타입 정의
-export interface WorkDiary {
-  id: string
-  user_id: string
-  work_date: string
-  work_content: string
-  work_type: string
-  work_sub_type: string
-  project_id?: number
-  custom_project_name?: string
-  start_time?: string
-  end_time?: string
-  work_hours?: number // 계산된 근무시간 (퇴근시간 - 출근시간 - 1시간)
-  overtime_hours?: number // 초과근무시간
-  created_at: string
-  updated_at: string
+  event_type: 'OUT';
 }
 
 // 업무일지 작성용 폼 데이터 타입
 export interface WorkEntry {
-  projectId: string
-  workContent: string
-  workType: string
-  workSubType: string
-  customProjectName: string
-  startTime?: string
-  endTime?: string
-  workHours?: number // 계산된 근무시간
-  overtimeHours?: number // 초과근무시간
+  projectId: string;
+  workContent: string;
+  workType: string;
+  workSubType: string;
+  customProjectName: string;
+  startTime?: string;
+  endTime?: string;
+  workHours?: number;
+  overtime_hours?: number;
+}
+
+// 기타 필요한 인터페이스
+export interface AccessLog {
+  id: string;
+  user_id: string;
+  action: string;
+  ip_address?: string;
+  created_at: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  user_id: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  start_time?: string;
+  end_time?: string;
+  total_days: number;
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  approved_by?: string;
+  approved_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Event {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  allDay?: boolean;
+  extendedProps?: {
+    description?: string;
+    location?: string;
+    type?: string;
+    projectId?: number;
+  };
+}
+
+export interface ProjectEvent {
+  id: string;
+  project_id: number;
+  event_type: string;
+  event_date: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LocalEvent {
+  id: string;
+  participant_id: string;
+  created_by_id: string;
+  summary: string;
+  category: string;
+  sub_category?: string;
+  sub_sub_category?: string;
+  project_id?: number;
+  project_type?: string;
+  custom_project?: string;
+  description?: string;
+  location?: string;
+  start_date?: string;
+  end_date?: string;
+  start_date_time?: string;
+  end_date_time?: string;
+  created_at: string;
+  updated_at: string;
 }

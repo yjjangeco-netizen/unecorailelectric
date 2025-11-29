@@ -69,11 +69,11 @@ export default function ManualManagementPage() {
 
   // 카테고리 필터링
   const categories = ['all', '점검', '안전', '조작', '기타']
-  
+
   // 검색 및 필터링
   const filteredManuals = manualItems.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      item.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory
     return matchesSearch && matchesCategory
   })
@@ -82,12 +82,12 @@ export default function ManualManagementPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* 공통 헤더 추가 */}
       <CommonHeader
-        currentUser={currentUser}
+        currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
         isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
         title="메뉴얼 관리"
         backUrl="/work-tool"
       />
-      
+
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">메뉴얼 관리</h2>
@@ -110,7 +110,7 @@ export default function ManualManagementPage() {
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
-            
+
             {/* 카테고리 선택 */}
             <select
               value={selectedCategory}
@@ -123,7 +123,7 @@ export default function ManualManagementPage() {
                 </option>
               ))}
             </select>
-            
+
             {/* 새 메뉴얼 작성 버튼 */}
             <Button
               size="sm"

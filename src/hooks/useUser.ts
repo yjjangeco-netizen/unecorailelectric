@@ -102,21 +102,21 @@ export function useUser() {
   const isAdmin = (): boolean => {
     if (!user) return false;
     // Modified: permissions가 없을 때 level을 기반으로 생성
-    const userPermissions = user.permissions || UserService.mapLevelToPermissions(user.level);
+    const userPermissions = user.permissions || UserService.mapLevelToPermissions(String(user.level));
     return PermissionManager.isAdmin(userPermissions as PermissionType[]);
   };
 
   const hasLevel = (level: number): boolean => {
     if (!user) return false;
     // Modified: permissions가 없을 때 level을 기반으로 생성
-    const userPermissions = user.permissions || UserService.mapLevelToPermissions(user.level);
+    const userPermissions = user.permissions || UserService.mapLevelToPermissions(String(user.level));
     return PermissionManager.hasLevel(userPermissions as PermissionType[], level);
   };
 
   const canAccessFeature = (feature: string): boolean => {
     if (!user) return false;
     // Modified: permissions가 없을 때 level을 기반으로 생성
-    const userPermissions = user.permissions || UserService.mapLevelToPermissions(user.level);
+    const userPermissions = user.permissions || UserService.mapLevelToPermissions(String(user.level));
     return PermissionManager.canAccessFeature(userPermissions as PermissionType[], feature);
   };
 
@@ -124,7 +124,7 @@ export function useUser() {
   const canEdit = (): boolean => {
     if (!user) return false;
     // Modified: permissions가 없을 때 level을 기반으로 생성
-    const userPermissions = user.permissions || UserService.mapLevelToPermissions(user.level);
+    const userPermissions = user.permissions || UserService.mapLevelToPermissions(String(user.level));
     return PermissionManager.canEdit(userPermissions as PermissionType[]);
   };
 
@@ -139,7 +139,7 @@ export function useUser() {
     }
     
     // level3 이상 권한 확인 (새로운 매트릭스 기준)
-    const userPermissions = user.permissions || UserService.mapLevelToPermissions(user.level);
+    const userPermissions = user.permissions || UserService.mapLevelToPermissions(String(user.level));
     if (PermissionManager.hasLevel(userPermissions, 3)) {
       console.log('level3 이상 사용자 수정 권한 확인: 수정 권한 허용');
       return true;

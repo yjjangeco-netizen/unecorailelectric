@@ -301,7 +301,7 @@ export default function SchedulePage() {
   // Level3 이상 권한 확인 (새로운 매트릭스 기준)
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
-      const userLevel = user.level || '1'
+      const userLevel = String(user.level || '1')
       if (userLevel === '1' || userLevel === '2') {
         router.push('/dashboard')
       }
@@ -373,7 +373,7 @@ export default function SchedulePage() {
 
   // 프로젝트명 업데이트 함수
   const getUpdatedProjectName = (project: any) => {
-    let baseName = project.name || project.project_name || project.projectName
+    let baseName = project.project_name || project.name || project.projectName
 
     // "선반" 제거
     if (baseName.includes('선반')) {
@@ -403,8 +403,8 @@ export default function SchedulePage() {
       setFilteredProjects(projects)
     } else {
       const filtered = projects.filter(project =>
-        project.name.toLowerCase().includes(term.toLowerCase()) ||
-        project.project_number.toLowerCase().includes(term.toLowerCase()) ||
+        (project.project_name || '').toLowerCase().includes(term.toLowerCase()) ||
+        (project.project_number || '').toLowerCase().includes(term.toLowerCase()) ||
         getUpdatedProjectName(project).toLowerCase().includes(term.toLowerCase())
       )
       setFilteredProjects(filtered)
@@ -419,7 +419,7 @@ export default function SchedulePage() {
   }
 
   // 프로젝트 이벤트 로딩 (일정 API 활용)
-  const loadProjectEvents = async () => {
+  const loadProjectEvents = useCallback(async () => {
     try {
       console.log('프로젝트 이벤트 로딩 시작...')
 
@@ -445,7 +445,7 @@ export default function SchedulePage() {
       console.log('일정 API 호출 시작...')
       const response = await fetch(`/api/schedule?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`, {
         headers: {
-          'x-user-level': user?.level || '1'
+          'x-user-level': String(user?.level || '1')
         }
       })
       console.log('일정 API 응답 상태:', response.status)
@@ -473,7 +473,7 @@ export default function SchedulePage() {
         console.log('프로젝트 API 호출 시작...')
         const projectsResponse = await fetch('/api/projects', {
           headers: {
-            'x-user-level': user?.level || '1'
+            'x-user-level': String(user?.level || '1')
           }
         })
         console.log('프로젝트 API 응답 상태:', projectsResponse.status)
@@ -487,7 +487,7 @@ export default function SchedulePage() {
           projects.forEach((project: any, index: number) => {
             console.log(`프로젝트 ${index + 1}:`, {
               id: project.id,
-              name: project.name,
+              name: project.project_name,
               project_number: project.project_number,
               assembly_date: project.assembly_date,
               factory_test_date: project.factory_test_date,
@@ -509,7 +509,7 @@ export default function SchedulePage() {
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.project_number,
                   date: project.assembly_date,
-                  description: `${project.name} 조완`,
+                  description: `${project.project_name} 조완`,
                   isReadOnly: true, // 수정 불가
                   icon: '🔧' // 조완 아이콘
                 })
@@ -530,7 +530,7 @@ export default function SchedulePage() {
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.project_number,
                   date: project.factory_test_date,
-                  description: `${project.name} 공시`,
+                  description: `${project.project_name} 공시`,
                   isReadOnly: true, // 수정 불가
                   icon: '🏭' // 공장시운전 아이콘
                 })
@@ -551,7 +551,7 @@ export default function SchedulePage() {
                   projectName: getUpdatedProjectName(project),
                   projectNumber: project.project_number,
                   date: project.site_test_date,
-                  description: `${project.name} 현시`,
+                  description: `${project.project_name} 현시`,
                   isReadOnly: true, // 수정 불가
                   icon: '🏗️' // 현장시운전 아이콘
                 })
@@ -615,7 +615,7 @@ export default function SchedulePage() {
     } catch (err) {
       console.error('프로젝트 이벤트 불러오기 실패:', err)
     }
-  }
+  }, [viewMode, user, projects])
 
   const loadCalendarEvents = useCallback(async () => {
     setLoadingEvents(true)
@@ -694,7 +694,7 @@ export default function SchedulePage() {
       try {
         const leaveResponse = await fetch('/api/leave-requests', {
           headers: {
-            'x-user-level': user?.level || '1'
+            'x-user-level': String(user?.level || '1')
           }
         })
 
@@ -743,7 +743,7 @@ export default function SchedulePage() {
       try {
         const eventsResponse = await fetch('/api/events', {
           headers: {
-            'x-user-level': user?.level || '1',
+            'x-user-level': String(user?.level || '1'),
             'x-user-id': user?.id || ''
           }
         })
@@ -811,7 +811,7 @@ export default function SchedulePage() {
     } finally {
       setLoadingEvents(false)
     }
-  }, [user])
+  }, [user, loadProjectEvents])
 
   // 구글 캘린더에서 일정 가져오기
   useEffect(() => {
@@ -820,7 +820,7 @@ export default function SchedulePage() {
       loadUsers()
       loadProjects()
     }
-  }, [isAuthenticated, currentDate, viewMode, loadCalendarEvents, loadUsers, loadProjects])
+  }, [isAuthenticated, currentDate, viewMode, loadCalendarEvents, loadUsers, loadProjects, loadProjectEvents])
 
   // 업무일지에 외근/출장 보고 추가
   const addToWorkDiary = async (event: LocalEvent, participant: User) => {
@@ -928,7 +928,7 @@ export default function SchedulePage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-level': user?.level || '1'
+            'x-user-level': String(user?.level || '1')
           },
           body: JSON.stringify(leaveData)
         })
@@ -1036,7 +1036,7 @@ export default function SchedulePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-level': user?.level || '1',
+          'x-user-level': String(user?.level || '1'),
           'x-user-id': user?.id || ''
         },
         body: JSON.stringify(eventData)
@@ -1222,7 +1222,7 @@ export default function SchedulePage() {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'x-user-level': user?.level || '1',
+            'x-user-level': String(user?.level || '1'),
             'x-user-id': user?.id || ''
           },
           body: JSON.stringify(eventData)
@@ -1345,7 +1345,7 @@ export default function SchedulePage() {
         const response = await fetch(`/api/leave-requests?id=${leaveId}`, {
           method: 'DELETE',
           headers: {
-            'x-user-level': user?.level || '1'
+            'x-user-level': String(user?.level || '1')
           }
         })
 
@@ -1367,7 +1367,7 @@ export default function SchedulePage() {
         const response = await fetch(`/api/events/${eventIdNum}`, {
           method: 'DELETE',
           headers: {
-            'x-user-level': user?.level || '1',
+            'x-user-level': String(user?.level || '1'),
             'x-user-id': user?.id || ''
           }
         })
@@ -1392,7 +1392,7 @@ export default function SchedulePage() {
           const response = await fetch(`/api/business-trips?id=${tripId}`, {
             method: 'DELETE',
             headers: {
-              'x-user-level': user?.level || '1',
+              'x-user-level': String(user?.level || '1'),
               'x-user-id': user?.id || ''
             }
           })
@@ -1638,7 +1638,7 @@ export default function SchedulePage() {
     <AuthGuard requiredLevel={3}>
       <div className="min-h-screen bg-blue-50">
         <CommonHeader
-          currentUser={user}
+          currentUser={user ? { ...user, level: String(user.level) } : null}
           isAdmin={user?.permissions?.includes('administrator') || false}
           title="일정 관리"
           backUrl="/"

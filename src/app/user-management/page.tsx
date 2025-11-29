@@ -54,20 +54,20 @@ export default function UserManagementPage() {
       setLoading(true)
       setError(null)
       console.log('사용자 목록 로드 시작...')
-      
+
       const response = await fetch('/api/users')
       console.log('API 응답 상태:', response.status)
-      
+
       if (!response.ok) {
         const errorText = await response.text()
         console.error('API 오류 응답:', errorText)
         throw new Error(`사용자 목록을 가져오는데 실패했습니다. (${response.status})`)
       }
-      
+
       const data = await response.json()
       console.log('API 응답 데이터:', data)
       console.log('사용자 수:', data.users?.length || 0)
-      
+
       setUsers(data.users || [])
     } catch (error) {
       console.error('사용자 목록 로드 오류:', error)
@@ -108,7 +108,7 @@ export default function UserManagementPage() {
   const validateDomain = async (domain: string) => {
     try {
       setDomainValidation({ isValid: null, message: '검증 중...' })
-      
+
       // 간단한 도메인 형식 검증
       const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/
       if (!domainRegex.test(domain)) {
@@ -119,7 +119,7 @@ export default function UserManagementPage() {
       // 실제 도메인 존재 여부 확인 (간단한 예시)
       // 실제로는 서버에서 DNS 조회를 수행해야 함
       await new Promise(resolve => setTimeout(resolve, 1000)) // 시뮬레이션
-      
+
       setDomainValidation({ isValid: true, message: '도메인이 유효합니다.' })
       return true
     } catch (error) {
@@ -139,7 +139,7 @@ export default function UserManagementPage() {
   // 도메인 검증 후 사용자 페이지로 이동
   const handleDomainSubmit = async () => {
     if (!selectedUser) return
-    
+
     const isValid = await validateDomain(domainInput)
     if (isValid) {
       // 도메인이 유효하면 해당 사용자의 전용 페이지로 이동
@@ -153,7 +153,7 @@ export default function UserManagementPage() {
   const handleSaveUser = async (updatedUser: UserType) => {
     try {
       setLoading(true)
-      
+
       // API 호출로 사용자 정보 업데이트
       const response = await fetch(`/api/users`, {
         method: 'PUT',
@@ -178,13 +178,13 @@ export default function UserManagementPage() {
 
       const result = await response.json()
       console.log('사용자 정보 업데이트 성공:', result)
-      
+
       // 성공 메시지 표시
       alert('사용자 정보가 성공적으로 업데이트되었습니다.')
-      
+
       // 사용자 목록을 다시 로드하여 최신 데이터 반영
       await loadUsers()
-      
+
       setShowEditModal(false)
       setEditingUser(null)
     } catch (error) {
@@ -199,7 +199,7 @@ export default function UserManagementPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch('/api/add-test-users', {
         method: 'POST'
       })
@@ -211,7 +211,7 @@ export default function UserManagementPage() {
 
       const data = await response.json()
       console.log('테스트 사용자 추가 결과:', data)
-      
+
       // 목록 새로고침
       await loadUsers()
     } catch (error) {
@@ -231,166 +231,160 @@ export default function UserManagementPage() {
   )
 
   return (
-    <AuthGuard requiredLevel={5} requiredPermissions={['user_management']}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* 공통 헤더 추가 */}
+    <AuthGuard requiredLevel="5">
+      <div className="min-h-screen bg-gray-50">
         <CommonHeader
           currentUser={currentUser}
           isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
           title="회원관리"
           backUrl="/dashboard"
         />
-      
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* 헤더 */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <User className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">회원관리</h1>
-            </div>
-            <Button 
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              새 사용자 추가
-            </Button>
-          </div>
-        </div>
 
-        {/* 검색 및 필터 */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="이름, ID, 부서, 직책으로 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+        <div className="container mx-auto px-4 py-6">
+          {/* 헤더 */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <User className="h-8 w-8 text-blue-600" />
+                <h1 className="text-2xl font-bold text-gray-900">회원관리</h1>
               </div>
-            </div>
-            <Button variant="outline" onClick={loadUsers} className="mr-2">
-              새로고침
-            </Button>
-            <Button 
-              onClick={handleAddTestUsers}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              테스트 사용자 추가
-            </Button>
-          </div>
-        </div>
-
-        {/* 사용자 목록 */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">사용자 목록</h2>
-          
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-600 mt-2">사용자 정보를 불러오는 중...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <div className="text-red-500 text-6xl mb-4">⚠️</div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">오류가 발생했습니다</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button 
-                onClick={loadUsers}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+              <Button
+                onClick={() => setShowAddModal(true)}
+                className="bg-blue-600 hover:bg-blue-700"
               >
-                다시 시도
+                <Plus className="h-4 w-4 mr-2" />
+                새 사용자 추가
               </Button>
             </div>
-          ) : users.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">사용자를 찾을 수 없습니다</h3>
-              <p className="text-gray-600 mb-4">데이터베이스에 사용자 데이터가 없거나 권한이 없습니다.</p>
-              <Button 
-                onClick={loadUsers}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
+          </div>
+
+          {/* 검색 및 필터 */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="이름, ID, 부서, 직책으로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Button variant="outline" onClick={loadUsers} className="mr-2">
                 새로고침
               </Button>
+              <Button
+                onClick={handleAddTestUsers}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                테스트 사용자 추가
+              </Button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">이름</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">부서</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">직책</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">이메일</th>
-                                         <th className="text-left py-3 px-4 font-medium text-gray-700">권한</th>
-                     <th className="text-left py-3 px-4 font-medium text-gray-700">작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium text-gray-900">{user.id}</td>
-                                             <td className="py-3 px-4 font-medium text-gray-900">{user.name}</td>
-                                             <td className="py-3 px-4 font-medium text-gray-900">{user.department}</td>
-                       <td className="py-3 px-4 font-medium text-gray-900">{user.position}</td>
-                      <td className="py-3 px-4 text-gray-600">{user.username || '-'}</td>
-                                             <td className="py-3 px-4 font-medium text-gray-900">{user.level}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditUser(user)}
-                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            수정
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteUser(user)}
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" />
-                            삭제
-                          </Button>
-                        </div>
-                      </td>
+          </div>
+
+          {/* 사용자 목록 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">사용자 목록</h2>
+
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-gray-600 mt-2">사용자 정보를 불러오는 중...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">오류가 발생했습니다</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <Button
+                  onClick={loadUsers}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  다시 시도
+                </Button>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">사용자를 찾을 수 없습니다</h3>
+                <p className="text-gray-600 mb-4">데이터베이스에 사용자 데이터가 없거나 권한이 없습니다.</p>
+                <Button
+                  onClick={loadUsers}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  새로고침
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50">
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">이름</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">부서</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">직책</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">이메일</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">권한</th>
+                      <th className="text-left py-3 px-4 font-medium text-gray-700">작업</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {!loading && filteredUsers.length === 0 && (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">사용자를 찾을 수 없습니다.</p>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 font-medium text-gray-900">{user.id}</td>
+                        <td className="py-3 px-4 font-medium text-gray-900">{user.name}</td>
+                        <td className="py-3 px-4 font-medium text-gray-900">{user.department}</td>
+                        <td className="py-3 px-4 font-medium text-gray-900">{user.position}</td>
+                        <td className="py-3 px-4 text-gray-600">{user.username || '-'}</td>
+                        <td className="py-3 px-4 font-medium text-gray-900">{user.level}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditUser(user)}
+                              className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            >
+                              <Edit className="h-3 w-3 mr-1" />
+                              수정
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDeleteUser(user)}
+                              className="text-red-600 border-red-300 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              삭제
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* 사용자 수정 모달 */}
-      <UserEditModal
-        user={editingUser}
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false)
-          setEditingUser(null)
-        }}
-        onSave={handleSaveUser}
-      />
-    </div>
+        {/* 사용자 수정 모달 */}
+        {editingUser && (
+          <UserEditModal
+            user={editingUser}
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false)
+              setEditingUser(null)
+            }}
+            onSave={handleSaveUser}
+          />
+        )}
+      </div>
     </AuthGuard>
   )
 }

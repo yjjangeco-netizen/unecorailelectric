@@ -50,8 +50,8 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
     // 검색어 필터링
     if (searchTerm.trim()) {
       filtered = filtered.filter(stock => 
-        stock.item?.product?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stock.item?.spec?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        stock.item?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        stock.item?.specification?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         stock.item?.maker?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
@@ -74,8 +74,8 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
           closing_quantity,
           location,
           note,
-          product,
-          spec,
+          name,
+          specification,
           maker,
           unit_price,
           stock_status
@@ -99,14 +99,16 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
         note: item.note || '',
         item: {
           id: item.id,
-          product: item.product,
-          spec: item.spec,
+          name: item.name,
+          specification: item.specification,
           maker: item.maker,
           unit_price: item.unit_price,
           stock_status: item.stock_status,
           purpose: item.purpose || '',
           min_stock: item.min_stock || 0,
           category: item.category || '',
+          current_quantity: item.current_quantity || 0,
+          status: item.status || '',
           created_at: item.created_at || new Date().toISOString(),
           updated_at: item.updated_at || new Date().toISOString()
         }
@@ -248,10 +250,10 @@ export default function StockOutListModal({ isOpen, onClose }: StockOutListModal
                         {index + 1}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {stockOut.item?.product || '-'}
+                        {stockOut.item?.name || '-'}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {stockOut.item?.spec || '-'}
+                        {stockOut.item?.specification || '-'}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {stockOut.item?.maker || '-'}

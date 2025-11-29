@@ -99,7 +99,7 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
 
   useEffect(() => {
     if (user) {
-      const level = user.level || '1'
+      const level = String(user.level || '1')
       const defaultPermissions = getDefaultPermissionsByLevel(level)
       
       const initialData = {
@@ -278,7 +278,7 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
               {menuOptions.map((option) => {
                 const Icon = option.icon
                 const isChecked = formData[option.key as keyof User] as boolean || false
-                const isDefaultForLevel = getDefaultPermissionsByLevel(formData.level || '1')[option.key]
+                const isDefaultForLevel = getDefaultPermissionsByLevel(String(formData.level || '1'))[option.key]
                 return (
                   <div key={option.key} className={`flex items-center space-x-2 p-2 rounded ${
                     isDefaultForLevel ? 'bg-green-50' : ''

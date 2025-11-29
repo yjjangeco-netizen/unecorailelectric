@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
+import {
   Search,
   ArrowLeft,
   Calendar,
@@ -59,7 +59,7 @@ interface Project {
 export default function WorkDiaryViewPage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
-  
+
   // 상태 관리
   const [searchStartDate, setSearchStartDate] = useState('')
   const [searchEndDate, setSearchEndDate] = useState('')
@@ -67,7 +67,7 @@ export default function WorkDiaryViewPage() {
   const [searchUser, setSearchUser] = useState('all')
   const [workDiaries, setWorkDiaries] = useState<WorkDiaryEntry[]>([])
   const [projects, setProjects] = useState<Project[]>([])
-  const [users, setUsers] = useState<{id: string, name: string}[]>([])
+  const [users, setUsers] = useState<{ id: string, name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -85,7 +85,7 @@ export default function WorkDiaryViewPage() {
   // Level2 이상 권한 확인
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      const userLevel = user.level || '1'
+      const userLevel = String(user.level || '1')
       if (userLevel === '1') {
         router.push('/dashboard')
       }
@@ -118,16 +118,16 @@ export default function WorkDiaryViewPage() {
     try {
       const response = await fetch('/api/users')
       const result = await response.json()
-      
+
       if (response.ok) {
         const allUsers = result.users || []
-        
+
         // 현재 사용자 레벨에 따라 필터링
-        const currentUserLevel = parseInt(user?.level || '1')
+        const currentUserLevel = parseInt(String(user?.level || '1'))
         let filteredUsers = []
-        
+
         console.log('사용자 필터링 - 현재 레벨:', currentUserLevel)
-        
+
         if (currentUserLevel === 999) { // administrator
           // 관리자는 모든 사용자 조회 가능
           filteredUsers = allUsers
@@ -135,12 +135,12 @@ export default function WorkDiaryViewPage() {
         } else {
           // 숫자 레벨은 해당 레벨 이하만 조회 가능
           filteredUsers = allUsers.filter((u: any) => {
-            const userLevel = parseInt(u.level || '1')
+            const userLevel = parseInt(String(u.level || '1'))
             return userLevel <= currentUserLevel
           })
           console.log(`Level ${currentUserLevel} - Level 1~${currentUserLevel} 사용자:`, filteredUsers)
         }
-        
+
         setUsers(filteredUsers)
       } else {
         console.error('사용자 목록 로드 실패:', result.error)
@@ -156,7 +156,7 @@ export default function WorkDiaryViewPage() {
       // 현재 사용자 레벨에 따라 조회 가능한 사용자 ID 목록 생성
       const currentUserLevel = String(user?.level || '1')
       let allowedUserIds = []
-      
+
       if (currentUserLevel === 'administrator') {
         // 관리자는 모든 사용자 조회 가능
         allowedUserIds = users.map(u => u.id)
@@ -173,10 +173,10 @@ export default function WorkDiaryViewPage() {
         // Level 2는 Level 1~2 조회 가능
         allowedUserIds = users.filter((u: any) => ['1', '2'].includes(String(u.level))).map((u: any) => u.id)
       }
-      
+
       console.log('현재 사용자 레벨:', currentUserLevel)
       console.log('조회 가능한 사용자 ID 목록:', allowedUserIds)
-      
+
       // 실제 API 호출
       const params = new URLSearchParams()
       if (searchStartDate) params.append('startDate', searchStartDate)
@@ -185,20 +185,20 @@ export default function WorkDiaryViewPage() {
       if (searchUser !== 'all') params.append('userId', searchUser)
       params.append('page', currentPage.toString())
       params.append('limit', '10')
-      
+
       // 현재 사용자 레벨 정보 추가
       params.append('userLevel', currentUserLevel)
       // 조회 가능한 사용자 ID 목록 추가
       params.append('allowedUserIds', allowedUserIds.join(','))
-      
+
       console.log('API 호출 파라미터:', params.toString())
 
       const response = await fetch(`/api/work-diary?${params}`)
-      
+
       if (response.ok) {
         const result = await response.json()
         console.log('API 응답 데이터:', result.data)
-        
+
         // API가 이미 완전한 데이터를 반환하므로 그대로 사용
         setWorkDiaries(result.data || [])
         setTotalPages(result.totalPages || 1)
@@ -310,14 +310,14 @@ export default function WorkDiaryViewPage() {
           }
         }
       ]
-      
+
       // 현재 사용자 레벨에 따라 필터링
       const currentUserLevel = String(user?.level || '1')
       let filteredData = []
-      
+
       // 현재 사용자 레벨에 따라 조회 가능한 사용자 ID 목록 생성
       let allowedUserIds = []
-      
+
       if (currentUserLevel === 'administrator') {
         // 관리자는 모든 사용자 조회 가능
         allowedUserIds = users.map((u: any) => u.id)
@@ -334,16 +334,16 @@ export default function WorkDiaryViewPage() {
         // Level 2는 Level 1~2 조회 가능
         allowedUserIds = users.filter((u: any) => ['1', '2'].includes(String(u.level))).map((u: any) => u.id)
       }
-      
+
       console.log('현재 사용자 레벨:', currentUserLevel, typeof currentUserLevel)
       console.log('전체 데이터:', allMockData)
       console.log('조회 가능한 사용자 ID 목록:', allowedUserIds)
-      
+
       // 조회 가능한 사용자 ID 목록에 따라 필터링
       filteredData = allMockData.filter(d => allowedUserIds.includes(d.userId))
-      
+
       console.log('필터링된 데이터:', filteredData)
-      
+
       setWorkDiaries(filteredData as any)
       setTotalPages(1)
     } finally {
@@ -410,9 +410,9 @@ export default function WorkDiaryViewPage() {
             'Content-Type': 'application/json',
           },
         })
-        
+
         console.log('삭제 API 응답:', response.status, response.statusText)
-        
+
         if (response.ok) {
           const result = await response.json()
           console.log('삭제 성공:', result)
@@ -453,7 +453,7 @@ export default function WorkDiaryViewPage() {
   }
 
   // Level1 사용자는 접근 불가
-  if (user?.level === '1') {
+  if (String(user?.level || '1') === '1') {
     return null
   }
 
@@ -521,7 +521,7 @@ export default function WorkDiaryViewPage() {
                 </div>
                 <p className="text-xs text-emerald-600 mt-1">검색 시작일</p>
               </div>
-              
+
               <div>
                 <Label className="text-emerald-700 font-medium">종료 날짜</Label>
                 <div className="relative mt-1">
@@ -537,7 +537,7 @@ export default function WorkDiaryViewPage() {
                 </div>
                 <p className="text-xs text-emerald-600 mt-1">검색 종료일</p>
               </div>
-              
+
               <div>
                 <Label className="text-emerald-700 font-medium">프로젝트</Label>
                 <Select
@@ -557,7 +557,7 @@ export default function WorkDiaryViewPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label className="text-emerald-700 font-medium">작성자</Label>
                 <Select
@@ -577,7 +577,7 @@ export default function WorkDiaryViewPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="flex items-end space-x-2">
                 <Button
                   onClick={handleSearch}
@@ -737,7 +737,7 @@ export default function WorkDiaryViewPage() {
                 ✕
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">작성자</label>
@@ -745,38 +745,38 @@ export default function WorkDiaryViewPage() {
                   {selectedDiary.user?.name || selectedDiary.userId || '알 수 없음'}
                 </p>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">작업일</label>
                 <p className="text-sm text-gray-900">{selectedDiary.workDate}</p>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">프로젝트</label>
                 <p className="text-sm text-gray-900">
                   {selectedDiary.project?.project_name || selectedDiary.customProjectName || '프로젝트 없음'}
                 </p>
               </div>
-              
+
               {selectedDiary.workType && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">작업유형</label>
                   <p className="text-sm text-gray-900">{selectedDiary.workType}</p>
                 </div>
               )}
-              
+
               {selectedDiary.workSubType && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">세부유형</label>
                   <p className="text-sm text-gray-900">{selectedDiary.workSubType}</p>
                 </div>
               )}
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">작업내용</label>
                 <p className="text-sm text-gray-900 whitespace-pre-wrap">{selectedDiary.workContent}</p>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">작성일시</label>
                 <p className="text-sm text-gray-900">
@@ -784,7 +784,7 @@ export default function WorkDiaryViewPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex justify-end mt-6">
               <Button
                 variant="outline"
@@ -811,7 +811,7 @@ export default function WorkDiaryViewPage() {
                 ✕
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">작업내용</label>
@@ -819,31 +819,31 @@ export default function WorkDiaryViewPage() {
                   className="w-full p-2 border border-gray-300 rounded-md"
                   rows={4}
                   defaultValue={selectedDiary.workContent}
-                  onChange={(e) => setSelectedDiary({...selectedDiary, workContent: e.target.value})}
+                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workContent: e.target.value })}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">작업유형</label>
                 <input
                   type="text"
                   className="w-full p-2 border border-gray-300 rounded-md"
                   defaultValue={selectedDiary.workType || ''}
-                  onChange={(e) => setSelectedDiary({...selectedDiary, workType: e.target.value})}
+                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workType: e.target.value })}
                 />
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-700">세부유형</label>
                 <input
                   type="text"
                   className="w-full p-2 border border-gray-300 rounded-md"
                   defaultValue={selectedDiary.workSubType || ''}
-                  onChange={(e) => setSelectedDiary({...selectedDiary, workSubType: e.target.value})}
+                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workSubType: e.target.value })}
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-2 mt-6">
               <Button
                 variant="outline"
@@ -868,7 +868,7 @@ export default function WorkDiaryViewPage() {
                         customProjectName: selectedDiary.customProjectName
                       })
                     })
-                    
+
                     if (response.ok) {
                       alert('업무일지가 수정되었습니다.')
                       setShowEditModal(false)

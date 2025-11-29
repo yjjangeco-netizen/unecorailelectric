@@ -10,17 +10,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Users, 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  Edit, 
+import {
+  MapPin,
+  Calendar,
+  Clock,
+  Users,
+  Plus,
+  Search,
+  Filter,
+  Download,
+  Eye,
+  Edit,
   Trash2,
   CheckCircle,
   XCircle,
@@ -72,13 +72,13 @@ interface User {
 export default function BusinessTripManagementPage() {
   const { user, isAuthenticated, loading } = useUser()
   const router = useRouter()
-  
+
   const [trips, setTrips] = useState<BusinessTrip[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [loadingData, setLoadingData] = useState(false)
   const [error, setError] = useState('')
-  
+
   // 필터 및 검색
   const [filters, setFilters] = useState({
     status: 'all',
@@ -87,7 +87,7 @@ export default function BusinessTripManagementPage() {
     date_range: 'all'
   })
   const [searchTerm, setSearchTerm] = useState('')
-  
+
   // 모달 상태
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -136,10 +136,10 @@ export default function BusinessTripManagementPage() {
     const matchesStatus = filters.status === 'all' || trip.status === filters.status
     const matchesType = filters.trip_type === 'all' || trip.trip_type === filters.trip_type
     const matchesProject = filters.project === 'all' || trip.project_id === filters.project
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trip.location.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     return matchesStatus && matchesType && matchesProject && matchesSearch
   })
 
@@ -176,12 +176,12 @@ export default function BusinessTripManagementPage() {
     return (
       <Badge variant={variants[status as keyof typeof variants]}>
         <Icon className="w-3 h-3 mr-1" />
-        {status === 'business_trip' ? '출장' : 
-         status === 'field_work' ? '외근' : 
-         status === 'pending' ? '대기' :
-         status === 'approved' ? '승인' :
-         status === 'rejected' ? '거부' :
-         status === 'completed' ? '완료' : status}
+        {status === 'business_trip' ? '출장' :
+          status === 'field_work' ? '외근' :
+            status === 'pending' ? '대기' :
+              status === 'approved' ? '승인' :
+                status === 'rejected' ? '거부' :
+                  status === 'completed' ? '완료' : status}
       </Badge>
     )
   }
@@ -212,13 +212,17 @@ export default function BusinessTripManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CommonHeader currentUser={user} isAdmin={user?.level === 'admin'} />
-      
-      <div className="container mx-auto px-4 py-6">
-        {/* 헤더 */}
-        <div className="flex justify-between items-center mb-6">
+      <CommonHeader
+        currentUser={user ? { ...user, level: String(user.level) } : null}
+        isAdmin={user?.level === 'admin'}
+        title="출장/외근 관리"
+        backUrl="/"
+      />
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">출장/외근 관리</h1>
+            <h1 className="text-3xl font-bold text-gray-900">출장 / 외근 관리</h1>
             <p className="text-gray-600">출장 및 외근 신청을 관리하고 승인하세요</p>
           </div>
           <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
@@ -240,7 +244,7 @@ export default function BusinessTripManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -252,7 +256,7 @@ export default function BusinessTripManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -264,7 +268,7 @@ export default function BusinessTripManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -295,7 +299,7 @@ export default function BusinessTripManagementPage() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label>상태</Label>
                 <Select
@@ -314,7 +318,7 @@ export default function BusinessTripManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>구분</Label>
                 <Select
@@ -331,7 +335,7 @@ export default function BusinessTripManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <Label>프로젝트</Label>
                 <Select
@@ -351,7 +355,7 @@ export default function BusinessTripManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <Button variant="outline" onClick={() => setFilters({
                 status: 'all',
                 trip_type: 'all',
@@ -390,7 +394,7 @@ export default function BusinessTripManagementPage() {
                         {getTripTypeBadge(trip.trip_type)}
                         {getStatusBadge(trip.status)}
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <MapPin className="w-4 h-4" />
@@ -405,9 +409,9 @@ export default function BusinessTripManagementPage() {
                           <span>{trip.start_time} ~ {trip.end_time}</span>
                         </div>
                       </div>
-                      
+
                       <p className="text-gray-700 mb-4">{trip.description}</p>
-                      
+
                       {trip.companions.length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
                           <Users className="w-4 h-4" />
@@ -415,7 +419,7 @@ export default function BusinessTripManagementPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2 ml-4">
                       <Button
                         variant="outline"

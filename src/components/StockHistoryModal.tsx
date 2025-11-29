@@ -70,7 +70,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
 
     // item 객체의 실제 데이터 확인
     console.log('전달받은 item 객체:', item)
-    console.log('품목명:', item.product)
+    console.log('품목명:', item.name)
     console.log('현재 재고:', item.current_quantity)
     console.log('품목 상태:', item.stock_status)
 
@@ -100,7 +100,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
         .from('stock_in')
         .select(`
           *,
-          items(product, spec, maker)
+          items(name, specification, maker)
         `)
         .eq('item_id', item.id)
         .order('received_at', { ascending: false })
@@ -115,7 +115,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
         .from('stock_out')
         .select(`
           *,
-          items(product, spec, maker)
+          items(name, specification, maker)
         `)
         .eq('item_id', item.id)
         .order('issued_at', { ascending: false })
@@ -129,9 +129,9 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       const allHistory = [
         ...((stockInData as any)?.map((inItem: any) => ({
           id: `in-${inItem.id}`,
-          itemName: inItem.product,
-          spec: inItem.spec,
-          maker: inItem.maker,
+          itemName: inItem.items?.name || inItem.product || '', // items 조인 결과 또는 기존 필드 사용
+          spec: inItem.items?.specification || inItem.spec || '',
+          maker: inItem.items?.maker || inItem.maker || '',
           purpose: inItem.purpose,
           unitPrice: inItem.unit_price,
           quantity: inItem.quantity,
@@ -144,9 +144,9 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
         })) ?? []),
         ...((stockOutData as any)?.map((outItem: any) => ({
           id: `out-${outItem.id}`,
-          itemName: outItem.product,
-          spec: outItem.spec,
-          maker: outItem.maker,
+          itemName: outItem.items?.name || outItem.product || '',
+          spec: outItem.items?.specification || outItem.spec || '',
+          maker: outItem.items?.maker || outItem.maker || '',
           purpose: outItem.purpose,
           unitPrice: outItem.unit_price,
           quantity: -outItem.quantity, // 출고는 음수로 표시
@@ -208,7 +208,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
               {/* 품목 정보 헤더 */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-medium mb-3 text-black">
-                  {item.product} {item.spec && `(${item.spec})`}
+                  {item.name} {item.specification && `(${item.specification})`}
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
@@ -334,4 +334,4 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       </DialogContent>
     </Dialog>
   )
-} 
+}

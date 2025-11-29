@@ -6,13 +6,13 @@ import { useUser } from '@/hooks/useUser'
 import CommonHeader from '@/components/CommonHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  Home, 
-  Package2, 
-  Calendar, 
-  Settings, 
-  FileText, 
-  BarChart3, 
+import {
+  Home,
+  Package2,
+  Calendar,
+  Settings,
+  FileText,
+  BarChart3,
   Users,
   CheckCircle,
   XCircle,
@@ -25,18 +25,18 @@ export default function UserDashboardPage() {
   const router = useRouter()
   const params = useParams()
   const userId = params['userId'] as string
-  
+
   const [targetUser, setTargetUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     console.log('사용자 대시보드 - 사용자 상태:', { currentUser, isAuthenticated, authLoading })
-    
+
     // localStorage에서 직접 사용자 정보 확인
     const storedUser = localStorage.getItem('user')
     console.log('사용자 대시보드 - localStorage 직접 확인:', storedUser)
-    
+
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
@@ -51,7 +51,7 @@ export default function UserDashboardPage() {
         console.error('localStorage 파싱 오류:', err)
       }
     }
-    
+
     // 로딩이 완료되고 인증되지 않은 경우에만 리다이렉트
     if (!authLoading && !isAuthenticated && !storedUser) {
       console.log('사용자 대시보드 - 로그인 페이지로 리다이렉트')
@@ -66,7 +66,7 @@ export default function UserDashboardPage() {
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch(`/api/users?id=${userId}`)
       if (response.ok) {
         const data = await response.json()
@@ -101,7 +101,7 @@ export default function UserDashboardPage() {
     return (
       <div className="min-h-screen bg-white">
         <CommonHeader
-          currentUser={currentUser}
+          currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
           isAdmin={currentUser?.level === 'admin'}
           title="사용자 대시보드"
           backUrl="/user-management"
@@ -123,7 +123,7 @@ export default function UserDashboardPage() {
     return (
       <div className="min-h-screen bg-white">
         <CommonHeader
-          currentUser={currentUser}
+          currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
           isAdmin={currentUser?.level === 'admin'}
           title="사용자 대시보드"
           backUrl="/user-management"
@@ -161,7 +161,7 @@ export default function UserDashboardPage() {
   return (
     <div className="min-h-screen bg-white">
       <CommonHeader
-        currentUser={targetUser}
+        currentUser={targetUser ? { ...targetUser, level: String(targetUser.level) } : null}
         isAdmin={targetUser?.level === 'admin'}
         title={`${targetUser.name}님의 대시보드`}
         backUrl="/user-management"

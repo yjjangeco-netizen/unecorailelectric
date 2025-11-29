@@ -35,6 +35,8 @@ interface MotorSpec {
   quantity: number
   breaker_size?: string
   cable_size?: string
+  eocr_setting?: string
+  breaker_setting?: string
 }
 
 interface CctvLocation {
@@ -71,7 +73,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
     
     // 프로젝트가 있으면 모터 사양 로드
     if (project?.id) {
-      loadMotorSpecs(project.id)
+      loadMotorSpecs(String(project.id))
     }
   }, [project])
 
@@ -162,7 +164,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
       if (failed.length > 0) {
         alert(`${failed.length}개 모터 추가에 실패했습니다.`)
       } else {
-        await loadMotorSpecs(currentProject.id)
+        await loadMotorSpecs(String(currentProject.id))
         alert(`${motorsToAdd.length}개 모터가 성공적으로 추가되었습니다.`)
       }
     } catch (error) {
@@ -193,7 +195,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
       })
 
       if (response.ok) {
-        await loadMotorSpecs(currentProject.id)
+        await loadMotorSpecs(String(currentProject.id))
       } else {
         alert('모터 사양 저장에 실패했습니다.')
       }
@@ -215,7 +217,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
       })
 
       if (response.ok) {
-        await loadMotorSpecs(currentProject.id)
+        await loadMotorSpecs(String(currentProject.id))
       } else {
         alert('모터 삭제에 실패했습니다.')
       }
@@ -276,7 +278,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-gray-900">
-            프로젝트 상세 정보: {currentProject.name || '새 프로젝트'} ({currentProject.project_number || '미지정'})
+            프로젝트 상세 정보: {currentProject.project_name || '새 프로젝트'} ({currentProject.project_number || '미지정'})
           </DialogTitle>
         </DialogHeader>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
@@ -294,8 +296,8 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                 <h3 className="text-lg font-semibold mb-4">기본 정보</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">프로젝트명</Label>
-                    <Input id="name" value={currentProject.name || ''} onChange={handleChange} />
+                    <Label htmlFor="project_name">프로젝트명</Label>
+                    <Input id="project_name" value={currentProject.project_name || ''} onChange={handleChange} />
                   </div>
                   <div>
                     <Label htmlFor="base_name">기지명</Label>
@@ -310,8 +312,8 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                     <Label htmlFor="has_disk">디스크브레이크 여부</Label>
                   </div>
                   <div>
-                    <Label htmlFor="status">프로젝트 상태</Label>
-                    <Select value={currentProject.status} onValueChange={(value) => handleChange({ target: { id: 'status', value } })}>
+                    <Label htmlFor="ProjectStatus">프로젝트 상태</Label>
+                    <Select value={currentProject.ProjectStatus} onValueChange={(value) => handleChange({ target: { id: 'ProjectStatus', value } } as any)}>
                       <SelectTrigger>
                         <SelectValue placeholder="상태 선택" />
                       </SelectTrigger>
@@ -760,30 +762,34 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
         </DialogFooter>
       </DialogContent>
 
-              {/* 모터 사양 모달 */}
-              <MotorSpecModal
-                isOpen={showMotorModal}
-                onClose={() => setShowMotorModal(false)}
-                onSave={handleSaveMotor}
-                motor={editingMotor}
-                projectId={currentProject?.id || ''}
-              />
+      {/* 모터 사양 모달 */}
+      <MotorSpecModal
+        isOpen={showMotorModal}
+        onClose={() => setShowMotorModal(false)}
+        onSave={handleSaveMotor}
+        motor={editingMotor}
+        projectId={String(currentProject?.id || '')}
+      />
 
-              {/* 대량 모터 추가 모달 */}
-              <BulkMotorAddModal
-                isOpen={showBulkMotorModal}
-                onClose={() => setShowBulkMotorModal(false)}
-                onSave={handleBulkSaveMotor}
-                projectId={currentProject?.id || ''}
-              />
+      {/* 대량 모터 추가 모달 */}
+      <BulkMotorAddModal
+        isOpen={showBulkMotorModal}
+        onClose={() => setShowBulkMotorModal(false)}
+        onSave={handleBulkSaveMotor}
+        projectId={String(currentProject?.id || '')}
+      />
 
-              {/* 사양서 생성기 모달 */}
-              <SpecificationGenerator
-                isOpen={showSpecGenerator}
-                onClose={() => setShowSpecGenerator(false)}
-                project={currentProject}
-                motors={motors}
-              />
-            </Dialog>
-          );
-        }
+      {/* 사양서 생성기 모달 */}
+      <SpecificationGenerator
+        isOpen={showSpecGenerator}
+        onClose={() => setShowSpecGenerator(false)}
+        projectData={{
+          id: Number(currentProject?.id) || 0,
+          projectName: currentProject?.project_name || '',
+          projectNumber: currentProject?.project_number || '',
+          description: currentProject?.description
+        }}
+      />
+    </Dialog>
+  );
+}

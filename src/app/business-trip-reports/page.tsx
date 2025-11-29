@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import CommonHeader from '@/components/CommonHeader'
-import { 
-  Briefcase, 
-  Search, 
-  Calendar, 
-  MapPin, 
-  User, 
+import {
+  Briefcase,
+  Search,
+  Calendar,
+  MapPin,
+  User,
   FileText,
   Clock,
   CheckCircle,
@@ -68,15 +68,15 @@ export default function BusinessTripReportsPage() {
   useEffect(() => {
     const loadReports = async () => {
       if (!user?.id) return
-      
+
       setLoading(true)
       try {
         // 레벨 5 이상은 모든 보고서, 그 외는 자신의 것만
         const isLevel5OrAdmin = user.level === '5' || user.level === 'administrator'
-        const apiUrl = isLevel5OrAdmin 
-          ? '/api/business-trip-reports' 
+        const apiUrl = isLevel5OrAdmin
+          ? '/api/business-trip-reports'
           : `/api/business-trip-reports?userId=${user.id}`
-        
+
         const response = await fetch(apiUrl)
         if (response.ok) {
           const data = await response.json()
@@ -100,13 +100,13 @@ export default function BusinessTripReportsPage() {
   // 필터링된 보고서
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.business_trips.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.business_trips.location.toLowerCase().includes(searchTerm.toLowerCase())
-    
+      report.business_trips.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.business_trips.location.toLowerCase().includes(searchTerm.toLowerCase())
+
     const matchesStatus = statusFilter === 'all' || report.status === statusFilter
-    
+
     const matchesDate = !dateFilter || report.submitted_at.startsWith(dateFilter)
-    
+
     return matchesSearch && matchesStatus && matchesDate
   })
 
@@ -170,22 +170,16 @@ export default function BusinessTripReportsPage() {
     )
   }
 
-  // Level1 사용자는 접근 불가
-  if (user?.level === '1') {
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* 공통 헤더 */}
+    <div className="min-h-screen bg-gray-50">
       <CommonHeader
-        currentUser={user}
-        isAdmin={user?.level === 'administrator'}
+        currentUser={user ? { ...user, level: String(user.level) } : null}
+        isAdmin={user?.level === 'admin'}
         title="출장/외근 보고서"
-        backUrl="/work-diary"
+        backUrl="/"
       />
-      
-      <div className="max-w-[1600px] mx-auto p-4 sm:p-6">
+
+      <div className="container mx-auto px-4 py-8">
         {/* 필터 섹션 */}
         <Card className="mb-6">
           <CardHeader>
@@ -262,7 +256,7 @@ export default function BusinessTripReportsPage() {
                 <div className="text-red-500 text-6xl mb-4">⚠️</div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">오류가 발생했습니다</h3>
                 <p className="text-gray-600 mb-4">{error}</p>
-                <Button 
+                <Button
                   onClick={() => window.location.reload()}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
@@ -291,7 +285,7 @@ export default function BusinessTripReportsPage() {
                               <span className="ml-1">{getStatusText(report.status)}</span>
                             </span>
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div className="flex items-center text-sm text-gray-600">
                               <User className="h-4 w-4 mr-2" />
@@ -310,14 +304,14 @@ export default function BusinessTripReportsPage() {
                               <span>제출일: {formatDate(report.submitted_at)}</span>
                             </div>
                           </div>
-                          
+
                           <div className="bg-gray-50 rounded-lg p-3">
                             <p className="text-sm text-gray-700 line-clamp-3">
                               {report.content}
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="ml-4">
                           <Button
                             variant="outline"

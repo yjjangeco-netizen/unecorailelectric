@@ -10,8 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import CommonHeader from '@/components/CommonHeader'
-import { 
-  FileText, 
+import {
+  FileText,
   Plus,
   Trash2,
   ArrowLeft,
@@ -45,7 +45,7 @@ interface Project {
 export default function WorkDiaryWritePage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
-  
+
   // 상태 관리
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0])
   const [dailyStartTime, setDailyStartTime] = useState('09:00')
@@ -63,38 +63,38 @@ export default function WorkDiaryWritePage() {
   // 근무시간 계산 함수 (퇴근시간 - 출근시간 - 1시간)
   const calculateWorkHours = (startTime: string, endTime: string): number => {
     if (!startTime || !endTime) return 0
-    
+
     const start = new Date(`2000-01-01T${startTime}:00`)
     const end = new Date(`2000-01-01T${endTime}:00`)
-    
+
     // 퇴근시간이 출근시간보다 이른 경우 (다음날까지 일한 경우)
     if (end < start) {
       end.setDate(end.getDate() + 1)
     }
-    
+
     const diffMs = end.getTime() - start.getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
-    
+
     // 점심시간 1시간 제외
     const workHours = Math.max(0, diffHours - 1)
-    
+
     return Math.round(workHours * 10) / 10 // 소수점 첫째자리까지
   }
 
   // 프로젝트명에 따른 작업유형/세부유형 설정 함수
   const getWorkTypeOptions = (projectName: string) => {
     const wsmsKeywords = ['cncwl', 'cncuwl', 'wsms', 'm&d', 'tandem', 'cncdwl']
-    const hasWsmsKeyword = wsmsKeywords.some(keyword => 
+    const hasWsmsKeyword = wsmsKeywords.some(keyword =>
       projectName.toLowerCase().includes(keyword.toLowerCase())
     )
-    
+
     if (hasWsmsKeyword) {
       return {
         workTypes: ['신규', '보완', 'AS', 'SS', 'OV'],
         workSubTypes: ['내근', '출장', '외근', '전화']
       }
     }
-    
+
     return {
       workTypes: [],
       workSubTypes: []
@@ -104,8 +104,8 @@ export default function WorkDiaryWritePage() {
   // 프로젝트 선택 시 작업유형/세부유형 초기화
   const handleProjectSelect = (project: Project, index: number) => {
     const updated = [...workEntries]
-    updated[index] = { 
-      ...updated[index], 
+    updated[index] = {
+      ...updated[index],
       projectId: project.id.toString(),
       workType: '',
       workSubType: '',
@@ -125,7 +125,7 @@ export default function WorkDiaryWritePage() {
   // Level2 이상 권한 확인
   useEffect(() => {
     if (!authLoading && isAuthenticated && user) {
-      const userLevel = user.level || '1'
+      const userLevel = String(user.level || '1')
       if (userLevel === '1') {
         router.push('/dashboard')
       }
@@ -180,7 +180,7 @@ export default function WorkDiaryWritePage() {
     setLoading(true)
     try {
       const validEntries = workEntries.filter(entry => entry.projectId && entry.workContent.trim())
-      
+
       if (validEntries.length === 0) {
         alert('최소 하나의 업무 내용을 입력해주세요.')
         return
@@ -214,7 +214,7 @@ export default function WorkDiaryWritePage() {
       }
 
       alert('업무일지가 성공적으로 등록되었습니다.')
-      
+
       // 일일업무일지 메인 페이지로 이동
       router.push('/work-diary')
     } catch (error) {
@@ -246,7 +246,7 @@ export default function WorkDiaryWritePage() {
   }
 
   // Level1 사용자는 접근 불가
-  if (user?.level === '1') {
+  if (String(user?.level || '1') === '1') {
     return null
   }
 
@@ -363,7 +363,7 @@ export default function WorkDiaryWritePage() {
                       </Button>
                     )}
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* 프로젝트 선택 */}
                     <div>
@@ -374,8 +374,8 @@ export default function WorkDiaryWritePage() {
                             value={entry.customProjectName}
                             onChange={(e) => {
                               const updated = [...workEntries]
-                              updated[index] = { 
-                                ...updated[index], 
+                              updated[index] = {
+                                ...updated[index],
                                 customProjectName: e.target.value,
                                 projectId: updated[index]?.projectId || '',
                                 workType: updated[index]?.workType || '',
@@ -392,8 +392,8 @@ export default function WorkDiaryWritePage() {
                             value={entry.projectId}
                             onValueChange={(value) => {
                               const updated = [...workEntries]
-                              updated[index] = { 
-                                ...updated[index], 
+                              updated[index] = {
+                                ...updated[index],
                                 projectId: value,
                                 workType: '',
                                 workSubType: '',
@@ -449,11 +449,11 @@ export default function WorkDiaryWritePage() {
                             />
                           )
                         }
-                        
+
                         const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
                         const projectNumber = selectedProject?.project_number || ''
                         const workTypeOptions = getWorkTypeOptions(projectNumber)
-                        
+
                         if (workTypeOptions.workTypes.length > 0) {
                           return (
                             <Select
@@ -513,11 +513,11 @@ export default function WorkDiaryWritePage() {
                             />
                           )
                         }
-                        
+
                         const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
                         const projectNumber = selectedProject?.project_number || ''
                         const workTypeOptions = getWorkTypeOptions(projectNumber)
-                        
+
                         if (workTypeOptions.workSubTypes.length > 0 && entry.workType) {
                           return (
                             <Select
@@ -558,8 +558,8 @@ export default function WorkDiaryWritePage() {
                       })()}
                     </div>
                   </div>
-                  
-                  
+
+
                   <div>
                     <Label className="text-black font-bold">업무 내용</Label>
                     <Textarea

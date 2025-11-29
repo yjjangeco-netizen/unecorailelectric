@@ -32,8 +32,8 @@ import {
 // 프로젝트명 업데이트 함수 (현장명 생성)
 const getUpdatedProjectName = (project: Project) => {
   // 프로젝트명이 이미 있으면 그대로 사용
-  if (project.name && project.name.trim() !== '') {
-    return project.name
+  if (project.project_name && project.project_name.trim() !== '') {
+    return project.project_name
   }
 
   // 프로젝트번호를 기반으로 현장명 생성
@@ -166,7 +166,7 @@ const getUpdatedProjectName = (project: Project) => {
 
 // 프로젝트 상태 표시 함수
 const getProjectStatusDisplay = (project: Project) => {
-  if (project.status === 'Warranty' && project.completion_date && project.warranty_period) {
+  if (project.ProjectStatus === 'Warranty' && project.completion_date && project.warranty_period) {
     return `하자보증중 (~${project.warranty_period})`
   }
 
@@ -184,8 +184,8 @@ const getProjectStatusDisplay = (project: Project) => {
   }
 
   // 데이터베이스 상태 반영
-  if (project.status && statusMap[project.status]) {
-    return statusMap[project.status]
+  if (project.ProjectStatus && statusMap[project.ProjectStatus]) {
+    return statusMap[project.ProjectStatus]
   }
 
   return '제작중'
@@ -276,7 +276,7 @@ export default function ProjectManagementPage() {
     if (!showDemolishedProjects) {
       filtered = filtered.filter(project => {
         // status가 'Demolished' 또는 'cancelled'이거나 프로젝트명에 '철거'가 포함된 경우 철거 프로젝트로 간주
-        const isDemolished = project.status === 'Demolished' || (project.status as string) === 'cancelled'
+        const isDemolished = project.ProjectStatus === 'Demolished' || (project.ProjectStatus as string) === 'cancelled'
         const projectName = getUpdatedProjectName(project)
         const hasDemolishedInName = projectName.includes('철거')
 
@@ -301,16 +301,16 @@ export default function ProjectManagementPage() {
       filtered = filtered.filter(project => {
         if (statusFilters.includes('Demolished')) {
           const projectName = getUpdatedProjectName(project)
-          return statusFilters.includes(project.status) || projectName.includes('철거')
+          return statusFilters.includes(project.ProjectStatus) || projectName.includes('철거')
         }
-        return statusFilters.includes(project.status)
+        return statusFilters.includes(project.ProjectStatus)
       })
     }
 
     // 검색 필터링
     if (searchTerm.trim()) {
       filtered = filtered.filter(project =>
-        (project.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (project.project_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (project.project_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         getUpdatedProjectName(project).toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -430,7 +430,7 @@ export default function ProjectManagementPage() {
   const handleEdit = (project: Project) => {
     setEditingProject(project)
     setFormData({
-      projectName: project.name,
+      projectName: project.project_name,
       projectNumber: project.project_number,
       assemblyDate: project.assembly_date || '',
       factoryTestDate: project.factory_test_date || '',
@@ -548,7 +548,7 @@ export default function ProjectManagementPage() {
 
   // 프로젝트 상태 표시 함수
   const getProjectStatusDisplay = (project: Project) => {
-    if (project.status === 'Warranty' && project.completion_date && project.warranty_period) {
+    if (project.ProjectStatus === 'Warranty' && project.completion_date && project.warranty_period) {
       return `하자보증중 (~${project.warranty_period})`
     }
 
@@ -566,8 +566,8 @@ export default function ProjectManagementPage() {
     }
 
     // 데이터베이스 상태 반영
-    if (project.status && statusMap[project.status]) {
-      return statusMap[project.status]
+    if (project.ProjectStatus && statusMap[project.ProjectStatus]) {
+      return statusMap[project.ProjectStatus]
     }
 
     return '제작중'
@@ -617,7 +617,7 @@ export default function ProjectManagementPage() {
     <AuthGuard requiredLevel={3}>
       <div className="min-h-screen bg-white">
         <CommonHeader
-          currentUser={user}
+          currentUser={user ? { ...user, level: String(user.level) } : null}
           isAdmin={user?.level === 'administrator'}
           title="프로젝트 관리"
           backUrl="/settings"
@@ -1070,12 +1070,12 @@ export default function ProjectManagementPage() {
                           <td className="p-3 text-slate-800 font-medium text-sm">{getUpdatedProjectName(project)}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">
                             <select
-                              value={project.status}
-                              onChange={(e) => handleStatusChange(project.id, e.target.value)}
-                              className={`px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${project.status === 'Warranty' ? 'bg-blue-100 text-blue-800' :
-                                project.status === 'WarrantyComplete' ? 'bg-green-100 text-green-800' :
-                                  project.status === 'Demolished' ? 'bg-red-100 text-red-800' :
-                                    project.status === 'Manufacturing' ? 'bg-yellow-100 text-yellow-800' :
+                              value={project.ProjectStatus}
+                              onChange={(e) => handleStatusChange(String(project.id), e.target.value)}
+                              className={`px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${project.ProjectStatus === 'Warranty' ? 'bg-blue-100 text-blue-800' :
+                                project.ProjectStatus === 'WarrantyComplete' ? 'bg-green-100 text-green-800' :
+                                  project.ProjectStatus === 'Demolished' ? 'bg-red-100 text-red-800' :
+                                    project.ProjectStatus === 'Manufacturing' ? 'bg-yellow-100 text-yellow-800' :
                                       // 프로젝트명에 '철거'가 포함된 경우 빨간색으로 표시
                                       getUpdatedProjectName(project).includes('철거') ? 'bg-red-100 text-red-800' :
                                         'bg-gray-100 text-gray-800'
