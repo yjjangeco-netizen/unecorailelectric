@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createApiClient } from '@/lib/supabaseServer'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // 권한 체크를 위한 헤더 확인 (실제 구현에서는 JWT 토큰 등을 사용)

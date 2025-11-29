@@ -697,111 +697,131 @@ export default function StockManagementPage() {
             )}
 
             {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
-            {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
-            <div className="rounded-lg border shadow-sm bg-white overflow-hidden">
-              <Table>
-                <TableHeader className="bg-gray-50/80 backdrop-blur-sm sticky top-0 z-10">
-                  <TableRow className="hover:bg-transparent border-b border-gray-200">
-                    {/* 선택 권한이 있을 때만 체크박스 헤더 표시 */}
-                    {canSelect && (
-                      <TableHead className="w-[50px] text-center">
-                        <Checkbox
-                          checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
-                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                          aria-label="Select all"
-                          className="translate-y-[2px]"
-                        />
-                      </TableHead>
-                    )}
-                    <TableHead className="min-w-[200px] font-semibold text-gray-700">품목</TableHead>
-                    <TableHead className="min-w-[150px] font-semibold text-gray-700">규격</TableHead>
-                    <TableHead className="min-w-[100px] font-semibold text-gray-700">카테고리</TableHead>
-                    <TableHead className="min-w-[120px] font-semibold text-gray-700">공급업체</TableHead>
-                    <TableHead className="min-w-[100px] font-semibold text-gray-700">위치</TableHead>
-                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">마감</TableHead>
-                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">입고</TableHead>
-                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">출고</TableHead>
-                    <TableHead className="min-w-[80px] text-right font-semibold text-gray-700">재고</TableHead>
-                    <TableHead className="min-w-[120px] text-right font-semibold text-gray-700">단가</TableHead>
-                    <TableHead className="min-w-[120px] text-right font-semibold text-gray-700">총액</TableHead>
-                    <TableHead className="min-w-[100px] text-center font-semibold text-gray-700">상태</TableHead>
-                    <TableHead className="min-w-[150px] font-semibold text-gray-700">비고</TableHead>
-                    {/* 수정 권한이 있을 때만 수정 헤더 표시 */}
-                    {canEdit && <TableHead className="w-[50px] text-center font-semibold text-gray-700">수정</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={canSelect ? 15 : 14} className="h-32 text-center">
-                        <div className="flex flex-col justify-center items-center gap-2">
-                          <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-                          <span className="text-sm text-gray-500 font-medium">재고 데이터를 불러오는 중...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredItems.length > 0 ? (
-                    filteredItems.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-blue-50/50 transition-colors duration-200 group">
-                        {/* 선택 권한이 있을 때만 체크박스 표시 */}
-                        {canSelect && (
-                          <TableCell className="text-center">
+            {/* ClickUp-style Table Container */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+              {/* Toolbar / Filter Bar Placeholder (Optional) */}
+              <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2 bg-white">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">List View</div>
+                {/* Add more toolbar items here if needed */}
+              </div>
+
+              <div className="flex-1 overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm shadow-sm">
+                    <TableRow className="hover:bg-transparent border-b border-gray-200">
+                      {/* Checkbox Column */}
+                      {canSelect && (
+                        <TableHead className="w-[40px] text-center p-0">
+                          <div className="flex items-center justify-center h-full">
                             <Checkbox
-                              checked={selectedItems.includes(item.id)}
-                              onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
-                              aria-label={`Select ${item.name}`}
-                              className="translate-y-[2px]"
+                              checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
+                              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                              aria-label="Select all"
+                              className="data-[state=checked]:bg-[#7b68ee] data-[state=checked]:border-[#7b68ee]"
                             />
-                          </TableCell>
-                        )}
-                        <TableCell className="font-medium text-gray-900 group-hover:text-blue-700 transition-colors">{item.name}</TableCell>
-                        <TableCell className="text-gray-600">{item.specification}</TableCell>
-                        <TableCell className="text-gray-600">{item.category}</TableCell>
-                        <TableCell className="text-gray-600">{item.supplier}</TableCell>
-                        <TableCell className="text-gray-600">{item.location}</TableCell>
-                        <TableCell className="text-right text-gray-600 font-mono">{item.closingQuantity}</TableCell>
-                        <TableCell className="text-right text-green-600 font-medium font-mono">+{item.inbound}</TableCell>
-                        <TableCell className="text-right text-red-600 font-medium font-mono">-{item.outbound}</TableCell>
-                        <TableCell className="text-right font-bold text-gray-900 font-mono bg-gray-50/50 rounded-md px-2">{item.currentStock}</TableCell>
-                        <TableCell className="text-right text-gray-600 font-mono">{item.unitPrice.toLocaleString()}</TableCell>
-                        <TableCell className="text-right font-medium text-gray-900 font-mono">{(item.currentStock * item.unitPrice).toLocaleString()}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full shadow-sm ${getStatusColor(item.status)}`}>
-                            {getStatusIcon(item.status)}
-                            {getStatusText(item.status)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-gray-500 text-xs" title={item.notes}>{item.notes}</TableCell>
-                        {/* 수정 권한이 있을 때만 수정 버튼 표시 */}
-                        {canEdit && (
-                          <TableCell className="text-center">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600 rounded-full transition-colors"
-                              onClick={() => handleEditItem(item)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={canSelect ? 15 : 14} className="h-48 text-center">
-                        <div className="flex flex-col items-center justify-center text-gray-500">
-                          <div className="bg-gray-100 p-4 rounded-full mb-3">
-                            <Package className="h-8 w-8 text-gray-400" />
                           </div>
-                          <p className="font-medium text-gray-900">데이터가 없습니다</p>
-                          <p className="text-sm text-gray-500 mt-1">새로운 품목을 추가하거나 검색 조건을 변경해보세요.</p>
-                        </div>
-                      </TableCell>
+                        </TableHead>
+                      )}
+                      
+                      {/* Columns with ClickUp-like styling */}
+                      <TableHead className="min-w-[200px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">품목</TableHead>
+                      <TableHead className="min-w-[150px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">규격</TableHead>
+                      <TableHead className="min-w-[120px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">카테고리</TableHead>
+                      <TableHead className="min-w-[120px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">공급업체</TableHead>
+                      <TableHead className="min-w-[100px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">위치</TableHead>
+                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">마감</TableHead>
+                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">입고</TableHead>
+                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">출고</TableHead>
+                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">재고</TableHead>
+                      <TableHead className="min-w-[120px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">단가</TableHead>
+                      <TableHead className="min-w-[120px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">총액</TableHead>
+                      <TableHead className="min-w-[100px] text-center text-xs font-bold text-gray-500 uppercase tracking-wide h-10">상태</TableHead>
+                      <TableHead className="min-w-[200px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">비고</TableHead>
+                      {canEdit && <TableHead className="w-[50px] text-center text-xs font-bold text-gray-500 uppercase tracking-wide h-10">수정</TableHead>}
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={canSelect ? 15 : 14} className="h-32 text-center">
+                          <div className="flex flex-col justify-center items-center gap-2">
+                            <RefreshCw className="h-6 w-6 animate-spin text-[#7b68ee]" />
+                            <span className="text-sm text-gray-500">Loading...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : filteredItems.length > 0 ? (
+                      filteredItems.map((item) => (
+                        <TableRow key={item.id} className="group hover:bg-[#f7f8fd] transition-colors duration-150 border-b border-gray-100 last:border-0">
+                          {canSelect && (
+                            <TableCell className="text-center p-0">
+                              <div className="flex items-center justify-center h-full">
+                                <Checkbox
+                                  checked={selectedItems.includes(item.id)}
+                                  onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+                                  className="data-[state=checked]:bg-[#7b68ee] data-[state=checked]:border-[#7b68ee] opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
+                                />
+                              </div>
+                            </TableCell>
+                          )}
+                          <TableCell className="font-medium text-gray-900 text-sm py-2">{item.name}</TableCell>
+                          <TableCell className="text-gray-600 text-sm py-2">{item.specification}</TableCell>
+                          <TableCell className="text-gray-600 text-sm py-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              {item.category}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-gray-600 text-sm py-2">{item.supplier}</TableCell>
+                          <TableCell className="text-gray-600 text-sm py-2">{item.location}</TableCell>
+                          <TableCell className="text-right text-gray-500 text-sm py-2">{item.closingQuantity}</TableCell>
+                          <TableCell className="text-right text-green-600 text-sm py-2 font-medium">
+                            {item.inbound > 0 ? `+${item.inbound}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right text-red-500 text-sm py-2 font-medium">
+                            {item.outbound > 0 ? `-${item.outbound}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-gray-900 text-sm py-2">
+                            {item.currentStock}
+                          </TableCell>
+                          <TableCell className="text-right text-gray-600 text-sm py-2">{item.unitPrice.toLocaleString()}</TableCell>
+                          <TableCell className="text-right font-medium text-gray-900 text-sm py-2">{(item.currentStock * item.unitPrice).toLocaleString()}</TableCell>
+                          <TableCell className="text-center py-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.status === 'active' ? 'bg-green-100 text-green-800' :
+                              item.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {getStatusText(item.status)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate text-gray-400 text-xs py-2">{item.notes}</TableCell>
+                          {canEdit && (
+                            <TableCell className="text-center py-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 hover:bg-gray-200 rounded text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleEditItem(item)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={canSelect ? 15 : 14} className="h-48 text-center">
+                          <div className="flex flex-col items-center justify-center text-gray-400">
+                            <Package className="h-10 w-10 mb-2 opacity-20" />
+                            <p className="text-sm">No items found</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         </div>
