@@ -187,7 +187,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return await databaseAuth.checkSelfAccess(targetUserId)
   }, [user])
 
-  const executeWithDbPermission = useCallback(async <T>(
+  const executeWithDbPermission = useCallback(async <T extends unknown>(
     operation: () => Promise<T>,
     requiredPermission: string = 'level1',
     fallbackValue?: T
@@ -196,7 +196,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return await databaseAuth.executeWithPermission(operation, requiredPermission, fallbackValue)
   }, [user])
 
-  const executeWithDbDepartmentAccess = useCallback(async <T>(
+  const executeWithDbDepartmentAccess = useCallback(async <T extends unknown>(
     operation: () => Promise<T>,
     requiredDepartment: string = '전기팀',
     fallbackValue?: T
