@@ -29,7 +29,7 @@ import {
   BarChart3,
   FileText
 } from 'lucide-react'
-import CommonHeader from '@/components/CommonHeader'
+
 
 interface BusinessTrip {
   id: string
@@ -212,19 +212,10 @@ export default function BusinessTripManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <CommonHeader
-        currentUser={user ? { ...user, level: String(user.level) } : null}
-        isAdmin={user?.level === 'admin'}
-        title="출장/외근 관리"
-        backUrl="/"
-      />
+
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">출장 / 외근 관리</h1>
-            <p className="text-gray-600">출장 및 외근 신청을 관리하고 승인하세요</p>
-          </div>
           <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             신청하기

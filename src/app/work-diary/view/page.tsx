@@ -349,7 +349,7 @@ export default function WorkDiaryViewPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchStartDate, searchEndDate, searchProject, searchUser, currentPage, user?.level])
+  }, [searchStartDate, searchEndDate, searchProject, searchUser, currentPage, user?.level, users])
 
   // 초기 데이터 로드
   useEffect(() => {

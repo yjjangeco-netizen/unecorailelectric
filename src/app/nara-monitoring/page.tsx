@@ -28,7 +28,6 @@ import {
   FileText,
   BarChart3
 } from 'lucide-react'
-import CommonHeader from '@/components/CommonHeader'
 
 interface BidItem {
   id: string
@@ -185,15 +184,6 @@ export default function NaraMonitoringPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* 공통 헤더 */}
-      <CommonHeader
-        currentUser={user ? { ...user, level: String(user.level) } : null}
-        isAdmin={String(user?.level) === 'admin'}
-        title="Nara"
-        backUrl="/"
-        onLogout={() => router.push('/login')}
-      />
-
       <div className="container mx-auto px-4 py-8">
         {/* 에러 메시지 */}
         {error && (

@@ -98,6 +98,37 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
+    console.log('Updated Item Keys:', Object.keys(updatedItem))
+    console.log('Updated Item:', updatedItem)
+
+    // History Logging
+    try {
+      const historyData = {
+        item_id: itemId,
+        item_name: updatedItem.item_name || updatedItem.name || updatedItem.product || 'Unknown Item',
+        type: type,
+        quantity: quantity,
+        previous_quantity: currentItem.current_quantity,
+        new_quantity: newCurrentQuantity,
+        reason: reason || 'Stock Out',
+        note: note,
+        location: updatedItem.location || '',
+        user_level: body.userLevel || '1',
+        created_at: new Date().toISOString()
+      }
+      console.log('Logging History Data:', historyData)
+
+      const { error: historyError } = await supabase
+        .from('stock_history')
+        .insert(historyData)
+      
+      if (historyError) {
+        console.error('Failed to log stock history:', historyError)
+      }
+    } catch (hErr) {
+      console.error('Exception logging history:', hErr)
+    }
+
     console.log('✅ 재고 트랜잭션 성공:', updatedItem)
 
     return NextResponse.json({ 

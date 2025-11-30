@@ -1,6 +1,6 @@
 'use client'
 
-import { Package, TrendingUp, AlertTriangle } from 'lucide-react'
+import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react'
 
 interface StockStatisticsProps {
   totalItems: number
@@ -21,66 +21,72 @@ export default function StockStatistics({
   const isLevel2 = userLevel === '2'
   
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isLevel2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4 sm:gap-6 mb-6 sm:mb-8`}>
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div className="flex items-center">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+    <div className={`grid grid-cols-1 sm:grid-cols-2 ${isLevel2 ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4 h-full`}>
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-blue-50 rounded-2xl">
+            <Package className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="ml-3 sm:ml-4">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">총 품목 수</p>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalItems.toLocaleString()}</p>
-          </div>
+          <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">+2.5%</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500 mb-1">Total Items</p>
+          <p className="text-3xl font-bold text-gray-900">{totalItems.toLocaleString()}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div className="flex items-center">
-          <div className="p-2 bg-green-100 rounded-lg">
-            <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 bg-emerald-50 rounded-2xl">
+            <TrendingUp className="h-6 w-6 text-emerald-600" />
           </div>
-          <div className="ml-3 sm:ml-4">
-            <p className="text-xs sm:text-sm font-medium text-gray-600">총 재고 수량</p>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalQuantity.toLocaleString()}</p>
-          </div>
+          <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">+12%</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-500 mb-1">Total Quantity</p>
+          <p className="text-3xl font-bold text-gray-900">{totalQuantity.toLocaleString()}</p>
         </div>
       </div>
 
       {/* LEVEL3 이상에서만 부족재고 표시 */}
       {!isLevel2 && (
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
+          <div className="flex items-center justify-between mb-4">
+            <div className={`p-3 rounded-2xl ${lowStockItems > 0 ? 'bg-rose-50' : 'bg-gray-50'}`}>
+              <AlertTriangle className={`h-6 w-6 ${lowStockItems > 0 ? 'text-rose-600' : 'text-gray-400'}`} />
             </div>
-            <div className="ml-3 sm:ml-4">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">부족 재고</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{lowStockItems.toLocaleString()}</p>
-            </div>
+            {lowStockItems > 0 && (
+              <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-1 rounded-full">Action Needed</span>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Low Stock</p>
+            <p className="text-3xl font-bold text-gray-900">{lowStockItems.toLocaleString()}</p>
           </div>
         </div>
       )}
 
       {/* LEVEL3 이상에서만 총재고가치 표시 */}
       {!isLevel2 && (
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-violet-50 rounded-2xl">
+              <DollarSign className="h-6 w-6 text-violet-600" />
             </div>
-            <div className="ml-3 sm:ml-4">
-              <p className="text-xs sm:text-sm font-medium text-gray-600">총 재고 가치</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                {totalValue >= 1000000000 
-                  ? `${(totalValue / 1000000000).toFixed(1)}B`
-                  : totalValue >= 1000000 
-                  ? `${(totalValue / 1000000).toFixed(1)}M`
-                  : totalValue >= 1000 
-                  ? `${(totalValue / 1000).toFixed(1)}K`
-                  : totalValue.toLocaleString()
-                }원
-              </p>
-            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Total Value</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {totalValue >= 1000000000 
+                ? `${(totalValue / 1000000000).toFixed(1)}B`
+                : totalValue >= 1000000 
+                ? `${(totalValue / 1000000).toFixed(1)}M`
+                : totalValue >= 1000 
+                ? `${(totalValue / 1000).toFixed(1)}K`
+                : totalValue.toLocaleString()
+              }
+              <span className="text-lg font-normal text-gray-400 ml-1">KRW</span>
+            </p>
           </div>
         </div>
       )}

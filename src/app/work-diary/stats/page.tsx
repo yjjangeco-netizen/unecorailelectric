@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -89,19 +89,7 @@ export default function WorkDiaryStatsPage() {
     }
   }, [authLoading, isAuthenticated, user, router])
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const userLevel = user.level || '1'
-      const levelStr = String(userLevel)
-      
-      if (levelStr === '5' || levelStr === 'admin') {
-        console.log('권한 있음 - 통계 데이터 로드')
-        fetchStats()
-      }
-    }
-  }, [startDate, endDate, isAuthenticated, user])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
@@ -119,7 +107,19 @@ export default function WorkDiaryStatsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [startDate, endDate])
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const userLevel = user.level || '1'
+      const levelStr = String(userLevel)
+      
+      if (levelStr === '5' || levelStr === 'admin') {
+        console.log('권한 있음 - 통계 데이터 로드')
+        fetchStats()
+      }
+    }
+  }, [startDate, endDate, isAuthenticated, user, fetchStats])
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('ko-KR')

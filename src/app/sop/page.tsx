@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import CommonHeader from '@/components/CommonHeader'
+
 import { ArrowLeft, FileText, Search, Plus, Edit, Download, BookOpen } from 'lucide-react'
 
 export default function SOPPage() {
@@ -132,12 +132,7 @@ export default function SOPPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* 공통 헤더 추가 */}
-      <CommonHeader
-        currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
-        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
-        title="SOP"
-        backUrl="/stock-management"
-      />
+
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 통계 카드 */}

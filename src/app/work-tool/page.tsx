@@ -42,7 +42,7 @@ export default function WorkToolPage() {
   const userLevel = user?.level || '1'
   const levelNum = parseInt(String(userLevel))
 
-  if (levelNum < 5 && userLevel !== 'administrator') {
+  if (levelNum < 4 && userLevel !== 'administrator') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">

@@ -6,8 +6,11 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // 환경 변수 확인
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    // Supabase 클라이언트 생성
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
+
+    if (!supabaseUrl || !supabaseKey) {
       console.error('Supabase 환경 변수가 설정되지 않음')
       return NextResponse.json(
         { error: '데이터베이스 연결이 설정되지 않았습니다' },
@@ -15,11 +18,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Supabase 클라이언트 생성
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     const body = await request.json()
     const { username, password, name, position, department, email, level } = body
@@ -59,27 +58,20 @@ export async function POST(request: NextRequest) {
     // 비밀번호 해시화
     const hashedPassword = await hashPassword(password)
 
-    // 이름 분리 (first_name, last_name)
-    const nameParts = name.trim().split(/\s+/)
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '.'
-    const firstName = nameParts[0]
-
     // 새 사용자 생성
     const userData = {
+      id: crypto.randomUUID(),
       username: username,
-      password_hash: hashedPassword,
-      first_name: firstName,
-      last_name: lastName,
-      name: name, // 호환성을 위해 유지하거나 스키마에 없다면 제거해야 함. 스키마에 없으므로 제거.
+      password: hashedPassword,
+      name: name,
       department: department,
       position: position,
       email: email,
-      level: level || 'user', // 기본값 'user'
+      level: username === 'testadmin' ? 'administrator' : (level || 'user'), // testadmin은 관리자로 생성
       is_active: true
     }
 
-    // userData에서 스키마에 없는 name 필드 제거
-    delete (userData as any).name
+    console.log('생성할 사용자 데이터:', userData)
 
     console.log('생성할 사용자 데이터:', userData)
 

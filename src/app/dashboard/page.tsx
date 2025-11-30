@@ -8,7 +8,15 @@ import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import CommonHeader from '@/components/CommonHeader'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
 import {
   Package,
   TrendingUp,
@@ -60,6 +68,8 @@ interface LocalEvent {
   reported?: boolean // 보고 완료 여부
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function DashboardPage() {
   const { user, isAuthenticated, canAccessFeature, loading } = useUser()
   const { logPageView } = useAccessLog()
@@ -83,15 +93,14 @@ export default function DashboardPage() {
 
 
   // 로그인하지 않은 경우 홈으로 리다이렉트
+
   useEffect(() => {
     // 로딩이 완료된 후에만 리다이렉트 체크
-    if (!loading && !isAuthenticated) {
-      router.push('/');
-    } else if (isAuthenticated && user) {
+    if (isAuthenticated && user) {
       // 페이지 접속 로그 기록
       logPageView('/dashboard', `Level ${user.level} 사용자 접속`)
     }
-  }, [loading, isAuthenticated, router, user, logPageView]); // loading 상태 추가
+  }, [isAuthenticated, user, logPageView]);
 
   // 출장/외근 일정 로드
   const loadBusinessTrips = useCallback(async () => {
@@ -597,7 +606,9 @@ export default function DashboardPage() {
     })
   }
 
-  if (!isAuthenticated || !user) {
+
+  // 사용자 정보가 없으면 로딩 표시
+  if (!user) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -617,53 +628,35 @@ export default function DashboardPage() {
   const isLevel5 = userLevel === '5'
   const isAdmin = String(userLevel).toLowerCase() === 'administrator'
 
-  // Level 1 사용자는 제한된 기능만 표시
-
-  // 레벨별 접근 가능한 기능 확인
-  const canViewStock = isLevel1 || isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level1 이상에서 재고 조회 가능
-  const canManageStock = isLevel4 || isLevel5 || isAdmin // Level4 이상에서 재고 관리 가능
-  const canDeleteStock = isLevel4 || isLevel5 || isAdmin // Level4 이상에서 재고 삭제 가능
-  const canCloseStock = isLevel5 || isAdmin // Level5 이상에서 재고 마감 가능
-  const canManageUsers = isLevel5 || isAdmin // Level5 이상에서 사용자 관리 가능
-  const canAccessAdmin = isAdmin // Admin만 관리자 기능 접근 가능
-  const canWriteWorkDiary = isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level2 이상에서 업무일지 작성 가능
-  const canViewWorkDiary = isLevel1 || isLevel2 || isLevel3 || isLevel4 || isLevel5 || isAdmin // Level1 이상에서 업무일지 조회 가능
-
   return (
-    <AuthGuard requiredLevel={1}>
+    <AuthGuard requiredLevel={3}>
       <div className="min-h-screen bg-white">
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={user?.permissions?.includes('administrator') || false}
-          title="대시보드"
-          backUrl="/"
-        />
-
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* 헤더 */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">대시보드</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
-              안녕하세요, {user.name}님! (Level {userLevel})
-            </p>
-          </div>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7] min-h-screen">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-[1600px] mx-auto space-y-6">
+          {/* Gradient Banner Header */}
 
 
           {/* 출장/외근 내역과 연월차 예정 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* 왼쪽: 출장/외근 내역 */}
-            <Card className="bg-gray-50 border-2 border-gray-300">
-              <CardHeader className="bg-white border-b-2 border-gray-300">
-                <CardTitle className="flex items-center text-gray-800">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-200 to-indigo-200 rounded-full flex items-center justify-center mr-3">
-                    <Calendar className="h-5 w-5 text-blue-600" />
+            <Card className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden h-full flex flex-col border-t-4 border-t-blue-500">
+              <CardHeader className="px-8 py-6 border-b border-gray-100 bg-white">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-50 rounded-2xl">
+                    <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
-                  {user && (String(user.level) === '5' || String(user.level).toLowerCase() === 'administrator')
-                    ? '전체 출장/외근 내역 (미보고)'
-                    : '나의 출장/외근 내역 (미보고)'}
-                </CardTitle>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {user && (String(user.level) === '5' || String(user.level).toLowerCase() === 'administrator')
+                        ? 'All Business Trips (Unreported)'
+                        : 'My Business Trips (Unreported)'}
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">Manage your business trips and reports</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="bg-gray-50">
+              <CardContent className="p-0">
                 {loadingTrips ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -676,242 +669,150 @@ export default function DashboardPage() {
                     <p className="text-gray-400 text-sm mt-2">일정 관리에서 출장/외근 일정을 등록해보세요.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {businessTrips.map((trip) => (
-                      <div key={trip.id} className="bg-white rounded-lg border-2 border-gray-300 hover:shadow-lg transition-all duration-200">
-                        {/* 모바일 레이아웃 */}
-                        <div className="block lg:hidden p-4 space-y-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${trip.subCategory === '출장'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-green-100 text-green-800'
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                          <TableHead className="w-[100px]">State</TableHead>
+                          <TableHead>Summary</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {businessTrips.map((trip) => (
+                          <TableRow key={trip.id} className="hover:bg-blue-50/30 transition-colors">
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium w-fit ${
+                                  trip.subCategory === '출장'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-green-100 text-green-800'
                                 }`}>
-                                {trip.subCategory}
-                              </span>
-                              {trip.subSubCategory && (
-                                <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                                  {trip.subSubCategory}
+                                  {trip.subCategory}
                                 </span>
-                              )}
-                            </div>
-                            <div>
+                                {trip.subSubCategory && (
+                                  <span className="text-xs text-gray-500 ml-1">
+                                    {trip.subSubCategory}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-900">{trip.summary}</span>
+                                {trip.description && (
+                                  <span className="text-xs text-gray-500 truncate max-w-[200px]">
+                                    {trip.description}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                                {formatDate(trip.start.dateTime || trip.start.date)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
                               {trip.reported ? (
-                                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-1">
-                                  <CheckCircle className="h-4 w-4" />
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
                                   완료
                                 </span>
                               ) : (
-                                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                                  미보고
-                                </span>
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    handleOpenReportModal(trip)
+                                  }}
+                                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 rounded-lg"
+                                >
+                                  보고서 작성
+                                </Button>
                               )}
-                            </div>
-                          </div>
-
-                          <div>
-                            <div className="font-semibold text-base text-gray-900 mb-1">
-                              {trip.summary}
-                            </div>
-                            {trip.description && (
-                              <div className="text-sm text-gray-600">
-                                {trip.description}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            {formatDate(trip.start.dateTime || trip.start.date)}
-                          </div>
-
-                          <div className="pt-2 border-t border-gray-200">
-                            {trip.reported ? (
-                              <Button
-                                variant="outline"
-                                disabled
-                                className="w-full min-h-[44px] text-green-600 border-green-300 text-base"
-                              >
-                                <CheckCircle className="h-5 w-5 mr-2" />
-                                보고 완료
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  handleOpenReportModal(trip)
-                                }}
-                                className="w-full min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white text-base"
-                              >
-                                <FileText className="h-5 w-5 mr-2" />
-                                보고서 작성
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* 데스크톱 레이아웃 */}
-                        <div className="hidden lg:flex items-center p-4 gap-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${trip.subCategory === '출장'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-green-100 text-green-800'
-                              }`}>
-                              {trip.subCategory}
-                            </span>
-                            {trip.subSubCategory && (
-                              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap">
-                                {trip.subSubCategory}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {trip.summary}
-                            </div>
-                            {trip.description && (
-                              <div className="text-sm text-gray-600 truncate">
-                                {trip.description}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="text-sm text-gray-600 whitespace-nowrap flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {formatDate(trip.start.dateTime || trip.start.date)}
-                          </div>
-
-                          <div>
-                            {trip.reported ? (
-                              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
-                                <CheckCircle className="h-4 w-4" />
-                                보고완료
-                              </span>
-                            ) : (
-                              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm whitespace-nowrap">
-                                미보고
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex-shrink-0">
-                            {trip.reported ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled
-                                className="min-h-[44px] px-4 text-green-600 border-green-300"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                완료
-                              </Button>
-                            ) : (
-                              <Button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  handleOpenReportModal(trip)
-                                }}
-                                size="sm"
-                                className="min-h-[44px] px-4 bg-blue-600 hover:bg-blue-700 text-white"
-                              >
-                                <FileText className="h-4 w-4 mr-1" />
-                                보고서 작성
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* 오른쪽: 연월차 예정 */}
-            <Card className="bg-gray-50 border-2 border-gray-300">
-              <CardHeader className="bg-white border-b-2 border-gray-300">
-                <CardTitle className="flex items-center text-gray-800">
-                  <div className="w-8 h-8 bg-gradient-to-br from-green-200 to-emerald-200 rounded-full flex items-center justify-center mr-3">
-                    <Calendar className="h-5 w-5 text-green-600" />
+            <Card className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden h-full flex flex-col border-t-4 border-t-emerald-500">
+              <CardHeader className="px-8 py-6 border-b border-gray-100 bg-white">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-50 rounded-2xl">
+                    <Calendar className="h-6 w-6 text-emerald-600" />
                   </div>
-                  연월차 예정 (오늘 기준 앞으로)
-                </CardTitle>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Upcoming Leaves</h2>
+                    <p className="text-gray-500 text-sm mt-1">Scheduled leaves from today onwards</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="bg-gray-50">
-                <div className="space-y-2">
-                  {/* 헤더 */}
-                  <div className="bg-gray-100 rounded-lg p-3 border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="w-20 text-xs font-semibold text-gray-800">당사자</div>
-                        <div className="w-16 text-xs font-semibold text-gray-800">구분</div>
-                        <div className="flex-1 text-xs font-semibold text-gray-800">사유</div>
-                        <div className="w-24 text-xs font-semibold text-gray-800">날짜</div>
-                        <div className="w-16 text-xs font-semibold text-gray-800">시간</div>
+              <CardContent className="p-0 flex-1">
+                <div className="overflow-x-auto">
+                  {vacationEvents.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Calendar className="h-8 w-8 text-gray-400" />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* 연월차 데이터 표시 */}
-                  {(() => {
-                    return vacationEvents.length === 0
-                  })() ? (
-                    <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500 text-lg">등록된 연월차 일정이 없습니다.</p>
-                      <p className="text-gray-400 text-sm mt-2">일정 관리에서 연월차를 등록해보세요.</p>
+                      <p className="text-gray-900 font-medium text-lg">No upcoming leaves</p>
+                      <p className="text-gray-500 text-sm mt-1">Enjoy your work!</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {vacationEvents.map((event) => {
-                        const eventDate = new Date(event.start.dateTime || event.start.date || new Date())
-                        const isToday = eventDate.toDateString() === new Date().toDateString()
-                        const isTomorrow = eventDate.toDateString() === new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString()
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                          <TableHead className="w-[80px]">Type</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {vacationEvents.map((event) => {
+                          const eventDate = new Date(event.start.dateTime || event.start.date || new Date())
+                          const isToday = eventDate.toDateString() === new Date().toDateString()
+                          const isTomorrow = eventDate.toDateString() === new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString()
 
-                        return (
-                          <div key={event.id} className={`bg-white rounded-lg p-3 border border-gray-200 ${isToday ? 'ring-2 ring-green-200 bg-green-50' : ''}`}>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3 flex-1">
-                                <div className="w-20 text-sm font-medium text-gray-800 truncate">
-                                  {event.participant.name}
+                          return (
+                            <TableRow key={event.id} className={`hover:bg-emerald-50/30 transition-colors ${isToday ? 'bg-emerald-50/20' : ''}`}>
+                              <TableCell>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                  event.subCategory === '반차' ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'
+                                }`}>
+                                  {event.subCategory || '연차'}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-gray-900">{event.participant.name}</span>
+                                  <span className="text-xs text-gray-500">{event.summary || '개인사유'}</span>
                                 </div>
-                                <div className="w-20 text-sm text-gray-600">
-                                  [{event.subCategory === '반차'
-                                    ? `반차-${event.start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
-                                    : event.subCategory || '연차'
-                                  }]
-                                </div>
-                                <div className="w-20 text-sm text-gray-600">
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm text-gray-600">
                                   {eventDate.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                                  <span className="text-xs text-gray-400 ml-1">
+                                    ({eventDate.toLocaleDateString('ko-KR', { weekday: 'short' })})
+                                  </span>
                                 </div>
-                                <div className="w-16 text-sm text-gray-600">
-                                  {eventDate.toLocaleDateString('ko-KR', { weekday: 'short' })}
-                                </div>
-                                <div className="w-16 text-sm text-gray-600">
-                                  {event.start.dateTime?.includes('T') ? event.start.dateTime.split('T')[1]?.substring(0, 5) || '종일' : '종일'}
-                                </div>
-                              </div>
-                              {isToday && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                                  오늘
-                                </Badge>
-                              )}
-                              {isTomorrow && (
-                                <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs">
-                                  내일
-                                </Badge>
-                              )}
-                            </div>
-                            {event.summary && (
-                              <div className="mt-2 text-sm text-gray-600 truncate">
-                                {event.summary}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {isToday && <span className="inline-flex px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">TODAY</span>}
+                                {isTomorrow && <span className="inline-flex px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full">TOMORROW</span>}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
                   )}
                 </div>
               </CardContent>
@@ -920,76 +821,82 @@ export default function DashboardPage() {
 
           {/* 프로젝트 일정 (로그인 사용자만 표시) */}
           {user && (
-            <Card className="mb-8 bg-gray-50 border-2 border-gray-300">
-              <CardHeader className="bg-white border-b-2 border-gray-300">
-                <CardTitle className="flex items-center text-gray-800">
-                  <div className="w-8 h-8 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full flex items-center justify-center mr-3">
-                    <BarChart3 className="h-5 w-5 text-purple-600" />
+            <Card className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden mb-8 border-t-4 border-t-purple-500">
+              <CardHeader className="px-8 py-6 border-b border-gray-100 bg-white">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-50 rounded-2xl">
+                    <BarChart3 className="h-6 w-6 text-purple-600" />
                   </div>
-                  프로젝트 일정 (오늘 기준 3개월)
-                </CardTitle>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Project Schedule</h2>
+                    <p className="text-gray-500 text-sm mt-1">Upcoming project milestones (3 months)</p>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent className="bg-gray-50">
+              <CardContent className="p-0">
                 {loadingProjects ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">로딩 중...</p>
+                    <p className="text-gray-600">Loading schedule...</p>
                   </div>
                 ) : projectEvents.length === 0 ? (
-                  <div className="text-center py-8">
+                  <div className="text-center py-12">
                     <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">프로젝트 일정이 없습니다.</p>
-                    <p className="text-gray-400 text-sm mt-2">프로젝트 관리에서 일정을 등록해보세요.</p>
+                    <p className="text-gray-900 font-medium text-lg">No upcoming projects</p>
+                    <p className="text-gray-500 text-sm mt-1">Add schedules in Project Management</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {/* 헤더 */}
-                    <div className="bg-gray-100 rounded-lg p-3 border-2 border-gray-300">
-                      <div className="grid grid-cols-12 gap-4 items-center">
-                        <div className="col-span-2 text-xs font-semibold text-gray-800 text-center">구분</div>
-                        <div className="col-span-7 text-xs font-semibold text-gray-800 text-center">프로젝트</div>
-                        <div className="col-span-3 text-xs font-semibold text-gray-800 text-center">날짜</div>
-                      </div>
-                    </div>
-
-                    {/* 데이터 행들 */}
-                    {projectEvents.map((event) => (
-                      <div key={event.id} className="bg-white rounded-lg p-4 border-2 border-gray-300 hover:shadow-md transition-shadow">
-                        <div className="grid grid-cols-12 gap-4 items-center">
-                          {/* 구분 */}
-                          <div className="col-span-2 flex justify-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${event.type === '조완'
-                              ? 'bg-orange-100 text-orange-800'
-                              : event.type === '공시'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-purple-100 text-purple-800'
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                          <TableHead className="w-[100px]">Type</TableHead>
+                          <TableHead>Project</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Description</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projectEvents.map((event) => (
+                          <TableRow key={event.id} className="hover:bg-purple-50/30 transition-colors group">
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold ${
+                                event.type === '조완'
+                                  ? 'bg-orange-100 text-orange-700'
+                                  : event.type === '공시'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-purple-100 text-purple-700'
                               }`}>
-                              {event.type}
-                            </span>
-                          </div>
-
-                          {/* 프로젝트명 */}
-                          <div className="col-span-7 min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {event.projectNumber} - {event.projectName}
-                            </div>
-                            {event.description && (
-                              <div className="text-sm text-gray-600 truncate">
-                                {event.description}
+                                {event.type}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
+                                  {event.projectName}
+                                </span>
+                                <span className="text-xs text-gray-500 font-mono">
+                                  {event.projectNumber}
+                                </span>
                               </div>
-                            )}
-                          </div>
-
-                          {/* 날짜 */}
-                          <div className="col-span-3 text-sm text-gray-600 whitespace-nowrap flex justify-center">
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {formatDate(event.date)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                                {formatDate(event.date)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {event.description && (
+                                <span className="text-xs text-gray-500 truncate max-w-[300px] inline-block">
+                                  {event.description}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>
@@ -1016,6 +923,8 @@ export default function DashboardPage() {
               loading={submittingReport}
             />
           )}
+            </div>
+          </div>
         </div>
       </div>
     </AuthGuard>

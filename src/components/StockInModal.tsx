@@ -332,11 +332,19 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
         }
       }
       
-      // admin이 아닌 경우에만 level2 권한 체크
+      // admin이 아닌 경우에만 권한 체크
       if (!hasPermission) {
-        hasPermission = await checkDbPermission('level2')
+        // 1. 명시적 권한 확인
+        if (user?.stock_in) {
+          hasPermission = true
+        } 
+        // 2. 레벨 기반 권한 확인 (하위 호환성)
+        else {
+          hasPermission = await checkDbPermission('level2')
+        }
+        
         if (!hasPermission) {
-          throw new Error('입고 권한이 부족합니다. level2 이상의 권한이 필요합니다.')
+          throw new Error('입고 권한이 부족합니다. (재고 입고 권한 또는 Level 2 이상 필요)')
         }
       }
 
@@ -393,7 +401,8 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
           unit_price: unitPrice,
           stock_status: data.stockStatus,
           reason: data.purpose || '재고관리',
-          note: data.note || ''
+          note: data.note || '',
+          userLevel: user?.level || '1' // Pass userLevel
         })
       })
 
@@ -616,7 +625,13 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
       
       // DB에 저장 (에러 처리 개선)
       try {
-        const result = await saveStockInToDB(formData)
+        // Append Level to product name
+        const level = user?.level || '1'
+        const dataToSave = {
+          ...formData,
+          product: `[Level ${level}] ${formData.product}`
+        }
+        const result = await saveStockInToDB(dataToSave)
         
         // 성공 시 onSave 콜백 호출하고 모달 닫기
         if (result.success) {
@@ -768,10 +783,16 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
 
     setIsSaving(true)
     try {
-      // 권한 확인 (level2 이상 필요)
-      const hasPermission = await checkDbPermission('level2')
+      // 권한 확인 (재고 입고 권한 또는 level2 이상 필요)
+      let hasPermission = false
+      if (user?.stock_in) {
+        hasPermission = true
+      } else {
+        hasPermission = await checkDbPermission('level2')
+      }
+
       if (!hasPermission) {
-        throw new Error('입고 권한이 부족합니다. level2 이상의 권한이 필요합니다.')
+        throw new Error('입고 권한이 부족합니다. (재고 입고 권한 또는 Level 2 이상 필요)')
       }
 
       // 권한 기반으로 데이터베이스 작업 실행
@@ -798,6 +819,9 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
         
         for (let i = 0; i < validItems.length; i++) {
           const item = validItems[i]
+          // Append Level to product name
+          const level = user?.level || '1'
+          item.product = `[Level ${level}] ${item.product}`
           if (!item) continue
           
           // UUID 생성 (crypto.randomUUID 사용)
@@ -892,522 +916,499 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-2xl bg-white" aria-describedby="stock-in-description">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <Package className="h-5 w-5 text-green-600" />
-              <span className="text-black">{isEditMode ? '재고 수정' : '재고 입고'}</span>
-            </DialogTitle>
-            <p id="stock-in-description" className="text-sm text-gray-600">
-              새로운 재고를 시스템에 등록하거나 기존 재고를 추가합니다. 품목명, 규격, 위치, 수량 등을 입력해주세요.
-            </p>
-          </DialogHeader>
-          
-          {/* 탭 선택 */}
-          {/* 탭 네비게이션 - 수정 모드에서는 숨김 */}
-          {!isEditMode && (
-            <div className="flex space-x-1 border-b border-gray-200">
-              <button
-                type="button"
-                onClick={() => setActiveTab('manual')}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                  activeTab === 'manual'
-                    ? 'bg-white text-black border-b-2 border-black'
-                    : 'text-gray-500 hover:text-black hover:bg-gray-100'
-                }`}
-              >
-                개별 입력
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('excel')}
-                className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-                  activeTab === 'excel'
-                    ? 'bg-white text-black border-b-2 border-black'
-                    : 'text-gray-500 hover:text-black hover:bg-gray-100'
-                }`}
-              >
-                엑셀 업로드
-              </button>
-            </div>
-          )}
-
-          {/* 개별 입력 탭 - 수정 모드이거나 수동 입력 탭일 때 */}
-          {(isEditMode || activeTab === 'manual') && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* 필수 필드들 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    품목명 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.product}
-                    onChange={(e) => {
-                      setFormData({...formData, product: e.target.value})
-                      if (isEditMode) {
-                        setModifiedFields(prev => ({
-                          ...prev,
-                          product: e.target.value !== editItem.name
-                        }))
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
-                      fieldErrors.product
-                        ? 'border-red-500 text-red-600 bg-red-50'
-                        : isEditMode && modifiedFields.product 
-                          ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                          : 'border-gray-300 text-black bg-white'
-                    }`}
-                    placeholder="품목명을 입력하세요"
-                    required
-                    maxLength={100}
-                  />
+        <DialogContent className="sm:max-w-2xl bg-white p-0 overflow-hidden border-0 shadow-2xl rounded-2xl" aria-describedby="stock-in-description">
+          {/* Header Section */}
+          <div className="bg-emerald-50/50 px-8 py-6 border-b border-emerald-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-emerald-950">
+                <div className="p-2.5 bg-emerald-100 rounded-xl">
+                  <Package className="h-6 w-6 text-emerald-600" />
                 </div>
+                {isEditMode ? '재고 수정' : '자재 입고'}
+              </DialogTitle>
+              <p id="stock-in-description" className="text-emerald-600/80 mt-2 text-sm font-medium">
+                새로운 자재를 창고에 등록하거나 기존 재고를 관리합니다.
+              </p>
+            </DialogHeader>
 
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    규격 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.spec}
-                    onChange={(e) => {
-                      setFormData({...formData, spec: e.target.value})
-                      if (isEditMode) {
-                        setModifiedFields(prev => ({
-                          ...prev,
-                          spec: e.target.value !== editItem.specification
-                        }))
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
-                      fieldErrors.spec
-                        ? 'border-red-500 text-red-600 bg-red-50'
-                        : isEditMode && modifiedFields.spec 
-                          ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                          : 'border-gray-300 text-black bg-white'
-                    }`}
-                    placeholder="규격을 입력하세요 (예: 10mm², 220V)"
-                    required
-                    maxLength={100}
-                  />
-                </div>
+            {/* Tab Navigation */}
+            {!isEditMode && (
+              <div className="flex p-1 bg-emerald-100/50 rounded-xl mt-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('manual')}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                    activeTab === 'manual'
+                      ? 'bg-white text-emerald-700 shadow-sm'
+                      : 'text-emerald-600/70 hover:text-emerald-700 hover:bg-emerald-100/50'
+                  }`}
+                >
+                  개별 입력
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('excel')}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                    activeTab === 'excel'
+                      ? 'bg-white text-emerald-700 shadow-sm'
+                      : 'text-emerald-600/70 hover:text-emerald-700 hover:bg-emerald-100/50'
+                  }`}
+                >
+                  엑셀 일괄 업로드
+                </button>
+              </div>
+            )}
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    위치 <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => {
-                      setFormData({...formData, location: e.target.value})
-                      if (isEditMode) {
-                        setModifiedFields(prev => ({
-                          ...prev,
-                          location: e.target.value !== editItem.location
-                        }))
-                      }
-                    }}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
-                      fieldErrors.location
-                        ? 'border-red-500 text-red-600 bg-red-50'
-                        : isEditMode && modifiedFields.location 
-                          ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                          : 'border-gray-300 text-black bg-white'
-                    }`}
-                    placeholder="보관 위치를 입력하세요"
-                    required
-                    maxLength={100}
-                  />
-                </div>
-
-                {isEditMode ? (
-                  // 수정 모드: 수량 관련 필드들
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-black mb-1">
-                        입고수량 <span className="text-red-500">*</span>
+          <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            {/* 개별 입력 탭 */}
+            {(isEditMode || activeTab === 'manual') && (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* 필수 정보 그룹 */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                    기본 정보
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        품목명 <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="number"
-                        value={editFormData.stockInQuantity}
+                        type="text"
+                        value={formData.product}
                         onChange={(e) => {
-                          const value = e.target.value
-                          console.log('입고수량 입력 변경:', value, '타입:', typeof value)
-                          
-                          // 함수형 업데이트 사용하여 이전 상태 기반으로 업데이트
-                          setEditFormData(prev => {
-                            const newData = {...prev, stockInQuantity: value}
-                            console.log('이전 editFormData:', prev)
-                            console.log('새로운 editFormData:', newData)
-                            return newData
-                          })
-                          
-                          // 수정된 필드 추적
-                          setModifiedFields(prev => ({
-                            ...prev,
-                            stockInQuantity: value !== editItem.inbound?.toString()
-                          }))
-                          
-                          // 즉시 유효성 검사
-                          const stockInQty = parseInt(value)
-                          if (value === '' || isNaN(stockInQty) || stockInQty < 0) {
-                            console.log('입고수량 즉시 검증 실패:', value, '파싱된 값:', stockInQty)
-                            setFieldErrors(prev => ({ ...prev, stockInQuantity: true }))
-                          } else {
-                            console.log('입고수량 즉시 검증 성공:', value, '파싱된 값:', stockInQty)
-                            setFieldErrors(prev => ({ ...prev, stockInQuantity: false }))
+                          setFormData({...formData, product: e.target.value})
+                          if (isEditMode) {
+                            setModifiedFields(prev => ({
+                              ...prev,
+                              product: e.target.value !== editItem.name
+                            }))
                           }
                         }}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
-                          fieldErrors.stockInQuantity
-                            ? 'border-red-500 text-red-600 bg-red-50'
-                            : modifiedFields.stockInQuantity 
-                              ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                              : 'border-gray-300 text-black bg-white'
+                        className={`w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium ${
+                          fieldErrors.product ? 'bg-red-50 border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''
                         }`}
-                        placeholder="입고수량을 입력하세요"
+                        placeholder="품목명을 입력하세요"
                         required
-                        min="0"
+                        maxLength={100}
                       />
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-black mb-1">
-                        출고수량
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        규격 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.spec}
+                        onChange={(e) => {
+                          setFormData({...formData, spec: e.target.value})
+                          if (isEditMode) {
+                            setModifiedFields(prev => ({
+                              ...prev,
+                              spec: e.target.value !== editItem.specification
+                            }))
+                          }
+                        }}
+                        className={`w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium ${
+                          fieldErrors.spec ? 'bg-red-50 border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''
+                        }`}
+                        placeholder="규격을 입력하세요"
+                        required
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        위치 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => {
+                          setFormData({...formData, location: e.target.value})
+                          if (isEditMode) {
+                            setModifiedFields(prev => ({
+                              ...prev,
+                              location: e.target.value !== editItem.location
+                            }))
+                          }
+                        }}
+                        className={`w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium ${
+                          fieldErrors.location ? 'bg-red-50 border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''
+                        }`}
+                        placeholder="보관 위치를 입력하세요"
+                        required
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        품목 상태 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.stockStatus}
+                        onChange={(e) => setFormData({...formData, stockStatus: e.target.value as 'new' | 'used-new' | 'used-used' | 'broken' | ''})}
+                        className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium appearance-none"
+                        required
+                      >
+                        <option value="">품목 상태 선택</option>
+                        <option value="new">신품</option>
+                        <option value="used-new">중고신품</option>
+                        <option value="used-used">중고사용품</option>
+                        <option value="broken">불량품</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 수량 및 단가 그룹 */}
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                    수량 및 단가
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {isEditMode ? (
+                      <>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            입고수량 <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            value={editFormData.stockInQuantity}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setEditFormData(prev => ({...prev, stockInQuantity: value}))
+                              setModifiedFields(prev => ({...prev, stockInQuantity: value !== editItem.inbound?.toString()}))
+                              
+                              const stockInQty = parseInt(value)
+                              if (value === '' || isNaN(stockInQty) || stockInQty < 0) {
+                                setFieldErrors(prev => ({ ...prev, stockInQuantity: true }))
+                              } else {
+                                setFieldErrors(prev => ({ ...prev, stockInQuantity: false }))
+                              }
+                            }}
+                            className={`w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium ${
+                              fieldErrors.stockInQuantity ? 'bg-red-50 border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''
+                            }`}
+                            placeholder="0"
+                            required
+                            min="0"
+                          />
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            출고수량
+                          </label>
+                          <input
+                            type="number"
+                            value={editFormData.stockOutQuantity}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setEditFormData(prev => ({...prev, stockOutQuantity: value}))
+                              setModifiedFields(prev => ({...prev, stockOutQuantity: value !== editItem.outbound?.toString()}))
+                              
+                              const stockOutQty = parseInt(value)
+                              if (value === '' || isNaN(stockOutQty) || stockOutQty < 0) {
+                                setFieldErrors(prev => ({ ...prev, stockOutQuantity: true }))
+                              } else {
+                                setFieldErrors(prev => ({ ...prev, stockOutQuantity: false }))
+                              }
+                            }}
+                            className={`w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium ${
+                              fieldErrors.stockOutQuantity ? 'bg-red-50 border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''
+                            }`}
+                            placeholder="0"
+                            min="0"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          수량 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.quantity}
+                          onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                          className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium"
+                          placeholder="수량을 입력하세요"
+                          required
+                          min="1"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        단가 {!isEditMode && <span className="text-red-500">*</span>}
                       </label>
                       <input
                         type="number"
-                        value={editFormData.stockOutQuantity}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          console.log('출고수량 입력 변경:', value, '타입:', typeof value)
-                          
-                          // 함수형 업데이트 사용하여 이전 상태 기반으로 업데이트
-                          setEditFormData(prev => {
-                            const newData = {...prev, stockOutQuantity: value}
-                            console.log('이전 editFormData:', prev)
-                            console.log('새로운 editFormData:', newData)
-                            return newData
-                          })
-                          
-                          // 수정된 필드 추적
-                          setModifiedFields(prev => ({
-                            ...prev,
-                            stockOutQuantity: value !== editItem.outbound?.toString()
-                          }))
-                          
-                          // 즉시 유효성 검사
-                          const stockOutQty = parseInt(value)
-                          if (value === '' || isNaN(stockOutQty) || stockOutQty < 0) {
-                            console.log('출고수량 즉시 검증 실패:', value, '파싱된 값:', stockOutQty)
-                            setFieldErrors(prev => ({ ...prev, stockOutQuantity: true }))
-                          } else {
-                            console.log('출고수량 즉시 검증 성공:', value, '파싱된 값:', stockOutQty)
-                            setFieldErrors(prev => ({ ...prev, stockOutQuantity: false }))
-                          }
-                        }}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black ${
-                          fieldErrors.stockOutQuantity
-                            ? 'border-red-500 text-red-600 bg-red-50'
-                            : modifiedFields.stockOutQuantity 
-                              ? 'border-blue-500 text-blue-600 bg-blue-50' 
-                              : 'border-gray-300 text-black bg-white'
-                        }`}
-                        placeholder="출고수량을 입력하세요"
+                        value={formData.unitPrice}
+                        onChange={(e) => setFormData({...formData, unitPrice: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium"
+                        placeholder="단가를 입력하세요"
+                        required={!isEditMode}
                         min="0"
                       />
                     </div>
-                  </>
-                ) : (
-                  // 입고 모드: 기존 수량 필드
-                  <div>
-                    <label className="block text-sm font-medium text-black mb-1">
-                      수량 <span className="text-red-500">*</span>
+                  </div>
+                </div>
+
+                {/* 추가 정보 그룹 */}
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
+                    추가 정보
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        제조사
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.maker}
+                        onChange={(e) => setFormData({...formData, maker: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium"
+                        placeholder="제조사를 입력하세요"
+                        maxLength={100}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        용도
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.purpose}
+                        onChange={(e) => setFormData({...formData, purpose: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium"
+                        placeholder="용도를 입력하세요"
+                        maxLength={100}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      비고
+                    </label>
+                    <textarea
+                      value={formData.note}
+                      onChange={(e) => setFormData({...formData, note: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium resize-none"
+                      placeholder="추가 정보를 입력하세요"
+                      rows={3}
+                      maxLength={500}
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      입고일
                     </label>
                     <input
-                      type="number"
-                      value={formData.quantity}
-                      onChange={(e) => {
-                        console.log('수량 입력 변경:', e.target.value);
-                        setFormData({...formData, quantity: e.target.value});
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                      placeholder="수량을 입력하세요"
+                      type="date"
+                      value={formData.stockInDate}
+                      onChange={(e) => setFormData({...formData, stockInDate: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-emerald-500 rounded-xl focus:ring-4 focus:ring-emerald-500/10 transition-all duration-200 font-medium"
                       required
-                      min="1"
                     />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-6 border-t border-gray-100">
+                  <Button 
+                    type="button" 
+                    onClick={handleCancel} 
+                    variant="outline" 
+                    className="flex-1 h-12 bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-bold transition-all"
+                  >
+                    취소
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200 rounded-xl font-bold transition-all"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    {isEditMode ? '수정 완료' : '입고 완료'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {/* 엑셀 업로드 탭 */}
+            {!isEditMode && activeTab === 'excel' && (
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-emerald-200 rounded-2xl p-8 text-center bg-emerald-50/30 hover:bg-emerald-50/50 transition-colors">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileSpreadsheet className="h-8 w-8 text-emerald-600" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold text-gray-900">엑셀 파일 업로드</h3>
+                    <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                      대량의 자재를 한번에 등록할 수 있습니다. 
+                      <br />
+                      .xlsx, .xls, .csv 형식을 지원합니다.
+                    </p>
+                    
+                    <div className="flex flex-col items-center gap-3 mt-6">
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleExcelUpload}
+                        className="hidden"
+                        id="excel-upload"
+                        disabled={isProcessingExcel}
+                      />
+                      <label
+                        htmlFor="excel-upload"
+                        className="inline-flex items-center px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 cursor-pointer shadow-lg shadow-emerald-200 font-bold transition-all"
+                      >
+                        <Upload className="h-5 w-5 mr-2" />
+                        {isProcessingExcel ? '처리 중...' : '파일 선택하기'}
+                      </label>
+                      
+                      <button
+                        onClick={downloadCSVTemplate}
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium underline underline-offset-4"
+                      >
+                        템플릿 다운로드
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 업로드된 데이터 미리보기 */}
+                {excelData.length > 0 && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                        업로드된 품목 ({excelData.length}개)
+                      </h4>
+                      <Button
+                        onClick={() => setExcelData([])}
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 text-xs"
+                      >
+                        초기화
+                      </Button>
+                    </div>
+                    
+                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl bg-white shadow-sm custom-scrollbar">
+                      <table className="min-w-full text-xs">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase tracking-wider">품목명</th>
+                            <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase tracking-wider">규격</th>
+                            <th className="px-4 py-3 text-left font-bold text-gray-500 uppercase tracking-wider">상태</th>
+                            <th className="px-4 py-3 text-right font-bold text-gray-500 uppercase tracking-wider">수량</th>
+                            <th className="px-4 py-3 text-right font-bold text-gray-500 uppercase tracking-wider">단가</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {excelData.map((item, index) => (
+                            <tr key={index} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-2.5 text-gray-900 font-medium">{item.product}</td>
+                              <td className="px-4 py-2.5 text-gray-600">{item.spec}</td>
+                              <td className="px-4 py-2.5">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                  item.stockStatus === 'new' ? 'bg-blue-100 text-blue-800' :
+                                  item.stockStatus === 'used-new' ? 'bg-green-100 text-green-800' :
+                                  item.stockStatus === 'used-used' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {item.stockStatus === 'new' ? '신품' : 
+                                   item.stockStatus === 'used-new' ? '중고신품' : 
+                                   item.stockStatus === 'used-used' ? '중고사용품' : 
+                                   item.stockStatus === 'broken' ? '불량품' : '미선택'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5 text-right text-gray-900 font-bold">{item.quantity}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-600">{item.unitPrice.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={handleBulkStockIn}
+                        className="flex-1 h-12 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-200 rounded-xl font-bold transition-all"
+                      >
+                        <Save className="h-5 w-5 mr-2" />
+                        일괄 입고 처리하기
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* 선택 필드들 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    제조사
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.maker}
-                    onChange={(e) => setFormData({...formData, maker: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                    placeholder="제조사를 입력하세요"
-                    maxLength={100}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    단가 {!isEditMode && <span className="text-red-500">*</span>}
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.unitPrice}
-                    onChange={(e) => setFormData({...formData, unitPrice: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                    placeholder="단가를 입력하세요"
-                    required={!isEditMode}
-                    min="0.01"
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    용도
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.purpose}
-                    onChange={(e) => setFormData({...formData, purpose: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                    placeholder="용도를 입력하세요"
-                    maxLength={100}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-black mb-1">
-                    품목 상태 <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={formData.stockStatus}
-                    onChange={(e) => setFormData({...formData, stockStatus: e.target.value as 'new' | 'used-new' | 'used-used' | 'broken' | ''})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                    required
-                  >
-                    <option value="">품목 상태를 선택하세요</option>
-                    <option value="new">신품</option>
-                    <option value="used-new">중고신품</option>
-                    <option value="used-used">중고사용품</option>
-                    <option value="broken">불량품</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">
-                  비고
-                </label>
-                <textarea
-                  value={formData.note}
-                  onChange={(e) => setFormData({...formData, note: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                  placeholder="추가 정보를 입력하세요"
-                  rows={3}
-                  maxLength={500}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-black mb-1">
-                  입고일
-                </label>
-                <input
-                  type="date"
-                  value={formData.stockInDate}
-                  onChange={(e) => setFormData({...formData, stockInDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                  required
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <Button type="submit" className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {isEditMode ? '수정 완료' : '+ 입고 처리'}
-                </Button>
-                <Button type="button" onClick={handleCancel} variant="outline" className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100">
-                  취소
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {/* 엑셀 업로드 탭 - 수정 모드에서는 숨김 */}
-          {!isEditMode && activeTab === 'excel' && (
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-white">
-                <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <div className="space-y-2">
-                  <p className="text-sm text-black">
-                    엑셀 파일을 업로드하여 일괄 입고할 수 있습니다.
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    필수 컬럼: 품목명, 규격, 위치, 수량, 단가, 품목상태 | 선택 컬럼: 제조사, 용도, 비고
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    품목상태: 신품, 중고신품, 중고사용품, 불량품 중 선택 | 입고일은 업로드일로 자동 설정
-                  </p>
-                  
-                  {/* CSV 템플릿 다운로드 */}
-                  <div className="mt-3">
-                    <button
-                      onClick={downloadCSVTemplate}
-                      className="inline-flex items-center px-3 py-1 text-xs bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100"
-                    >
-                      📄 CSV 템플릿 다운로드
-                    </button>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <input
-                      type="file"
-                      accept=".xlsx,.xls,.csv"
-                      onChange={handleExcelUpload}
-                      className="hidden"
-                      id="excel-upload"
-                      disabled={isProcessingExcel}
-                    />
-                    <label
-                      className="inline-flex items-center px-4 py-2 bg-white text-black border border-gray-300 rounded-md hover:bg-gray-100 cursor-pointer disabled:opacity-50"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {isProcessingExcel ? '처리 중...' : '엑셀 파일 선택'}
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* 업로드된 데이터 미리보기 */}
-              {excelData.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-black">업로드된 품목 ({excelData.length}개)</h4>
-                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md bg-white">
-                    <table className="min-w-full text-xs">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-black">품목명</th>
-                          <th className="px-3 py-2 text-left text-black">규격</th>
-                          <th className="px-3 py-2 text-left text-black">품목상태</th>
-                          <th className="px-3 py-2 text-left text-black">수량</th>
-                          <th className="px-3 py-2 text-left text-black">단가</th>
-                          <th className="px-3 py-2 text-left text-black">비고</th>
-                          <th className="px-3 py-2 text-left text-black">입고일</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {excelData.map((item, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-3 py-2 text-black">{item.product}</td>
-                            <td className="px-3 py-2 text-black">{item.spec}</td>
-                            <td className="px-3 py-2 text-black">
-                              {item.stockStatus === 'new' ? '신품' : 
-                               item.stockStatus === 'used-new' ? '중고신품' : 
-                               item.stockStatus === 'used-used' ? '중고사용품' : 
-                               item.stockStatus === 'broken' ? '불량품' : 
-                               '미선택'}
-                            </td>
-                            <td className="px-3 py-2 text-black">{item.quantity}</td>
-                            <td className="px-3 py-2 text-black">{item.unitPrice.toLocaleString()}</td>
-                            <td className="px-3 py-2 text-black">{item.note}</td>
-                            <td className="px-3 py-2 text-black">{item.stockInDate}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  
-                  <div className="flex space-x-3 pt-2">
-                    <Button
-                      onClick={handleBulkStockIn}
-                      className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      일괄 입고 처리
-                    </Button>
-                    <Button
-                      onClick={() => setExcelData([])}
-                      variant="outline"
-                      className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100"
-                    >
-                      데이터 초기화
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* 저장 버튼 */}
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <Button
-                  onClick={handleCancel}
-                  variant="outline"
-                  className="bg-white text-black border border-gray-300 hover:bg-gray-100"
-                >
-                  취소
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSaving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {isSaving ? '저장 중...' : '저장'}
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* 중복 재고 확인 팝업 */}
       {showDuplicateModal && duplicateItem && pendingStockInData && (
         <Dialog open={showDuplicateModal} onOpenChange={() => setShowDuplicateModal(false)}>
-          <DialogContent className="sm:max-w-md bg-white" aria-describedby="duplicate-stock-description">
-            <DialogHeader>
-              <DialogTitle className="text-black">기존재고와 합칠래?</DialogTitle>
-              <p id="duplicate-stock-description" className="text-sm text-gray-600">
-                동일한 품목이 이미 존재합니다. 기존 재고에 합치거나 새로 등록할 수 있습니다.
-              </p>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">기존재고:</span>
-                    <span className="font-medium text-black">{duplicateItem.currentQuantity}개</span>
+          <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-xl border-0 overflow-hidden" aria-describedby="duplicate-stock-description">
+            <div className="bg-amber-50 px-6 py-4 border-b border-amber-100">
+              <DialogHeader>
+                <DialogTitle className="text-amber-900 text-lg font-bold flex items-center gap-2">
+                  <div className="p-1.5 bg-amber-100 rounded-lg">
+                    <FileSpreadsheet className="h-5 w-5 text-amber-600" />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">입력재고:</span>
-                    <span className="font-medium text-black">{pendingStockInData.quantity}개</span>
-                  </div>
-                  <div className="pt-2 border-t border-gray-200">
-                    <span className="text-gray-600">비고:</span>
-                    <p className="text-black mt-1">{duplicateItem.notes || '없음'}</p>
-                  </div>
+                  중복 자재 확인
+                </DialogTitle>
+                <p id="duplicate-stock-description" className="text-amber-700/80 text-sm mt-1">
+                  동일한 품목이 이미 창고에 존재합니다.
+                </p>
+              </DialogHeader>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="bg-gray-50 p-5 rounded-xl border border-gray-100 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm font-medium">기존 재고량</span>
+                  <span className="font-bold text-gray-900 text-lg">{duplicateItem.currentQuantity}개</span>
+                </div>
+                <div className="w-full h-px bg-gray-200"></div>
+                <div className="flex justify-between items-center">
+                  <span className="text-emerald-600 text-sm font-medium">추가할 수량</span>
+                  <span className="font-bold text-emerald-600 text-lg">+{pendingStockInData.quantity}개</span>
+                </div>
+                <div className="bg-white p-3 rounded-lg border border-gray-200 mt-2">
+                  <span className="text-xs text-gray-400 block mb-1">비고</span>
+                  <p className="text-gray-700 text-sm">{duplicateItem.notes || '없음'}</p>
                 </div>
               </div>
               
-              <div className="flex justify-center">
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowDuplicateModal(false)}
+                  variant="outline"
+                  className="flex-1 h-11 border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold"
+                >
+                  취소
+                </Button>
                 <Button
                   onClick={handleMergeWithExisting}
-                  className="px-8 bg-white text-black border border-gray-300 hover:bg-gray-100"
+                  className="flex-1 h-11 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 rounded-xl font-bold"
                 >
-                  OK
+                  합치기
                 </Button>
               </div>
             </div>
@@ -1416,4 +1417,4 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
       )}
     </>
   )
-} 
+}

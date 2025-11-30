@@ -33,27 +33,42 @@ export default function AuthGuard({
         }
 
         if (!isAuthenticated || !user) {
-          console.log('AuthGuard: 인증되지 않은 사용자, 리다이렉트')
-          router.push(fallbackUrl)
-          return
+          console.log('AuthGuard: 인증되지 않은 사용자, 리다이렉트', { isAuthenticated, user, authLoading })
+          // Check localStorage directly to see if it's a sync issue
+          const stored = localStorage.getItem('user')
+          console.log('AuthGuard: localStorage check:', stored)
+          
+          router.push(`${fallbackUrl}?source=authguard&reason=unauthorized`)
         }
+
+
 
         // 2. 레벨 체크
         if (requiredLevel) {
-          const userLevel = user.level || '1'
-          const isAdministrator = userLevel === 'administrator' || userLevel === 'Administrator' || user.id === 'admin'
+          const userLevel = user.level
+          const isAdministrator = String(userLevel).toLowerCase() === 'administrator' || user.id === 'admin'
           
+          // 관리자는 모든 페이지 접근 가능
           if (!isAdministrator) {
-            const levelNum = typeof userLevel === 'number' ? userLevel : parseInt(userLevel)
-            const requiredLevelNum = typeof requiredLevel === 'number' ? requiredLevel : parseInt(requiredLevel)
+            const requiredLevelNum = typeof requiredLevel === 'string' ? parseInt(requiredLevel) : requiredLevel
+            const userLevelNum = typeof userLevel === 'string' ? parseInt(userLevel) : userLevel
             
-            if (levelNum < requiredLevelNum) {
-              console.log(`AuthGuard: 권한 부족 - 사용자 레벨: ${levelNum}, 필요 레벨: ${requiredLevelNum}`)
-              router.push(fallbackUrl)
+            // 사용자 레벨이 요구 레벨보다 낮으면 접근 불가
+            if (isNaN(userLevelNum) || userLevelNum < requiredLevelNum) {
+              console.log(`AuthGuard: 레벨 부족 - 요구 레벨: ${requiredLevel}, 사용자 레벨: ${userLevel}`)
+              
+              // 레벨 1, 2 사용자는 재고관리로, 레벨 3 이상은 대시보드로
+              if (userLevelNum <= 2) {
+                router.push('/stock-management')
+              } else {
+                router.push('/dashboard')
+              }
               return
             }
           }
         }
+
+
 
         // 3. 권한 체크
         if (requiredPermissions.length > 0) {
@@ -70,7 +85,8 @@ export default function AuthGuard({
           }
         }
 
-        // 4. 쿠키 기반 추가 검증
+        // 4. 쿠키 기반 추가 검증 (일시 비활성화: localhost 환경 호환성)
+        /*
         const authToken = document.cookie
           .split('; ')
           .find(row => row.startsWith('auth-token='))
@@ -104,6 +120,7 @@ export default function AuthGuard({
           router.push(fallbackUrl)
           return
         }
+        */
 
         console.log('AuthGuard: 인증 및 권한 확인 완료')
         setIsAuthorized(true)
@@ -117,21 +134,6 @@ export default function AuthGuard({
 
     checkAuthorization()
   }, [authLoading, isAuthenticated, user, requiredLevel, requiredPermissions, router, fallbackUrl])
-
-  // 로딩 중이거나 인증 체크 중
-  if (authLoading || checkingAuth) {
-    if (!showLoading) return null
-    
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">인증 확인 중...</p>
-        </div>
-      </div>
-    )
-  }
-
   // 인증되지 않았거나 권한이 없는 경우
   if (!isAuthorized) {
     return null

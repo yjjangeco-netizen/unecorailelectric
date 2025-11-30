@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', sanitizedUsername)
+      .eq('username', sanitizedUsername)
       .eq('is_active', true)
       .maybeSingle()
 
@@ -66,10 +66,13 @@ export async function POST(request: NextRequest) {
     if (user.password_hash) {
       isValidPassword = await verifyPassword(password, user.password_hash)
     } else if (user.password) {
-      // 하위 호환성: 평문 비밀번호가 있는 경우
-      isValidPassword = user.password === password
-
-      // TODO: 로그인 성공 시 비밀번호 해시화하여 업데이트하는 로직 추가 권장
+      // password 컬럼에 해시된 비밀번호가 저장된 경우 ($2로 시작)
+      if (user.password.startsWith('$2')) {
+        isValidPassword = await verifyPassword(password, user.password)
+      } else {
+        // 하위 호환성: 평문 비밀번호가 있는 경우
+        isValidPassword = user.password === password
+      }
     }
 
     if (!isValidPassword) {
@@ -80,33 +83,52 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('로그인 성공:', user.id)
+    console.log('로그인 성공:', user.username)
 
     // JWT 토큰 생성
     const token = generateToken({
       userId: user.id,
-      username: user.id,
+      username: user.username,
       level: user.level
     })
 
     // 사용자 정보 반환 (비밀번호 제외)
     const userResponse = {
       id: user.id,
-      username: user.id,
+      username: user.username,
       email: user.email || '',
       name: user.name || '',
       department: user.department || '',
       position: user.position || '',
       level: user.level,
       is_active: user.is_active,
+      stock_view: user.stock_view,
+      stock_in: user.stock_in,
+      stock_out: user.stock_out,
+      stock_disposal: user.stock_disposal,
+      work_tools: user.work_tools,
+      daily_log: user.daily_log,
+      work_manual: user.work_manual,
+      sop: user.sop,
+      user_management: user.user_management,
       created_at: user.created_at,
       updated_at: user.updated_at
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: userResponse,
       token
     })
+
+    // Set cookie in response for better reliability
+    response.cookies.set('auth-token', token, {
+      httpOnly: false, // Allow client access if needed for other logic
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'lax'
+    })
+
+    return response
   } catch (error) {
     console.error('로그인 오류:', error)
     return NextResponse.json(

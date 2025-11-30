@@ -1,160 +1,240 @@
 'use client'
+// Login Page Component
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { 
-  Building2, 
-  Package, 
-  Calendar, 
-  Users, 
-  BarChart3, 
-  Search,
-  CheckCircle,
-  Star,
-  ArrowRight,
-  Shield,
-  Zap,
-  Globe
-} from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Building2, Eye, EyeOff, ArrowRight, User, Lock, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { useUser } from '@/hooks/useUser'
+import { useRouter } from 'next/navigation'
 
-export default function HomePage() {
-  const [isHovered, setIsHovered] = useState<string | null>(null)
+export default function LoginPage() {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [status, setStatus] = useState('idle')
+  const [saveId, setSaveId] = useState(false)
+  const [savePassword, setSavePassword] = useState(false)
+  
+  const { login, user, isAuthenticated, loading: authLoading } = useUser()
+  const router = useRouter()
 
-  const features = [
-    {
-      icon: Package,
-      title: '재고 관리',
-      description: '실시간 재고 현황 추적 및 관리',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      icon: Calendar,
-      title: '일정 관리',
-      description: '업무 일정 및 프로젝트 관리',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      icon: BarChart3,
-      title: '업무보고',
-      description: '업무보고 및 관리',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    },
-    {
-      icon: Search,
-      title: '입찰 모니터링',
-      description: 'Nara 입찰공고 실시간 모니터링',
-      color: 'text-red-600',
-      bgColor: 'bg-red-50'
-    },
-  ]
+  // 저장된 ID/비밀번호 불러오기
+  useEffect(() => {
+    const savedId = localStorage.getItem('savedUsername')
+    const savedPassword = localStorage.getItem('savedPassword')
+    const saveIdChecked = localStorage.getItem('saveId') === 'true'
+    const savePasswordChecked = localStorage.getItem('savePassword') === 'true'
+    
+    if (savedId && saveIdChecked) {
+      setUsername(savedId)
+      setSaveId(true)
+    }
+    if (savedPassword && savePasswordChecked) {
+      setPassword(savedPassword)
+      setSavePassword(true)
+    }
+  }, [])
 
+  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault()
+    setError('')
+    setIsLoading(true)
+    setStatus('loading')
+
+    try {
+      const success = await login(username, password)
+      
+      if (success) {
+        if (saveId) {
+          localStorage.setItem('savedUsername', username)
+          localStorage.setItem('saveId', 'true')
+        } else {
+          localStorage.removeItem('savedUsername')
+          localStorage.removeItem('saveId')
+        }
+        
+        if (savePassword) {
+          localStorage.setItem('savedPassword', password)
+          localStorage.setItem('savePassword', 'true')
+        } else {
+          localStorage.removeItem('savedPassword')
+          localStorage.removeItem('savePassword')
+        }
+
+        // Context가 업데이트되었으므로 바로 이동
+        console.log('로그인 성공, 대시보드로 이동')
+        setStatus('success')
+        // router.push 대신 window.location.href 사용 (확실한 이동 보장)
+        window.location.href = '/dashboard'
+      } else {
+        console.log('Login returned false')
+        setStatus('error')
+        setError('로그인 실패: 사용자명 또는 비밀번호를 확인해주세요.')
+      }
+    } catch (err) {
+      console.error('Login error', err)
+      setStatus('error')
+      setError(`로그인 오류: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Building2 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">유네코레일</h1>
-                <p className="text-sm text-gray-600 font-medium">전기파트 업무 시스템</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 blur-xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-purple-50 rounded-full opacity-50 blur-xl"></div>
 
-      {/* Hero Section */}
-      <section className="py-24 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 leading-tight">
-            유네코레일<br />
-            <span className="text-yellow-300">전기제어파트 업무관리 도구</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-4xl mx-auto leading-relaxed">
-            유네코레일 전기팀을 위한 통합 업무 관리 시스템.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-10 py-4 text-lg font-bold shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300">
-                가입
-                <ArrowRight className="ml-3 h-6 w-6" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="px-10 py-4 text-lg font-bold border-2 border-white text-gray-900 bg-white hover:bg-gray-100 hover:text-blue-600 transition-all duration-300">
-                로그인
-              </Button>
-            </Link>
+        <div className="text-center relative">
+          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform rotate-3 hover:rotate-6 transition-transform duration-300">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">유네코레일</h2>
+          <p className="mt-2 text-sm text-gray-600 font-medium">전기팀 자재관리 시스템</p>
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              모든 업무를 하나의 플랫폼에서
-            </h2>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              재고 관리, 일정 관리, 입찰 모니터링까지 모든 기능을 통합하여 효율적인 업무 환경을 제공합니다.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon
-              return (
-                <div 
-                  key={index}
-                  className={`bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer border-2 border-transparent hover:border-blue-200 ${isHovered === feature.title ? 'transform scale-105 -rotate-1' : 'hover:rotate-1'}`}
-                  onMouseEnter={() => setIsHovered(feature.title)}
-                  onMouseLeave={() => setIsHovered(null)}
-                >
-                  <div className={`w-16 h-16 ${feature.bgColor} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                    <Icon className={`h-8 w-8 ${feature.color}`} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{feature.title}</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed">{feature.description}</p>
+        <div className="space-y-6 relative">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg animate-shake">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-white" />
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
               </div>
-              <span className="text-2xl font-bold">유네코레일</span>
             </div>
-            <p className="text-gray-300 text-lg leading-relaxed mb-8">
-              전기파트 업무 시스템으로 더 나은 업무 환경을 만들어갑니다.
-            </p>
-            <div className="border-t border-gray-700 pt-8">
-              <p className="text-gray-400 text-lg">&copy; 2025 유네코레일. All rights reserved. Made by YJJANG.</p>
+          )}
+          
+          <div className="space-y-5">
+            <div className="group">
+              <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                아이디
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  placeholder="아이디를 입력하세요"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
+                />
+              </div>
+            </div>
+
+            <div className="group">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                비밀번호
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  placeholder="비밀번호를 입력하세요"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </div>
+
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center">
+              <input
+                id="save-id"
+                name="save-id"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors cursor-pointer"
+                checked={saveId}
+                onChange={(e) => setSaveId(e.target.checked)}
+              />
+              <label htmlFor="save-id" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
+                아이디 저장
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                id="save-password"
+                name="save-password"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors cursor-pointer"
+                checked={savePassword}
+                onChange={(e) => setSavePassword(e.target.checked)}
+              />
+              <label htmlFor="save-password" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
+                비밀번호 저장
+              </label>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                로그인 중...
+              </>
+            ) : status === 'success' ? (
+              'SUCCESS - REDIRECTING...'
+            ) : status === 'error' ? (
+              'FAILED - RETRY'
+            ) : (
+              '로그인'
+            )}
+          </Button>
+          
+          {/* 회원가입 링크 */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              계정이 없으신가요?{' '}
+              <Link 
+                href="/signup" 
+                className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
+              >
+                회원가입하기
+              </Link>
+            </p>
+          </div>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }

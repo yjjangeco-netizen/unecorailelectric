@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import CommonHeader from '@/components/CommonHeader'
+
 import { Building2, FileText, ArrowLeft, Plus, Search, Download, Edit } from 'lucide-react'
 
 interface ManualItem {
@@ -80,22 +80,7 @@ export default function ManualManagementPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* 공통 헤더 추가 */}
-      <CommonHeader
-        currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
-        isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
-        title="메뉴얼 관리"
-        backUrl="/work-tool"
-      />
-
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">메뉴얼 관리</h2>
-          <p className="text-lg text-gray-600">
-            업무 매뉴얼 및 가이드 문서를 관리합니다
-          </p>
-        </div>
-
         {/* 검색 및 필터 */}
         <div className="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

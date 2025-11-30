@@ -7,11 +7,12 @@ import {
   FileText, 
   Calendar, 
   Settings, 
-  BarChart3, 
   Users, 
   LogOut,
-  ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3,
+  Pin,
+  PinOff
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -22,55 +23,127 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout } = useUser()
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<string[]>([])
+
+  const isCollapsed = !isPinned && !isHovered
+
+  const toggleExpand = (key: string) => {
+    setExpandedItems(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+  }
 
   const navigationItems = [
     { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
     { name: '재고관리', href: '/stock-management', icon: Package2, key: 'stock_view' },
-    { name: '업무일지', href: '/work-diary', icon: FileText, key: 'daily_log' },
+    { 
+      name: '업무일지', 
+      href: '/work-diary', 
+      icon: FileText, 
+      key: 'daily_log',
+      subItems: [
+        { name: '업무일지 작성', href: '/work-diary/write' },
+        { name: '외근/출장 보고', href: '/business-trip-reports' },
+        { name: '통계', href: '/work-diary/advanced-stats' }
+      ]
+    },
     { name: '일정관리', href: '/schedule', icon: Calendar, key: 'schedule' },
     { name: '업무도구', href: '/work-tool', icon: Settings, key: 'work_tools' },
     { name: 'SOP', href: '/sop', icon: FileText, key: 'sop' },
     { name: 'Nara', href: '/nara-monitoring', icon: BarChart3, key: 'nara' },
-    { name: '설정', href: '/settings', icon: Users, key: 'settings' },
+    { 
+      name: '설정', 
+      href: '/settings', 
+      icon: Users, 
+      key: 'settings',
+      subItems: [
+        { name: '회원관리', href: '/user-management' },
+        { name: '프로젝트 관리', href: '/project-management' },
+        { name: '입찰모니터링 관리', href: '/nara-settings' }
+      ]
+    },
   ]
 
-  // Filter items based on user level (simplified logic for now, can be expanded)
+
+  // Filter items based on user permissions (individual permissions take priority over level)
   const filteredItems = navigationItems.filter(item => {
-    if (!user) return false
-    const level = user.level || '1'
+    const level = user?.level || '1'
     const isAdmin = level.toLowerCase() === 'administrator'
     if (isAdmin) return true
     
-    // Basic level checks matching CommonHeader logic
-    if (item.key === 'dashboard') return true
-    if (item.key === 'stock_view') return true
-    if (item.key === 'daily_log') return ['2', '3', '4', '5'].includes(level)
-    if (item.key === 'schedule') return ['3', '4', '5'].includes(level)
-    if (item.key === 'work_tools') return ['3', '4', '5'].includes(level)
-    if (item.key === 'sop') return ['3', '4', '5'].includes(level)
-    if (item.key === 'nara') return ['4', '5'].includes(level)
-    if (item.key === 'settings') return level === '5'
+    // 개별 권한 필드가 있으면 우선 사용, 없으면 레벨 기반 기본값 사용
+    if (item.key === 'dashboard') {
+      // 대시보드는 레벨 3 이상
+      return ['3', '4', '5'].includes(level)
+    }
+    if (item.key === 'stock_view') {
+      // stock_view 권한 필드 확인, 없으면 모든 레벨 허용
+      return user?.stock_view === true || true
+    }
+    if (item.key === 'daily_log') {
+      // daily_log 권한 필드 확인, 없으면 레벨 3, 4, 5
+      return user?.daily_log === true || ['3', '4', '5'].includes(level)
+    }
+    if (item.key === 'schedule') {
+      // 일정관리는 레벨 3 이상
+      return ['3', '4', '5'].includes(level)
+    }
+    if (item.key === 'work_tools') {
+      // work_tools는 레벨 4, 5 (개별 권한 무시)
+      return ['4', '5'].includes(level)
+    }
+    if (item.key === 'sop') {
+      // sop 권한 필드 확인, 없으면 레벨 5만
+      return user?.sop === true || (level === '5')
+    }
+    if (item.key === 'nara') {
+      // NARA는 레벨 5만
+      return level === '5'
+    }
+    if (item.key === 'settings') {
+      // user_management 권한 필드 확인, 없으면 레벨 5만
+      return user?.user_management === true || (level === '5')
+    }
     return false
   })
 
   return (
     <aside 
       className={cn(
-        "flex flex-col h-screen bg-[#1c1c1c] text-white transition-all duration-300 border-r border-gray-800",
+        "flex flex-col h-screen bg-[#1c1c1c] text-white transition-all duration-300 border-r border-gray-800 z-50",
         isCollapsed ? "w-16" : "w-64"
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header / Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-gray-800">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="min-w-[32px] h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="font-bold text-white text-lg">U</span>
+      <div className="h-16 flex items-center px-4 border-b border-gray-800 bg-[#1c1c1c]">
+        <div className="flex items-center gap-3 overflow-hidden w-full">
+          <div className="min-w-[32px] h-8 flex items-center justify-center">
+            <img src="/logo_new.png" alt="Logo" className="h-8 w-8 object-contain" />
           </div>
           {!isCollapsed && (
-            <span className="font-bold text-lg tracking-tight whitespace-nowrap">
-              UNECO RAIL
-            </span>
+            <div className="flex items-center justify-between flex-1 min-w-0">
+              <div className="flex flex-col">
+                <span className="font-bold text-xl tracking-tight whitespace-nowrap text-white leading-none mb-0.5">
+                  유네코레일(주)
+                </span>
+                <span className="text-xs text-gray-400 font-medium leading-none">
+                  전기제어파트
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsPinned(!isPinned)}
+                className="h-6 w-6 text-gray-400 hover:text-white hover:bg-white/10 ml-1"
+                title={isPinned ? "자동 숨김 켜기" : "고정하기"}
+              >
+                {isPinned ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -79,25 +152,74 @@ export default function Sidebar() {
       <nav className="flex-1 py-6 px-2 space-y-1 overflow-y-auto">
         {filteredItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href
+          const isActive = pathname === item.href || (item.subItems && pathname.startsWith(item.href))
+          const isExpanded = expandedItems.includes(item.key)
           
           return (
-            <Button
-              key={item.href}
-              variant="ghost"
-              onClick={() => router.push(item.href)}
-              className={cn(
-                "w-full justify-start h-10 mb-1",
-                isActive 
-                  ? "bg-[#7b68ee] text-white hover:bg-[#6a5acd] hover:text-white" 
-                  : "text-gray-400 hover:text-white hover:bg-white/10",
-                isCollapsed ? "px-2 justify-center" : "px-3"
+            <div key={item.key}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (item.subItems && !isCollapsed) {
+                    toggleExpand(item.key)
+                  }
+                  router.push(item.href)
+                }}
+                className={cn(
+                  "w-full justify-start h-10 mb-1",
+                  isActive 
+                    ? "bg-[#7b68ee] text-white hover:bg-[#6a5acd] hover:text-white" 
+                    : "text-gray-400 hover:text-white hover:bg-white/10",
+                  isCollapsed ? "px-2 justify-center" : "px-3"
+                )}
+                title={isCollapsed ? item.name : undefined}
+              >
+                <Icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                {!isCollapsed && (
+                  <div className="flex-1 flex items-center justify-between">
+                    <span>{item.name}</span>
+                    {item.subItems && (
+                      <ChevronRight className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-90")} />
+                    )}
+                  </div>
+                )}
+              </Button>
+
+              {/* Subitems */}
+              {!isCollapsed && item.subItems && isExpanded && (
+                <div className="ml-9 space-y-1 mt-1">
+                  {item.subItems
+                    .filter((subItem) => {
+                      const level = user?.level || '1'
+                      const isAdmin = level.toLowerCase() === 'administrator'
+                      
+                      // 통계는 레벨 5만
+                      if (subItem.href === '/work-diary/advanced-stats') {
+                        return level === '5' || isAdmin
+                      }
+                      return true
+                    })
+                    .map((subItem) => {
+                      const isSubActive = pathname === subItem.href
+                      return (
+                        <Button
+                          key={subItem.href}
+                          variant="ghost"
+                          onClick={() => router.push(subItem.href)}
+                          className={cn(
+                            "w-full justify-start h-8 text-sm",
+                            isSubActive
+                              ? "text-white font-medium"
+                              : "text-gray-500 hover:text-gray-300"
+                          )}
+                        >
+                          {subItem.name}
+                        </Button>
+                      )
+                    })}
+                </div>
               )}
-              title={isCollapsed ? item.name : undefined}
-            >
-              <Icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
-              {!isCollapsed && <span>{item.name}</span>}
-            </Button>
+            </div>
           )
         })}
       </nav>
@@ -110,8 +232,12 @@ export default function Sidebar() {
           </div>
           {!isCollapsed && (
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium truncate">{user?.name}</p>
-              <p className="text-xs text-gray-500 truncate">Level {user?.level}</p>
+              <p className="text-sm font-medium truncate">
+                {user?.name} {user?.position}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {user?.department === '전기팀' ? '기술부 전기팀' : (user?.department || `Level ${user?.level}`)}
+              </p>
             </div>
           )}
           {!isCollapsed && (
@@ -128,15 +254,7 @@ export default function Sidebar() {
         </div>
       </div>
       
-      {/* Collapse Toggle */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="absolute -right-3 top-20 bg-[#1c1c1c] border border-gray-700 rounded-full w-6 h-6 p-0 hover:bg-gray-800 text-gray-400"
-        onClick={() => setIsCollapsed(!isCollapsed)}
-      >
-        {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
-      </Button>
+      {/* Collapse Toggle Removed */}
     </aside>
   )
 }

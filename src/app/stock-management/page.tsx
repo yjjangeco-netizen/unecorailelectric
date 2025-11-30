@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -35,20 +35,18 @@ import {
   XCircle,
   Package,
   Trash2,
-  Edit
+  Edit,
+  Printer
 } from "lucide-react"
 import StockStatistics from '@/components/stock/StockStatistics'
 import AuthGuard from '@/components/AuthGuard'
 import DisposalModal from '@/components/DisposalModal'
 import StockInModal from '@/components/StockInModal'
 import StockOutModal from '@/components/StockOutModal'
+import DeleteConfirmationModal from '@/components/DeleteConfirmationModal'
+import ClosingModal from '@/components/ClosingModal'
 
-interface FilterOptions {
-  category: string
-  status: string
-  location: string
-  supplier: string
-}
+
 
 export interface StockItem {
   id: string
@@ -75,13 +73,6 @@ export default function StockManagementPage() {
   const router = useRouter()
   // Force recompile check
   const { user, loading: authLoading, isAuthenticated, logout } = useUser()
-  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
-    category: '',
-    status: '',
-    location: '',
-    supplier: ''
-  })
-  const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<string>('name')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedItems, setSelectedItems] = useState<string[]>([])
@@ -94,19 +85,22 @@ export default function StockManagementPage() {
   const [stockInModalOpen, setStockInModalOpen] = useState(false)
   const [stockOutModalOpen, setStockOutModalOpen] = useState(false)
   const [disposalModalOpen, setDisposalModalOpen] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [closingModalOpen, setClosingModalOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingItem, setEditingItem] = useState<StockItem | null>(null)
 
-  // 인증 상태 확인 및 리다이렉트
+  // Check auth status and redirect
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/')
     }
   }, [authLoading, isAuthenticated, router])
 
-  // 실제 데이터베이스에서 재고 데이터 로드
+  // Load stock data from DB
   useEffect(() => {
-    if (!isAuthenticated) return // 인증되지 않은 경우 데이터 로드하지 않음
+    if (!isAuthenticated) return
 
     const loadStockData = async () => {
       setIsLoading(true)
@@ -117,7 +111,7 @@ export default function StockManagementPage() {
           .order('created_at', { ascending: false })
 
         if (error) {
-          console.error('재고 데이터 로드 오류:', error)
+          console.error('Error loading stock data:', error)
           setStockItems([])
           setFilteredItems([])
           return
@@ -135,8 +129,8 @@ export default function StockManagementPage() {
             currentStock: item.current_quantity || item.total_qunty || 0,
             closingQuantity: item.closing_quantity || 0,
             status: item.stock_status || 'new',
-            category: item.category || '일반',
-            unit: '개',
+            category: item.category || 'General',
+            unit: 'ea',
             minStock: item.min_stock || 0,
             maxStock: item.max_stock || 100,
             supplier: item.maker || '',
@@ -145,16 +139,16 @@ export default function StockManagementPage() {
             notes: item.note || ''
           }))
 
-          console.log('DB에서 로드된 재고 데이터:', convertedData)
+          console.log('Loaded stock data:', convertedData)
           setStockItems(convertedData)
           setFilteredItems(convertedData)
         } else {
-          console.log('DB에 재고 데이터가 없음, 빈 목록 표시')
+          console.log('No stock data in DB')
           setStockItems([])
           setFilteredItems([])
         }
       } catch (error) {
-        console.error('재고 데이터 로드 중 예외 발생:', error)
+        console.error('Exception loading stock data:', error)
         setStockItems([])
         setFilteredItems([])
       } finally {
@@ -162,13 +156,13 @@ export default function StockManagementPage() {
       }
     }
 
-    // 마지막 마감일 로드
+    // Load last closing date
     const savedLastClosingDate = localStorage.getItem('lastClosingDate')
     if (savedLastClosingDate) {
       setLastClosingDate(savedLastClosingDate)
     } else {
       const today = new Date()
-      const formattedDate = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`
+      const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
       setLastClosingDate(formattedDate)
       localStorage.setItem('lastClosingDate', formattedDate)
     }
@@ -176,7 +170,7 @@ export default function StockManagementPage() {
     loadStockData()
   }, [isAuthenticated])
 
-  // 검색 및 필터링
+  // Search and Filter
   useEffect(() => {
     let filtered = stockItems
 
@@ -190,24 +184,7 @@ export default function StockManagementPage() {
       )
     }
 
-    if (filterOptions.category) {
-      filtered = filtered.filter(item => item.category === filterOptions.category)
-    }
 
-    if (filterOptions.status) {
-      filtered = filtered.filter(item =>
-        ['new', 'used-new', 'used-used', 'broken'].includes(item.status) &&
-        item.status === filterOptions.status
-      )
-    }
-
-    if (filterOptions.location) {
-      filtered = filtered.filter(item => item.location === filterOptions.location)
-    }
-
-    if (filterOptions.supplier) {
-      filtered = filtered.filter(item => item.supplier === filterOptions.supplier)
-    }
 
     filtered.sort((a, b) => {
       let aValue: any = a[sortBy as keyof StockItem]
@@ -226,11 +203,11 @@ export default function StockManagementPage() {
     })
 
     setFilteredItems(filtered)
-  }, [searchTerm, stockItems, filterOptions, sortBy, sortOrder])
+  }, [searchTerm, stockItems, sortBy, sortOrder])
 
-  // 데이터 새로고침 함수
+  // Refresh data
   const refreshStockData = useCallback(async () => {
-    console.log('재고 데이터 새로고침 시작')
+    console.log('Refreshing stock data')
     setIsLoading(true)
     try {
       const { data: stockData, error } = await supabase
@@ -239,7 +216,7 @@ export default function StockManagementPage() {
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('재고 데이터 새로고침 오류:', error)
+        console.error('Error refreshing data:', error)
         return
       }
 
@@ -255,8 +232,8 @@ export default function StockManagementPage() {
           currentStock: item.current_quantity || item.total_qunty || 0,
           closingQuantity: item.closing_quantity || 0,
           status: item.stock_status || 'new',
-          category: item.category || '일반',
-          unit: '개',
+          category: item.category || 'General',
+          unit: 'ea',
           minStock: item.min_stock || 0,
           maxStock: item.max_stock || 100,
           supplier: item.maker || '',
@@ -265,17 +242,17 @@ export default function StockManagementPage() {
           notes: item.note || ''
         }))
 
-        console.log('새로고침된 재고 데이터:', convertedData)
+        console.log('Refreshed data:', convertedData)
         setStockItems(convertedData)
       }
     } catch (error) {
-      console.error('재고 데이터 새로고침 중 예외 발생:', error)
+      console.error('Exception refreshing data:', error)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  // 이벤트 핸들러들
+  // Event Handlers
   const handleSort = useCallback((field: string) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
@@ -314,35 +291,73 @@ export default function StockManagementPage() {
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedItems.length === 0) return
+    setDeleteModalOpen(true)
+  }
 
-    if (confirm(`선택된 ${selectedItems.length}개 품목을 삭제하시겠습니까?`)) {
-      setIsLoading(true)
-      try {
-        // 데이터베이스에서 실제 삭제
-        const { error } = await supabase
-          .from('items')
-          .delete()
-          .in('id', selectedItems)
+  const confirmDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('items')
+        .delete()
+        .in('id', selectedItems)
 
-        if (error) {
-          console.error('삭제 오류:', error)
-          alert(`삭제 중 오류가 발생했습니다: ${error.message}`)
-          return
-        }
-
-        // 로컬 상태 업데이트
-        setStockItems(prev => prev.filter(item => !selectedItems.includes(item.id)))
-        setSelectedItems([])
-
-        alert(`${selectedItems.length}개 품목이 성공적으로 삭제되었습니다.`)
-      } catch (error) {
-        console.error('삭제 처리 오류:', error)
-        alert('삭제 처리 중 오류가 발생했습니다.')
-      } finally {
-        setIsLoading(false)
+      if (error) {
+        console.error('Delete error:', error)
+        alert(`Error deleting: ${error.message}`)
+        return
       }
+
+      setStockItems(prev => prev.filter(item => !selectedItems.includes(item.id)))
+      setSelectedItems([])
+      setDeleteModalOpen(false)
+
+      // alert(`${selectedItems.length} items deleted successfully.`)
+    } catch (error) {
+      console.error('Delete exception:', error)
+      alert('Exception during delete.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleStockOutSave = async (data: any) => {
+    setIsLoading(true)
+    try {
+      const promises = selectedItems.map(async (itemId) => {
+        const response = await fetch('/api/stock/transaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'out',
+            itemId: itemId,
+            quantity: data.requestQuantity,
+            reason: data.project || 'Stock Out',
+            note: data.notes,
+            userLevel: userLevel // Pass userLevel
+          })
+        })
+        
+        if (!response.ok) {
+           const err = await response.json()
+           throw new Error(err.error || 'Failed to stock out')
+        }
+        return response.json()
+      })
+
+      await Promise.all(promises)
+      
+      alert('Stock out processed successfully')
+      setStockOutModalOpen(false)
+      setSelectedItems([])
+      refreshStockData()
+    } catch (error) {
+      console.error('Stock out error:', error)
+      alert(`Error processing stock out: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -352,86 +367,82 @@ export default function StockManagementPage() {
     setStockInModalOpen(true)
   }
 
-  const handleClosing = async () => {
-    const confirmMessage = `전체 재고를 마감 처리하시겠습니까?\n\n마감 후:\n- 모든 품목의 현재 재고가 마감 수량으로 설정됩니다\n- 모든 품목의 입고/출고 수량이 0으로 초기화됩니다\n- 마감 이력이 자동으로 저장됩니다\n\n이 작업은 되돌릴 수 없습니다.`
+  const handleClosing = () => {
+    setClosingModalOpen(true)
+  }
 
-    if (!confirm(confirmMessage)) {
-      return
-    }
-
+  const handleClosingSave = async (closingDate: string) => {
     setIsLoading(true)
     try {
-      // 1. 마감 이력 저장을 위한 API 호출
       const response = await fetch('/api/stock/closing-process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          closingDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD 형식
+          closingDate: closingDate,
           closedBy: user?.name || 'Unknown'
         })
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || '마감 처리 API 호출 실패')
+        throw new Error(errorData.error || 'Closing API failed')
       }
 
       const result = await response.json()
-      console.log('마감 처리 결과:', result)
+      console.log('Closing result:', result)
 
-      // 2. 로컬 상태 업데이트
       const today = new Date()
-      const formattedDate = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일 ${String(today.getHours()).padStart(2, '0')}시 ${String(today.getMinutes()).padStart(2, '0')}분`
+      const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} ${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`
       setLastClosingDate(formattedDate)
       localStorage.setItem('lastClosingDate', formattedDate)
 
-      // 3. 데이터 새로고침
       refreshStockData()
       setSelectedItems([])
+      setClosingModalOpen(false)
 
-      alert(`전체 ${result.processedItems || stockItems.length}개 품목의 마감 처리가 완료되었습니다.\n마감 이력이 저장되었습니다.`)
+      alert(`Closing processed for ${result.processedItems || stockItems.length} items.`)
     } catch (error) {
-      console.error('마감 처리 오류:', error)
-      alert(`마감 처리 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+      console.error('Closing error:', error)
+      alert(`Error processing closing: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // 유틸리티 함수들
+  // Utilities
+  // Utilities
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'text-green-600 bg-green-100'
-      case 'used-new': return 'text-blue-600 bg-blue-100'
-      case 'used-used': return 'text-yellow-600 bg-yellow-100'
-      case 'broken': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
+      case 'new': return 'text-emerald-700 bg-emerald-50 border border-emerald-100'
+      case 'used-new': return 'text-blue-700 bg-blue-50 border border-blue-100'
+      case 'used-used': return 'text-amber-700 bg-amber-50 border border-amber-100'
+      case 'broken': return 'text-rose-700 bg-rose-50 border border-rose-100'
+      default: return 'text-slate-600 bg-slate-50 border border-slate-100'
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'new': return '신품'
-      case 'used-new': return '중고-신품급'
-      case 'used-used': return '중고-사용급'
-      case 'broken': return '불량'
-      default: return '알 수 없음'
+      case 'new': return 'New'
+      case 'used-new': return 'Used (New)'
+      case 'used-used': return 'Used'
+      case 'broken': return 'Broken'
+      default: return 'Unknown'
     }
   }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'new': return <CheckCircle className="h-4 w-4" />
-      case 'used-new': return <Package className="h-4 w-4" />
-      case 'used-used': return <AlertTriangle className="h-4 w-4" />
-      case 'broken': return <XCircle className="h-4 w-4" />
+      case 'new': return <CheckCircle className="h-3.5 w-3.5" />
+      case 'used-new': return <Package className="h-3.5 w-3.5" />
+      case 'used-used': return <AlertTriangle className="h-3.5 w-3.5" />
+      case 'broken': return <XCircle className="h-3.5 w-3.5" />
       default: return null
     }
   }
 
-  // 통계 데이터 계산
   const statistics = {
     totalItems: stockItems.length,
     totalQuantity: stockItems.reduce((sum, item) => sum + item.currentStock, 0),
@@ -439,327 +450,273 @@ export default function StockManagementPage() {
     totalValue: stockItems.reduce((sum, item) => sum + (item.currentStock * 10000), 0)
   }
 
-  // 고유 값들 추출
   const categories = Array.from(new Set(stockItems.map(item => item.category)))
   const locations = Array.from(new Set(stockItems.map(item => item.location)))
   const suppliers = Array.from(new Set(stockItems.map(item => item.supplier)))
 
-  // 로딩 중이거나 인증되지 않은 경우 로딩 화면 표시
   if (authLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
   }
 
-  // 사용자 레벨 확인
   const userLevel = String(user?.level || '1')
-  const isLevel1 = userLevel === '1'
-  const isLevel2 = userLevel === '2'
-  const isLevel3 = userLevel === '3'
-  const isLevel4 = userLevel === '4'
-  const isLevel5 = userLevel === '5'
+  const levelNum = parseInt(userLevel) || 1
   const isAdmin = userLevel?.toLowerCase() === 'administrator' || userLevel === 'admin'
 
-  // 권한 설정 (User Request)
-  // level1(전체) : 재고 검색만 가능
-  // level2(사원) : 재고 검색만 가능
-  // level3(CS) : 재고 검색만 가능
-  // level4(전기팀) : 재고 검색 및 출고가능
-  // level5(부서장) : 재고 검색, 출고, 폐기 가능
-  // admin(관리자) : 전체 권한
+  // 레벨별 재고관리 권한
+  // LEVEL1 - 조회만
+  // LEVEL2 - 조회, 입고, 출고
+  // LEVEL3 - 조회, 입고, 출고
+  // LEVEL4 - 조회, 입고, 출고
+  // LEVEL5 - 조회, 입고, 출고, 삭제
+  // ADMIN - 전체
+  
+  // 개별 권한이 명시적으로 true면 허용, 아니면 레벨 기반으로 판단
+  const canStockIn = user?.stock_in === true || (levelNum >= 2 || isAdmin)
+  const canStockOut = user?.stock_out === true || (levelNum >= 2 || isAdmin)
+  const canDisposal = user?.stock_disposal === true || (levelNum >= 5 || isAdmin)
+  
+  // Advanced permissions
+  const canDelete = levelNum >= 5 || isAdmin
+  const canClosing = levelNum >= 5 || isAdmin
+  const canEdit = levelNum >= 5 || isAdmin
+  
+  // Report viewing permission - 레벨 4 이상 (개별 권한 무시)
+  const canReport = levelNum >= 4 || isAdmin
 
-  const canReadOnly = isLevel1 || isLevel2 || isLevel3
-  const canStockOut = isLevel4 || isLevel5 || isAdmin
-  const canDisposal = isLevel5 || isAdmin
-  const canStockIn = isAdmin
-  const canEdit = isAdmin
-  const canDelete = isAdmin
 
-  // 체크박스 선택 가능 여부 (출고나 폐기 권한이 있으면 선택 가능)
-  const canSelect = canStockOut || canDisposal
+
+  const canSelect = canStockIn || canStockOut || canDisposal
+
+
+  // Button classes
+  // Button classes
+  const stockOutClass = selectedItems.length === 0 
+    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
+    : 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm hover:shadow transition-all'
+  
+  const disposalClass = selectedItems.length === 0 
+    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' 
+    : 'bg-slate-700 hover:bg-slate-800 text-white shadow-sm hover:shadow transition-all'
+  
+  const deleteClass = selectedItems.length === 0 
+    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm hover:shadow transition-all opacity-50 cursor-not-allowed' 
+    : 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm hover:shadow transition-all'
 
   return (
-    <AuthGuard requiredLevel={1}>
-      <div className="min-h-screen bg-white">
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7]">
-        
-          <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-            <div className="max-w-[1600px] mx-auto space-y-6">
-              
-              {/* Statistics Cards */}
-              <StockStatistics {...statistics} userLevel={userLevel} />
+    <div className="min-h-screen bg-white">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7]">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="max-w-[1600px] mx-auto space-y-6">
+            
+            {/* Removed duplicate StockStatistics */}
 
-              {/* 재고 목록 헤더 */}
-              <div className="bg-white rounded-lg shadow mb-6">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <h2 className="text-lg font-semibold text-gray-900">전체 재고 현황</h2>
+            {/* Gradient Banner Header */}
 
-                  {/* 읽기 전용 메시지 표시 */}
-                  {canReadOnly && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <AlertTriangle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-blue-700 font-medium">읽기 전용 모드</span>
-                    </div>
+
+            {/* Statistics Cards - Full Width Row */}
+            <div className="mb-8">
+               <StockStatistics {...statistics} userLevel={userLevel} />
+            </div>
+
+            {/* Main Content: Stock List (Card Style) */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
+              <div className="px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Inventory Items</h2>
+                  <p className="text-gray-500 text-sm mt-1">Manage and track your stock items</p>
+                </div>
+              </div>
+
+              {/* Action Buttons & Search/Filter Row */}
+              <div className="px-8 py-4 bg-white border-b border-gray-100 flex flex-col lg:flex-row items-center justify-between gap-4">
+                {/* Left: Action Buttons */}
+                <div className="flex flex-wrap gap-3 w-full lg:w-auto">
+                  {canStockIn && (
+                    <Button
+                      onClick={() => {
+                        setEditingItem(null)
+                        setIsEditMode(false)
+                        setStockInModalOpen(true)
+                      }}
+                      className="h-10 px-4 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 rounded-xl transition-all"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Stock In
+                    </Button>
                   )}
 
-                  <div className="flex gap-3 items-center">
-                    {/* 입고 버튼 (Admin only) */}
-                    {canStockIn && (
-                      <Button
-                        onClick={() => {
-                          setEditingItem(null)
-                          setIsEditMode(false)
-                          setStockInModalOpen(true)
-                        }}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        📥 입고
-                      </Button>
-                    )}
+                  {canStockOut && (
+                    <Button
+                      onClick={() => setStockOutModalOpen(true)}
+                      disabled={selectedItems.length === 0}
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                        selectedItems.length === 0 
+                          ? 'bg-gray-100 text-gray-400' 
+                          : 'bg-violet-500 hover:bg-violet-600 text-white shadow-violet-200'
+                      }`}
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      Stock Out
+                    </Button>
+                  )}
 
-                    {/* 출고 버튼 (Level 4+) */}
-                    {canStockOut && (
-                      <Button
-                        onClick={() => setStockOutModalOpen(true)}
-                        disabled={selectedItems.length === 0}
-                        className={`${selectedItems.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                      >
-                        📤 출고
-                      </Button>
-                    )}
+                  {canDisposal && (
+                    <Button
+                      onClick={() => setDisposalModalOpen(true)}
+                      disabled={selectedItems.length === 0}
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                        selectedItems.length === 0 
+                          ? 'bg-gray-100 text-gray-400' 
+                          : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Disposal
+                    </Button>
+                  )}
+                  
+                  {canDelete && (
+                    <Button
+                      onClick={handleBulkDelete}
+                      disabled={selectedItems.length === 0}
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                        selectedItems.length === 0 
+                          ? 'bg-gray-100 text-gray-400' 
+                          : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  )}
 
-                    {/* 폐기 버튼 (Level 5+) */}
-                    {canDisposal && (
-                      <Button
-                        onClick={() => setDisposalModalOpen(true)}
-                        disabled={selectedItems.length === 0}
-                        className={`${selectedItems.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-700 hover:bg-gray-800'}`}
-                      >
-                        🗑️ 폐기
-                      </Button>
-                    )}
+                  {isAdmin && (
+                    <Button
+                      onClick={handleClosing}
+                      className="h-10 px-4 text-sm font-semibold bg-gray-800 hover:bg-gray-900 text-white shadow-md shadow-gray-300 rounded-xl transition-all"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Closing
+                    </Button>
+                  )}
 
-                    {/* 마감 버튼 (Admin only) */}
-                    {isAdmin && (
-                      <Button
-                        onClick={handleClosing}
-                        className="bg-yellow-600 hover:bg-yellow-700"
-                      >
-                        📅 마감
-                      </Button>
-                    )}
-
-                    {/* 삭제 버튼 (Admin only) */}
-                    {canDelete && (
-                      <Button
-                        onClick={handleBulkDelete}
-                        disabled={selectedItems.length === 0}
-                        className={`${selectedItems.length === 0 ? 'bg-red-600 hover:bg-red-700'}`}
-                      >
-                        ❌ 삭제
-                      </Button>
-                    )}
-                  </div>
+                  {canReport && (
+                    <Button
+                      onClick={() => window.open('/stock-management/history', '_blank')}
+                      className="h-10 px-4 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-300 rounded-xl transition-all"
+                    >
+                      <Printer className="w-4 h-4 mr-2" />
+                      입출고리스트
+                    </Button>
+                  )}
                 </div>
 
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="text"
-                      placeholder="품목명, 규격, 위치, 카테고리, 공급업체로 검색..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <Button
-                    onClick={() => { }}
-                    className="bg-blue-600 hover:bg-blue-700 px-6"
-                  >
-                    검색
-                  </Button>
-                  <Button
-                    onClick={refreshStockData}
-                    className="bg-gray-600 hover:bg-gray-700 px-4"
-                    disabled={isLoading}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                  </Button>
+                {/* Right: Search & Filters */}
+                <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto items-center">
+                   <div className="relative w-full sm:w-64">
+                     <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                     <Input 
+                       placeholder="Search..." 
+                       value={searchTerm}
+                       onChange={(e) => setSearchTerm(e.target.value)}
+                       className="pl-10 bg-white border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                     />
+                   </div>
+
                 </div>
               </div>
-            </div>
 
-            {/* 마지막 마감일 표시 */}
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-              <div className="flex items-center justify-end">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-800">마지막 마감일:</span>
-                  <span className="text-sm text-gray-600">{lastClosingDate || '없음'}</span>
-                </div>
-              </div>
-            </div>
 
-            {/* 액션 바 - 선택 가능할 때만 표시 */}
-            {canSelect && (
-              <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {selectedItems.length > 0 && (
-                      <span className="text-sm text-gray-600">
-                        {selectedItems.length}개 선택됨
-                      </span>
-                    )}
-                  </div>
 
-                  <div className="flex gap-2">
-                    {/* 선택 삭제 버튼 (Admin only) */}
-                    {selectedItems.length > 0 && canDelete && (
-                      <Button
-                        onClick={handleBulkDelete}
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 border-red-300 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        선택 삭제
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 테이블 헤더 및 본문 스크롤 컨테이너 */}
-            {/* ClickUp-style Table Container */}
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-200px)]">
-              {/* Toolbar / Filter Bar Placeholder (Optional) */}
-              <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2 bg-white">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">List View</div>
-                {/* Add more toolbar items here if needed */}
-              </div>
-
-              <div className="flex-1 overflow-auto">
+              <div className="overflow-hidden">
                 <Table>
-                  <TableHeader className="sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm shadow-sm">
-                    <TableRow className="hover:bg-transparent border-b border-gray-200">
-                      {/* Checkbox Column */}
-                      {canSelect && (
-                        <TableHead className="w-[40px] text-center p-0">
-                          <div className="flex items-center justify-center h-full">
-                            <Checkbox
-                              checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
-                              onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                              aria-label="Select all"
-                              className="data-[state=checked]:bg-[#7b68ee] data-[state=checked]:border-[#7b68ee]"
-                            />
-                          </div>
-                        </TableHead>
-                      )}
-                      
-                      {/* Columns with ClickUp-like styling */}
-                      <TableHead className="min-w-[200px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">품목</TableHead>
-                      <TableHead className="min-w-[150px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">규격</TableHead>
-                      <TableHead className="min-w-[120px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">카테고리</TableHead>
-                      <TableHead className="min-w-[120px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">공급업체</TableHead>
-                      <TableHead className="min-w-[100px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">위치</TableHead>
-                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">마감</TableHead>
-                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">입고</TableHead>
-                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">출고</TableHead>
-                      <TableHead className="min-w-[80px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">재고</TableHead>
-                      <TableHead className="min-w-[120px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">단가</TableHead>
-                      <TableHead className="min-w-[120px] text-right text-xs font-bold text-gray-500 uppercase tracking-wide h-10">총액</TableHead>
-                      <TableHead className="min-w-[100px] text-center text-xs font-bold text-gray-500 uppercase tracking-wide h-10">상태</TableHead>
-                      <TableHead className="min-w-[200px] text-xs font-bold text-gray-500 uppercase tracking-wide h-10">비고</TableHead>
-                      {canEdit && <TableHead className="w-[50px] text-center text-xs font-bold text-gray-500 uppercase tracking-wide h-10">수정</TableHead>}
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/50 hover:bg-gray-50/50 border-b border-gray-100">
+                      <TableHead className="w-[50px] py-4">
+                        <Checkbox 
+                          checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
+                          onCheckedChange={handleSelectAll}
+                          className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        />
+                      </TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('name')}>Product Info</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('category')}>Category</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('location')}>Location</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right cursor-pointer hover:text-gray-700" onClick={() => handleSort('currentStock')}>Stock</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('status')}>Status</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
                       <TableRow>
-                        <TableCell colSpan={canSelect ? 15 : 14} className="h-32 text-center">
-                          <div className="flex flex-col justify-center items-center gap-2">
-                            <RefreshCw className="h-6 w-6 animate-spin text-[#7b68ee]" />
-                            <span className="text-sm text-gray-500">Loading...</span>
+                        <TableCell colSpan={7} className="h-32 text-center text-gray-500">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+                            Loading data...
                           </div>
                         </TableCell>
                       </TableRow>
-                    ) : filteredItems.length > 0 ? (
+                    ) : filteredItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-32 text-center text-gray-500">
+                          No items found matching your criteria.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
                       filteredItems.map((item) => (
-                        <TableRow key={item.id} className="group hover:bg-[#f7f8fd] transition-colors duration-150 border-b border-gray-100 last:border-0">
-                          {canSelect && (
-                            <TableCell className="text-center p-0">
-                              <div className="flex items-center justify-center h-full">
-                                <Checkbox
-                                  checked={selectedItems.includes(item.id)}
-                                  onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
-                                  className="data-[state=checked]:bg-[#7b68ee] data-[state=checked]:border-[#7b68ee] opacity-0 group-hover:opacity-100 data-[state=checked]:opacity-100 transition-opacity"
-                                />
-                              </div>
-                            </TableCell>
-                          )}
-                          <TableCell className="font-medium text-gray-900 text-sm py-2">{item.name}</TableCell>
-                          <TableCell className="text-gray-600 text-sm py-2">{item.specification}</TableCell>
-                          <TableCell className="text-gray-600 text-sm py-2">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                        <TableRow key={item.id} className="hover:bg-blue-50/30 transition-colors border-b border-gray-50 last:border-0 group">
+                          <TableCell className="py-4">
+                            <Checkbox 
+                              checked={selectedItems.includes(item.id)}
+                              onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+                              className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                            />
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{item.name}</span>
+                              <span className="text-xs text-gray-500 mt-0.5">{item.specification}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
                               {item.category}
                             </span>
                           </TableCell>
-                          <TableCell className="text-gray-600 text-sm py-2">{item.supplier}</TableCell>
-                          <TableCell className="text-gray-600 text-sm py-2">{item.location}</TableCell>
-                          <TableCell className="text-right text-gray-500 text-sm py-2">{item.closingQuantity}</TableCell>
-                          <TableCell className="text-right text-green-600 text-sm py-2 font-medium">
-                            {item.inbound > 0 ? `+${item.inbound}` : '-'}
+                          <TableCell className="py-4 text-sm text-gray-600">{item.location}</TableCell>
+                          <TableCell className="py-4 text-right">
+                            <div className={`font-mono font-medium ${item.currentStock <= item.minStock ? "text-rose-600" : "text-gray-900"}`}>
+                              {item.currentStock.toLocaleString()}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-right text-red-500 text-sm py-2 font-medium">
-                            {item.outbound > 0 ? `-${item.outbound}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold text-gray-900 text-sm py-2">
-                            {item.currentStock}
-                          </TableCell>
-                          <TableCell className="text-right text-gray-600 text-sm py-2">{item.unitPrice.toLocaleString()}</TableCell>
-                          <TableCell className="text-right font-medium text-gray-900 text-sm py-2">{(item.currentStock * item.unitPrice).toLocaleString()}</TableCell>
-                          <TableCell className="text-center py-2">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item.status === 'active' ? 'bg-green-100 text-green-800' :
-                              item.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {getStatusText(item.status)}
+                          <TableCell className="py-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium shadow-sm ${getStatusColor(item.status)}`}>
+                              {getStatusIcon(item.status)}
+                              <span className="ml-1.5">{getStatusText(item.status)}</span>
                             </span>
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate text-gray-400 text-xs py-2">{item.notes}</TableCell>
-                          {canEdit && (
-                            <TableCell className="text-center py-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 w-6 p-0 hover:bg-gray-200 rounded text-gray-400 hover:text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                          <TableCell className="py-4 text-right">
+                            {canEdit && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
                                 onClick={() => handleEditItem(item)}
+                                className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
                               >
-                                <Edit className="h-3 w-3" />
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            </TableCell>
-                          )}
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={canSelect ? 15 : 14} className="h-48 text-center">
-                          <div className="flex flex-col items-center justify-center text-gray-400">
-                            <Package className="h-10 w-10 mb-2 opacity-20" />
-                            <p className="text-sm">No items found</p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -767,75 +724,57 @@ export default function StockManagementPage() {
             </div>
           </div>
         </div>
-
-        {/* 입고 모달 */}
-        <StockInModal
-          isOpen={stockInModalOpen}
-          onClose={handleStockInModalClose}
-          onSave={handleStockInModalSave}
-          isEditMode={isEditMode}
-          editItem={editingItem}
-        />
-
-        {/* 출고 모달 */}
-        <StockOutModal
-          isOpen={stockOutModalOpen}
-          onClose={() => setStockOutModalOpen(false)}
-          onSave={async (formData) => {
-            try {
-              for (const selectedItem of stockItems.filter(item => selectedItems.includes(item.id))) {
-                const currentStock = selectedItem.currentStock
-                const newStockOut = (selectedItem.outbound || 0) + formData.requestQuantity
-                const newCurrentQuantity = Math.max(currentStock - formData.requestQuantity, 0)
-
-                const { error: updateError } = await (supabase as any)
-                  .from('items')
-                  .update({
-                    current_quantity: newCurrentQuantity,
-                    stock_out: newStockOut,
-                    closing_quantity: newCurrentQuantity,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', selectedItem.id)
-
-                if (updateError) {
-                  console.error('출고 처리 오류:', updateError)
-                  alert(`출고 처리 중 오류가 발생했습니다: ${updateError.message}`)
-                  return
-                }
-              }
-
-              setStockOutModalOpen(false)
-              refreshStockData()
-              alert('출고 처리가 완료되었습니다.')
-            } catch (error) {
-              console.error('출고 처리 오류:', error)
-              alert('출고 처리 중 오류가 발생했습니다.')
-            }
-          }}
-          selectedItems={stockItems
-            .filter(item => selectedItems.includes(item.id))
-            .map(item => ({
-              id: item.id,
-              product: item.name,
-              spec: item.specification,
-              current_quantity: item.currentStock,
-              closing_quantity: item.currentStock,
-              unit_price: 10000,
-              location: item.location
-            }))}
-        />
-
-        {/* 폐기 모달 */}
-        <DisposalModal
-          isOpen={disposalModalOpen}
-          onClose={() => setDisposalModalOpen(false)}
-          selectedItems={selectedItems}
-          stockItems={stockItems}
-          onSuccess={refreshStockData}
-        />
       </div>
-      </div>
-    </AuthGuard>
+
+      {/* Modals */}
+      <StockInModal
+        isOpen={stockInModalOpen}
+        onClose={handleStockInModalClose}
+        onSave={handleStockInModalSave}
+        isEditMode={isEditMode}
+        editItem={editingItem}
+      />
+      
+      <StockOutModal
+        isOpen={stockOutModalOpen}
+        onClose={() => setStockOutModalOpen(false)}
+        onSave={handleStockOutSave}
+        selectedItems={stockItems.filter(item => selectedItems.includes(item.id)).map(item => ({
+          id: item.id,
+          product: item.name,
+          spec: item.specification,
+          current_quantity: item.currentStock,
+          closing_quantity: item.closingQuantity,
+          unit_price: item.unitPrice,
+          location: item.location
+        }))}
+      />
+
+      <DisposalModal
+        isOpen={disposalModalOpen}
+        onClose={() => setDisposalModalOpen(false)}
+        selectedItems={selectedItems}
+        stockItems={stockItems}
+        onSuccess={() => {
+          refreshStockData()
+          setSelectedItems([])
+        }}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        itemCount={selectedItems.length}
+        isDeleting={isDeleting}
+      />
+
+      <ClosingModal
+        isOpen={closingModalOpen}
+        onClose={() => setClosingModalOpen(false)}
+        onSave={handleClosingSave}
+        stockItems={stockItems}
+      />
+    </div>
   )
 }

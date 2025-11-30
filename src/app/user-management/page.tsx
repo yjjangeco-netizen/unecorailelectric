@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import AuthGuard from '@/components/AuthGuard'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import CommonHeader from '@/components/CommonHeader'
+
 import UserEditModal from '@/components/UserEditModal'
 import { Package, User, Plus, Edit, Trash2, Search, Globe, Shield, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import type { User as UserType, PositionType, DepartmentType, PermissionType } from '@/lib/types'
@@ -29,33 +29,36 @@ export default function UserManagementPage() {
   }>({ isValid: null, message: '' })
   const [showDomainModal, setShowDomainModal] = useState(false)
 
-  // 사용자 목록 로드
-  useEffect(() => {
-    loadUsers()
-    // 로그인 상태 확인 - user 키로 저장된 정보 사용
+  const getAuthHeaders = useCallback(() => {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
     const savedUser = localStorage.getItem('user')
     if (savedUser) {
       try {
         const userData = JSON.parse(savedUser)
-        console.log('사용자 관리 페이지 사용자 정보:', userData)
-        setCurrentUser({
-          id: userData.id || userData.username,
-          name: userData.name,
-          level: userData.level || '1'
-        })
-      } catch (error) {
-        console.error('사용자 정보 파싱 오류:', error)
+        if (userData.id || userData.username) {
+          headers['x-user-id'] = userData.id || userData.username
+        }
+        if (userData.level) {
+          headers['x-user-level'] = String(userData.level)
+        }
+      } catch (e) {
+        console.error('Error parsing user data', e)
       }
     }
+    return headers
   }, [])
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
       console.log('사용자 목록 로드 시작...')
 
-      const response = await fetch('/api/users')
+      const response = await fetch('/api/users', {
+        headers: getAuthHeaders()
+      })
       console.log('API 응답 상태:', response.status)
 
       if (!response.ok) {
@@ -76,7 +79,27 @@ export default function UserManagementPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getAuthHeaders])
+
+  // 사용자 목록 로드
+  useEffect(() => {
+    loadUsers()
+    // 로그인 상태 확인 - user 키로 저장된 정보 사용
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser)
+        console.log('사용자 관리 페이지 사용자 정보:', userData)
+        setCurrentUser({
+          id: userData.id || userData.username,
+          name: userData.name,
+          level: userData.level || '1'
+        })
+      } catch (error) {
+        console.error('사용자 정보 파싱 오류:', error)
+      }
+    }
+  }, [loadUsers])
 
   const handleEditUser = (user: UserType) => {
     setEditingUser(user)
@@ -88,6 +111,7 @@ export default function UserManagementPage() {
       try {
         const response = await fetch(`/api/users?id=${user.id}`, {
           method: 'DELETE',
+          headers: getAuthHeaders()
         })
 
         if (response.ok) {
@@ -157,16 +181,23 @@ export default function UserManagementPage() {
       // API 호출로 사용자 정보 업데이트
       const response = await fetch(`/api/users`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           id: updatedUser.id,
           name: updatedUser.name,
           department: updatedUser.department,
           position: updatedUser.position,
           level: updatedUser.level,
-          is_active: updatedUser.is_active
+          is_active: updatedUser.is_active,
+          stock_view: updatedUser.stock_view,
+          stock_in: updatedUser.stock_in,
+          stock_out: updatedUser.stock_out,
+          stock_disposal: updatedUser.stock_disposal,
+          work_tools: updatedUser.work_tools,
+          daily_log: updatedUser.daily_log,
+          work_manual: updatedUser.work_manual,
+          sop: updatedUser.sop,
+          user_management: updatedUser.user_management
         })
       })
 
@@ -195,52 +226,20 @@ export default function UserManagementPage() {
     }
   }
 
-  const handleAddTestUsers = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch('/api/add-test-users', {
-        method: 'POST'
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`테스트 사용자 추가 실패: ${errorText}`)
-      }
-
-      const data = await response.json()
-      console.log('테스트 사용자 추가 결과:', data)
-
-      // 목록 새로고침
-      await loadUsers()
-    } catch (error) {
-      console.error('테스트 사용자 추가 오류:', error)
-      setError(error instanceof Error ? error.message : '테스트 사용자 추가 실패')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // 검색 필터링
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.department?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (user.position?.toLowerCase() || '').includes(searchTerm.toLowerCase())
-  )
+  );
 
   return (
     <AuthGuard requiredLevel="5">
-      <div className="min-h-screen bg-gray-50">
-        <CommonHeader
-          currentUser={currentUser}
-          isAdmin={currentUser?.level === 'administrator' || currentUser?.level === '5'}
-          title="회원관리"
-          backUrl="/dashboard"
-        />
-
-        <div className="container mx-auto px-4 py-6">
+      <div className="min-h-screen bg-white">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7] min-h-screen">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-[1600px] mx-auto space-y-6">
           {/* 헤더 */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between">
@@ -275,12 +274,6 @@ export default function UserManagementPage() {
               </div>
               <Button variant="outline" onClick={loadUsers} className="mr-2">
                 새로고침
-              </Button>
-              <Button
-                onClick={handleAddTestUsers}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                테스트 사용자 추가
               </Button>
             </div>
           </div>
@@ -384,6 +377,8 @@ export default function UserManagementPage() {
             onSave={handleSaveUser}
           />
         )}
+          </div>
+        </div>
       </div>
     </AuthGuard>
   )

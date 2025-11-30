@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
 import AuthGuard from '@/components/AuthGuard'
-import CommonHeader from '@/components/CommonHeader'
+
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,7 +47,7 @@ export default function SettingsPage() {
     } else if (isAuthenticated) {
       console.log('설정 - 인증된 사용자, 페이지 표시')
     }
-  }, [authLoading, isAuthenticated, router])
+  }, [authLoading, isAuthenticated, router, user])
 
   if (authLoading) {
     return (
@@ -77,23 +77,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <AuthGuard requiredLevel={3}>
+    <AuthGuard requiredLevel={5}>
       <div className="min-h-screen bg-white">
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={user?.level === 'admin'}
-          title="설정"
-          backUrl="/"
-          onLogout={() => router.push('/login')}
-        />
-
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">설정</h1>
-            <p className="text-gray-600">
-              시스템 설정 및 관리 기능을 선택하세요.
-            </p>
-          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 회원관리 카드 */}

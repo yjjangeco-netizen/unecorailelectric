@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Clock, Search, X, Eye } from 'lucide-react'
 
@@ -34,7 +34,7 @@ export default function AuditLogModal({
   const [error, setError] = useState('')
 
   // 로그 조회
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true)
     setError('')
     
@@ -60,14 +60,14 @@ export default function AuditLogModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [itemId])
 
   // 모달이 열릴 때 로그 조회
   useEffect(() => {
     if (isOpen) {
       fetchLogs()
     }
-  }, [isOpen, itemId])
+  }, [isOpen, fetchLogs])
 
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('ko-KR', {

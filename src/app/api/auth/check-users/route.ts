@@ -7,8 +7,8 @@ export async function GET(_request: NextRequest) {
   try {
     console.log('=== 사용자 목록 확인 ===')
     
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
 
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json(
@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest) {
     // 사용자 목록 조회 (비밀번호 제외)
     const { data, error } = await supabase
       .from('users')
-      .select('id, username, first_name, last_name, level, department, position')
+      .select('id, username, name, level, department, position')
       .order('username')
 
     if (error) {

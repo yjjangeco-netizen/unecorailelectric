@@ -18,7 +18,7 @@ export class UserService {
       if (!response.ok) {
         const errorData = await response.json();
         console.log('로그인 실패:', errorData);
-        throw new Error(errorData.error || '로그인에 실패했습니다');
+        throw new Error(`[${response.status}] ${errorData.error || '로그인에 실패했습니다'}`);
       }
 
       const { user } = await response.json();

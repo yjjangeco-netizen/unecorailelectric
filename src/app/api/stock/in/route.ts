@@ -112,6 +112,31 @@ export async function POST(request: NextRequest) {
         }
       )
 
+      // History Logging (stock_history)
+      try {
+        const { error: historyError } = await supabase
+          .from('stock_history')
+          .insert({
+            item_id: result.item_id,
+            item_name: result.item_name || validatedData.name,
+            type: 'in',
+            quantity: validatedData.quantity,
+            previous_quantity: (result.new_quantity || 0) - validatedData.quantity,
+            new_quantity: result.new_quantity,
+            reason: validatedData.reason,
+            note: validatedData.note,
+            location: validatedData.location,
+            user_level: '1', // Default to 1 as we don't have level in token yet, or need to fetch user
+            created_at: new Date().toISOString()
+          })
+        
+        if (historyError) {
+          console.error('Failed to log stock history:', historyError)
+        }
+      } catch (hErr) {
+        console.error('Exception logging history:', hErr)
+      }
+
       return NextResponse.json({
         ok: true,
         data: {

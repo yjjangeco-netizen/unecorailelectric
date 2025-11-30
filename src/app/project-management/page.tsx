@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import CommonHeader from '@/components/CommonHeader'
+
 import ProjectDetailModal from '@/components/ProjectDetailModal'
 import SpecificationGenerator from '@/components/SpecificationGenerator'
 import type { Project } from '@/lib/types'
@@ -164,33 +164,6 @@ const getUpdatedProjectName = (project: Project) => {
   return '미지정 현장'
 }
 
-// 프로젝트 상태 표시 함수
-const getProjectStatusDisplay = (project: Project) => {
-  if (project.ProjectStatus === 'Warranty' && project.completion_date && project.warranty_period) {
-    return `하자보증중 (~${project.warranty_period})`
-  }
-
-  const statusMap: { [key: string]: string } = {
-    'Manufacturing': '제작중',
-    'Demolished': '철거',
-    'Warranty': '하자보증중',
-    'WarrantyComplete': '하자보증완료'
-  }
-
-  // 프로젝트명에 '철거'가 포함된 경우 철거로 표시 (데이터베이스 상태보다 우선)
-  const projectName = getUpdatedProjectName(project)
-  if (projectName.includes('철거')) {
-    return '철거'
-  }
-
-  // 데이터베이스 상태 반영
-  if (project.ProjectStatus && statusMap[project.ProjectStatus]) {
-    return statusMap[project.ProjectStatus]
-  }
-
-  return '제작중'
-}
-
 export default function ProjectManagementPage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
@@ -208,7 +181,7 @@ export default function ProjectManagementPage() {
   const [showDemolishedProjects, setShowDemolishedProjects] = useState(false)
   const [showLatheProjects, setShowLatheProjects] = useState(true)
   const [showGrindingProjects, setShowGrindingProjects] = useState(true)
-  const [statusFilters, setStatusFilters] = useState<string[]>(['Manufacturing', 'Demolished', 'Warranty', 'WarrantyComplete']) // 상태 필터 (체크박스)
+  const [statusFilters, setStatusFilters] = useState<string[]>([]) // 상태 필터 (체크박스) - 기본값 전체 표시
   const [sortBy, setSortBy] = useState('project_number') // 정렬 기준
   const [sortOrder, setSortOrder] = useState('asc') // 정렬 순서
 
@@ -223,11 +196,7 @@ export default function ProjectManagementPage() {
   })
 
   // 인증 상태 확인
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/')
-    }
-  }, [authLoading, isAuthenticated, router])
+
 
   // Level5 이상 권한 확인 (주석 처리 - 모든 사용자 접근 허용)
   // useEffect(() => {
@@ -329,12 +298,6 @@ export default function ProjectManagementPage() {
       } else if (sortBy === 'name') {
         aValue = getUpdatedProjectName(a)
         bValue = getUpdatedProjectName(b)
-        return sortOrder === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      } else if (sortBy === 'status') {
-        aValue = getProjectStatusDisplay(a)
-        bValue = getProjectStatusDisplay(b)
         return sortOrder === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue)
@@ -546,67 +509,8 @@ export default function ProjectManagementPage() {
     }
   }
 
-  // 프로젝트 상태 표시 함수
-  const getProjectStatusDisplay = (project: Project) => {
-    if (project.ProjectStatus === 'Warranty' && project.completion_date && project.warranty_period) {
-      return `하자보증중 (~${project.warranty_period})`
-    }
-
-    const statusMap: { [key: string]: string } = {
-      'Manufacturing': '제작중',
-      'Demolished': '철거',
-      'Warranty': '하자보증중',
-      'WarrantyComplete': '하자보증완료'
-    }
-
-    // 프로젝트명에 '철거'가 포함된 경우 철거로 표시 (데이터베이스 상태보다 우선)
-    const projectName = getUpdatedProjectName(project)
-    if (projectName.includes('철거')) {
-      return '철거'
-    }
-
-    // 데이터베이스 상태 반영
-    if (project.ProjectStatus && statusMap[project.ProjectStatus]) {
-      return statusMap[project.ProjectStatus]
-    }
-
-    return '제작중'
-  }
-
-  // 프로젝트 상태 변경 핸들러
-  const handleStatusChange = async (projectId: string, newStatus: string) => {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus })
-      })
-
-      if (!response.ok) {
-        throw new Error('상태 변경 실패')
-      }
-
-      // 성공 시 목록 다시 로드
-      await loadProjects()
-    } catch (error) {
-      console.error('상태 변경 실패:', error)
-      alert('상태 변경에 실패했습니다.')
-    }
-  }
 
 
-  if (authLoading || !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    )
-  }
 
   // Level5 미만 사용자는 접근 불가 (주석 처리 - 모든 사용자 접근 허용)
   // if (user?.level !== '5' && user?.level !== 'administrator') {
@@ -616,13 +520,7 @@ export default function ProjectManagementPage() {
   return (
     <AuthGuard requiredLevel={3}>
       <div className="min-h-screen bg-white">
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={user?.level === 'administrator'}
-          title="프로젝트 관리"
-          backUrl="/settings"
-          onLogout={() => router.push('/login')}
-        />
+
 
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 헤더 */}
@@ -797,28 +695,6 @@ export default function ProjectManagementPage() {
 
                 {/* 프로젝트 필터 및 정렬 컨트롤 */}
                 <div className="flex items-center space-x-4 flex-wrap">
-                  {/* 상태 필터 (체크박스) */}
-                  <div className="flex items-center space-x-4">
-                    <Label className="text-sm text-slate-700 font-medium">상태:</Label>
-                    <div className="flex space-x-3">
-                      {[
-                        { value: 'Manufacturing', label: '제작중' },
-                        { value: 'Demolished', label: '철거' },
-                        { value: 'Warranty', label: '하자보증중' },
-                        { value: 'WarrantyComplete', label: '하자보증완료' }
-                      ].map((status) => (
-                        <label key={status.value} className="flex items-center space-x-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={statusFilters.includes(status.value)}
-                            onChange={() => handleStatusFilterChange(status.value)}
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-slate-700">{status.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
 
                   {/* 정렬 기준 */}
                   <div className="flex items-center space-x-2">
@@ -830,7 +706,6 @@ export default function ProjectManagementPage() {
                     >
                       <option value="project_number">프로젝트번호</option>
                       <option value="name">프로젝트명</option>
-                      <option value="status">상태</option>
                       <option value="assembly_date">조립완료일</option>
                       <option value="factory_test_date">공장시운전일</option>
                       <option value="site_test_date">현장시운전일</option>
@@ -973,24 +848,6 @@ export default function ProjectManagementPage() {
                         <th className="text-left p-3 font-semibold text-slate-800 w-28">
                           <button
                             onClick={() => {
-                              if (sortBy === 'status') {
-                                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-                              } else {
-                                setSortBy('status')
-                                setSortOrder('asc')
-                              }
-                            }}
-                            className="flex items-center space-x-1 hover:text-blue-600"
-                          >
-                            <span>상태</span>
-                            {sortBy === 'status' && (
-                              <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
-                            )}
-                          </button>
-                        </th>
-                        <th className="text-left p-3 font-semibold text-slate-800 w-28">
-                          <button
-                            onClick={() => {
                               if (sortBy === 'assembly_date') {
                                 setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
                               } else {
@@ -1068,25 +925,6 @@ export default function ProjectManagementPage() {
                         <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                           <td className="p-3 text-slate-600 text-sm font-mono">{project.project_number}</td>
                           <td className="p-3 text-slate-800 font-medium text-sm">{getUpdatedProjectName(project)}</td>
-                          <td className="p-3 text-slate-600 text-sm text-left">
-                            <select
-                              value={project.ProjectStatus}
-                              onChange={(e) => handleStatusChange(String(project.id), e.target.value)}
-                              className={`px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${project.ProjectStatus === 'Warranty' ? 'bg-blue-100 text-blue-800' :
-                                project.ProjectStatus === 'WarrantyComplete' ? 'bg-green-100 text-green-800' :
-                                  project.ProjectStatus === 'Demolished' ? 'bg-red-100 text-red-800' :
-                                    project.ProjectStatus === 'Manufacturing' ? 'bg-yellow-100 text-yellow-800' :
-                                      // 프로젝트명에 '철거'가 포함된 경우 빨간색으로 표시
-                                      getUpdatedProjectName(project).includes('철거') ? 'bg-red-100 text-red-800' :
-                                        'bg-gray-100 text-gray-800'
-                                }`}
-                            >
-                              <option value="Manufacturing">제작중</option>
-                              <option value="Demolished">철거</option>
-                              <option value="Warranty">하자보증중</option>
-                              <option value="WarrantyComplete">하자보증완료</option>
-                            </select>
-                          </td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.assembly_date ? formatDate(project.assembly_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.factory_test_date ? formatDate(project.factory_test_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.site_test_date ? formatDate(project.site_test_date) : '-'}</td>

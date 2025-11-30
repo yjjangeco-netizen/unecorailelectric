@@ -1,4 +1,5 @@
 'use client'
+// Login Page Component
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -6,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Building2, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Building2, Eye, EyeOff, ArrowRight, User, Lock, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('idle')
   const [saveId, setSaveId] = useState(false)
   const [savePassword, setSavePassword] = useState(false)
   
@@ -40,19 +42,16 @@ export default function LoginPage() {
     }
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const handleSubmit = async (e?: React.FormEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault()
     setError('')
+    setIsLoading(true)
+    setStatus('loading')
 
     try {
-      console.log('로그인 시도:', { username, password })
       const success = await login(username, password)
-      console.log('로그인 결과:', success)
-      console.log('현재 사용자 상태:', { user, isAuthenticated, authLoading })
       
       if (success) {
-        // ID/비밀번호 저장 처리
         if (saveId) {
           localStorage.setItem('savedUsername', username)
           localStorage.setItem('saveId', 'true')
@@ -68,24 +67,49 @@ export default function LoginPage() {
           localStorage.removeItem('savedPassword')
           localStorage.removeItem('savePassword')
         }
+
+
+        // Context가 업데이트되었으므로 바로 이동
+        console.log('로그인 성공, 레벨에 따라 페이지 이동')
+        setStatus('success')
         
-        console.log('대시보드로 이동 시도')
-        // 여러 방법으로 이동 시도
-        console.log('즉시 대시보드로 이동')
-        try {
-          router.push('/dashboard')
-          router.refresh()
-        } catch (e) {
-          console.log('router.push 실패, window.location 사용')
-          window.location.href = '/dashboard'
-        }
+        // 약간의 지연을 두고 사용자 정보가 확실히 저장된 후 이동
+        setTimeout(() => {
+          // 사용자 정보 가져오기
+          const storedUser = localStorage.getItem('user')
+          if (storedUser) {
+            const userData = JSON.parse(storedUser)
+            const userLevel = userData.level || '1'
+            
+            console.log('User level:', userLevel)
+            
+            // 레벨에 따라 다른 페이지로 이동
+            if (['1', '2'].includes(userLevel)) {
+              console.log('Redirecting to stock-management')
+              window.location.href = '/stock-management'
+            } else {
+              console.log('Redirecting to dashboard')
+              window.location.href = '/dashboard'
+            }
+          } else {
+            // 기본값: 재고관리
+            console.log('No user data, redirecting to stock-management')
+            window.location.href = '/stock-management'
+          }
+        }, 300)
+
+
+
+
       } else {
-        console.log('로그인 실패')
-        setError('로그인에 실패했습니다. 사용자명과 비밀번호를 확인해주세요.')
+        console.log('Login returned false')
+        setStatus('error')
+        setError('로그인 실패: 사용자명 또는 비밀번호를 확인해주세요.')
       }
     } catch (err) {
-      console.error('로그인 오류:', err)
-      setError(`로그인 중 오류가 발생했습니다: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
+      console.error('Login error', err)
+      setStatus('error')
+      setError(`로그인 오류: ${err instanceof Error ? err.message : '알 수 없는 오류'}`)
     } finally {
       setIsLoading(false)
     }
@@ -93,141 +117,150 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* 로고 섹션 */}
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Building2 className="h-10 w-10 text-white" />
+      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-blue-50 rounded-full opacity-50 blur-xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-purple-50 rounded-full opacity-50 blur-xl"></div>
+
+        <div className="text-center relative">
+          <div className="mx-auto h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg mb-6 transform rotate-3 hover:rotate-6 transition-transform duration-300">
+            <Building2 className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">유네코레일</h1>
-          <p className="text-gray-600">전기파트 업무 시스템</p>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">유네코레일</h2>
+          <p className="mt-2 text-sm text-gray-600 font-medium">전기팀 자재관리 시스템</p>
         </div>
 
-        {/* 로그인 폼 */}
-        <Card className="shadow-2xl border-0 rounded-2xl">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl font-bold text-gray-900">로그인</CardTitle>
-            <p className="text-gray-600">계정에 로그인하여 시작하세요</p>
-          </CardHeader>
+        <div className="space-y-6 relative">
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg animate-shake">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700 font-medium">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
           
-          <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 사용자명 입력 */}
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-semibold text-gray-700">
-                  사용자명
-                </Label>
-                <Input
+          <div className="space-y-5">
+            <div className="group">
+              <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                아이디
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
                   id="username"
+                  name="username"
                   type="text"
+                  required
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  placeholder="아이디를 입력하세요"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="사용자명을 입력하세요"
-                  className="h-12 px-4 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
-                  required
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                 />
               </div>
-
-              {/* 비밀번호 입력 */}
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
-                  비밀번호
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="비밀번호를 입력하세요"
-                    className="h-12 px-4 pr-12 text-lg border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* 저장 옵션 */}
-              <div className="flex items-center justify-between space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="saveId"
-                    checked={saveId}
-                    onCheckedChange={(checked) => setSaveId(checked as boolean)}
-                  />
-                  <Label htmlFor="saveId" className="text-sm text-gray-700 cursor-pointer">
-                    ID 저장
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="savePassword"
-                    checked={savePassword}
-                    onCheckedChange={(checked) => setSavePassword(checked as boolean)}
-                  />
-                  <Label htmlFor="savePassword" className="text-sm text-gray-700 cursor-pointer">
-                    비밀번호 저장
-                  </Label>
-                </div>
-              </div>
-
-              {/* 에러 메시지 */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                  {error}
-                </div>
-              )}
-
-              {/* 로그인 버튼 */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    로그인 중...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center">
-                    로그인
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </div>
-                )}
-              </Button>
-            </form>
-
-            {/* 회원가입 링크 */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                계정이 없으신가요?{' '}
-                <Link 
-                  href="/signup" 
-                  className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
-                >
-                  회원가입하기
-                </Link>
-              </p>
             </div>
 
-          </CardContent>
-        </Card>
+            <div className="group">
+              <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1 ml-1">
+                비밀번호
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  placeholder="비밀번호를 입력하세요"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+          </div>
 
-        {/* 하단 링크 */}
-        <div className="text-center mt-8">
-          <Link 
-            href="/" 
-            className="text-gray-600 hover:text-gray-800 transition-colors duration-200"
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center">
+              <input
+                id="save-id"
+                name="save-id"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors cursor-pointer"
+                checked={saveId}
+                onChange={(e) => setSaveId(e.target.checked)}
+              />
+              <label htmlFor="save-id" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
+                아이디 저장
+              </label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                id="save-password"
+                name="save-password"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors cursor-pointer"
+                checked={savePassword}
+                onChange={(e) => setSavePassword(e.target.checked)}
+              />
+              <label htmlFor="save-password" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
+                비밀번호 저장
+              </label>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
           >
-            ← 홈으로 돌아가기
-          </Link>
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                로그인 중...
+              </>
+            ) : status === 'success' ? (
+              'SUCCESS - REDIRECTING...'
+            ) : status === 'error' ? (
+              'FAILED - RETRY'
+            ) : (
+              '로그인'
+            )}
+          </Button>
+          
+          {/* 회원가입 링크 */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              계정이 없으신가요?{' '}
+              <Link 
+                href="/signup" 
+                className="text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200"
+              >
+                회원가입하기
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

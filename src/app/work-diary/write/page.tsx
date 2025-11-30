@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import CommonHeader from '@/components/CommonHeader'
+
 import {
   FileText,
   Plus,
@@ -254,366 +254,270 @@ export default function WorkDiaryWritePage() {
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
-        <div className="mb-8">
-          <div className="flex items-center mb-4">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/work-diary')}
-              className="mr-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              뒤로가기
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">업무일지 작성</h1>
-              <p className="text-gray-600">일일 업무 내용을 작성하고 등록합니다</p>
-            </div>
-          </div>
-        </div>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-sky-50 border-2 border-gray-400 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-blue-100 to-sky-100 rounded-t-lg border-b-2 border-gray-400">
-            <CardTitle className="flex items-center text-black font-bold">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-200 to-sky-200 rounded-full flex items-center justify-center mr-3">
-                <FileText className="h-5 w-5 text-blue-600" />
+
+        <Card className="bg-white border border-gray-200 shadow-sm">
+          <CardContent className="p-8 space-y-8">
+            {/* 상단: 날짜 및 시간 설정 */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">작업 날짜</Label>
+                <Input
+                  type="date"
+                  value={workDate}
+                  onChange={(e) => setWorkDate(e.target.value)}
+                  className="bg-white"
+                />
               </div>
-              업무일지 작성
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 날짜 선택 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-black font-bold">작업 날짜</Label>
-                <div className="relative mt-1">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600" />
-                  <Input
-                    id="workDate"
-                    type="date"
-                    value={workDate}
-                    onChange={(e) => setWorkDate(e.target.value)}
-                    className="pl-10 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">출근 시간</Label>
+                <Input
+                  type="time"
+                  value={dailyStartTime}
+                  onChange={(e) => setDailyStartTime(e.target.value)}
+                  className="bg-white"
+                />
               </div>
-              <div className="flex items-end">
-                <div className="text-sm text-black bg-gradient-to-r from-blue-100 to-sky-100 px-3 py-2 rounded-md w-full border-2 border-gray-400">
-                  <Clock className="h-4 w-4 inline mr-2" />
-                  오늘 날짜가 기본으로 설정됩니다
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">퇴근 시간</Label>
+                <Input
+                  type="time"
+                  value={dailyEndTime}
+                  onChange={(e) => setDailyEndTime(e.target.value)}
+                  className="bg-white"
+                />
               </div>
             </div>
 
-            {/* 출퇴근 시간 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-black font-bold">출근 시간</Label>
-                <div className="relative mt-1">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600" />
-                  <Input
-                    type="time"
-                    value={dailyStartTime}
-                    onChange={(e) => setDailyStartTime(e.target.value)}
-                    className="pl-10 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                    placeholder="09:00"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-black font-bold">퇴근 시간</Label>
-                <div className="relative mt-1">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-600" />
-                  <Input
-                    type="time"
-                    value={dailyEndTime}
-                    onChange={(e) => setDailyEndTime(e.target.value)}
-                    className="pl-10 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                    placeholder="18:00"
-                  />
-                </div>
-              </div>
-            </div>
-
+            <div className="border-t border-gray-100 my-6"></div>
 
             {/* 업무 내용 입력 */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-black flex items-center">
-                <div className="w-6 h-6 bg-gradient-to-br from-blue-200 to-sky-200 rounded-full flex items-center justify-center mr-2">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                </div>
-                업무 내용
-              </h3>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">업무 내용</h3>
+                <span className="text-sm text-gray-500">총 {workEntries.length}건의 업무</span>
+              </div>
+              
               {workEntries.map((entry, index) => (
-                <div key={index} className="border-2 border-gray-400 rounded-lg p-4 space-y-4 bg-gradient-to-br from-white to-blue-50 shadow-md hover:shadow-lg transition-shadow">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-black flex items-center">
-                      <div className="w-6 h-6 bg-gradient-to-br from-blue-200 to-sky-200 rounded-full flex items-center justify-center mr-2 text-xs font-bold text-blue-700">
+                <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-b border-gray-200">
+                    <h4 className="font-semibold text-gray-700 flex items-center">
+                      <span className="bg-white border border-gray-200 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2 text-gray-600">
                         {index + 1}
-                      </div>
-                      업무 {index + 1}
+                      </span>
+                      업무 내용
                     </h4>
                     {workEntries.length > 1 && (
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => removeWorkEntry(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 border-2 border-red-400 hover:border-red-500"
+                        className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* 프로젝트 선택 */}
-                    <div>
-                      <Label className="text-black font-bold">프로젝트</Label>
-                      <div className="flex space-x-2 mt-1">
-                        {entry.projectId === 'other' ? (
-                          <Input
-                            value={entry.customProjectName}
-                            onChange={(e) => {
-                              const updated = [...workEntries]
-                              updated[index] = {
-                                ...updated[index],
-                                customProjectName: e.target.value,
-                                projectId: updated[index]?.projectId || '',
-                                workType: updated[index]?.workType || '',
-                                workSubType: updated[index]?.workSubType || '',
-                                workContent: updated[index]?.workContent || ''
-                              }
-                              setWorkEntries(updated)
-                            }}
-                            placeholder="프로젝트명을 입력하세요"
-                            className="flex-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                          />
-                        ) : (
-                          <Select
-                            value={entry.projectId}
-                            onValueChange={(value) => {
-                              const updated = [...workEntries]
-                              updated[index] = {
-                                ...updated[index],
-                                projectId: value,
-                                workType: '',
-                                workSubType: '',
-                                customProjectName: value === 'other' ? entry.customProjectName : '',
-                                workContent: updated[index]?.workContent || ''
-                              }
-                              setWorkEntries(updated)
-                            }}
-                          >
-                            <SelectTrigger className="flex-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black">
-                              <SelectValue placeholder="프로젝트를 선택하세요" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {projects.map((project) => (
-                                <SelectItem key={project.id} value={project.id.toString()}>
-                                  {project.name} ({project.project_number})
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="other">기타</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                        {entry.projectId !== 'other' && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openProjectSearch(index)}
-                            className="bg-blue-50 border-2 border-gray-400 hover:bg-blue-100 hover:border-gray-600"
-                          >
-                            <Search className="h-4 w-4 text-blue-600" />
-                          </Button>
-                        )}
+                  <div className="p-4 space-y-4 bg-white">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                      {/* 프로젝트 선택 (4/12) */}
+                      <div className="md:col-span-4 space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-500">프로젝트</Label>
+                        <div className="flex space-x-2">
+                          {entry.projectId === 'other' ? (
+                            <Input
+                              value={entry.customProjectName}
+                              onChange={(e) => {
+                                const updated = [...workEntries]
+                                updated[index] = {
+                                  ...updated[index],
+                                  customProjectName: e.target.value
+                                }
+                                setWorkEntries(updated)
+                              }}
+                              placeholder="프로젝트명 입력"
+                              className="bg-white h-9"
+                            />
+                          ) : (
+                            <Select
+                              value={entry.projectId}
+                              onValueChange={(value) => {
+                                const updated = [...workEntries]
+                                updated[index] = {
+                                  ...updated[index],
+                                  projectId: value,
+                                  workType: '',
+                                  workSubType: '',
+                                  customProjectName: value === 'other' ? entry.customProjectName : ''
+                                }
+                                setWorkEntries(updated)
+                              }}
+                            >
+                              <SelectTrigger className="bg-white h-9">
+                                <SelectValue placeholder="프로젝트 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {projects.map((project) => (
+                                  <SelectItem key={project.id} value={project.id.toString()}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="other">기타</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {entry.projectId !== 'other' && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => openProjectSearch(index)}
+                              className="shrink-0 h-9 w-9"
+                            >
+                              <Search className="h-4 w-4 text-gray-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 작업 유형 (2/12) */}
+                      <div className="md:col-span-2 space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-500">작업 유형</Label>
+                        {(() => {
+                          const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_number || '')
+                          
+                          if (workTypeOptions.workTypes.length > 0) {
+                            return (
+                              <Select
+                                value={entry.workType}
+                                onValueChange={(value) => {
+                                  const updated = [...workEntries]
+                                  updated[index] = { ...updated[index], workType: value, workSubType: '' }
+                                  setWorkEntries(updated)
+                                }}
+                              >
+                                <SelectTrigger className="bg-white h-9">
+                                  <SelectValue placeholder="선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {workTypeOptions.workTypes.map((type) => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          }
+                          return (
+                            <Input
+                              value={entry.workType}
+                              onChange={(e) => {
+                                const updated = [...workEntries]
+                                updated[index] = { ...updated[index], workType: e.target.value }
+                                setWorkEntries(updated)
+                              }}
+                              className="bg-white h-9"
+                            />
+                          )
+                        })()}
+                      </div>
+
+                      {/* 세부 유형 (2/12) */}
+                      <div className="md:col-span-2 space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-500">세부 유형</Label>
+                        {(() => {
+                          const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_number || '')
+                          
+                          if (workTypeOptions.workSubTypes.length > 0 && entry.workType) {
+                            return (
+                              <Select
+                                value={entry.workSubType}
+                                onValueChange={(value) => {
+                                  const updated = [...workEntries]
+                                  updated[index] = { ...updated[index], workSubType: value }
+                                  setWorkEntries(updated)
+                                }}
+                              >
+                                <SelectTrigger className="bg-white h-9">
+                                  <SelectValue placeholder="선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {workTypeOptions.workSubTypes.map((type) => (
+                                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )
+                          }
+                          return (
+                            <Input
+                              value={entry.workSubType}
+                              onChange={(e) => {
+                                const updated = [...workEntries]
+                                updated[index] = { ...updated[index], workSubType: e.target.value }
+                                setWorkEntries(updated)
+                              }}
+                              className="bg-white h-9"
+                            />
+                          )
+                        })()}
+                      </div>
+
+                      {/* 업무 내용 (4/12) */}
+                      <div className="md:col-span-4 space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-500">상세 내용</Label>
+                        <Textarea
+                          value={entry.workContent}
+                          onChange={(e) => {
+                            const updated = [...workEntries]
+                            updated[index] = { ...updated[index], workContent: e.target.value }
+                            setWorkEntries(updated)
+                          }}
+                          placeholder="업무 내용을 입력하세요 (엔터로 줄바꿈)"
+                          className="bg-white min-h-[38px] resize-y"
+                          rows={1}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = `${target.scrollHeight}px`;
+                          }}
+                        />
                       </div>
                     </div>
-
-                    {/* 작업 유형 선택 */}
-                    <div>
-                      <Label className="text-black font-bold">작업 유형</Label>
-                      {(() => {
-                        if (!entry.projectId || entry.projectId === '') {
-                          return (
-                            <Input
-                              id={`workType-${index}`}
-                              value={entry.workType}
-                              onChange={(e) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: e.target.value } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                              placeholder="작업 유형을 입력하세요"
-                              className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                            />
-                          )
-                        }
-
-                        const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                        const projectNumber = selectedProject?.project_number || ''
-                        const workTypeOptions = getWorkTypeOptions(projectNumber)
-
-                        if (workTypeOptions.workTypes.length > 0) {
-                          return (
-                            <Select
-                              value={entry.workType}
-                              onValueChange={(value) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: value, workSubType: '' } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                            >
-                              <SelectTrigger className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black">
-                                <SelectValue placeholder="작업 유형을 선택하세요" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {workTypeOptions.workTypes.map((type) => (
-                                  <SelectItem key={type} value={type}>
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )
-                        } else {
-                          return (
-                            <Input
-                              id={`workType-${index}`}
-                              value={entry.workType}
-                              onChange={(e) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workType: e.target.value } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                              placeholder="작업 유형을 입력하세요"
-                              className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                            />
-                          )
-                        }
-                      })()}
-                    </div>
-
-                    {/* 세부 유형 선택 */}
-                    <div>
-                      <Label className="text-black font-bold">세부 유형</Label>
-                      {(() => {
-                        if (!entry.projectId || entry.projectId === '') {
-                          return (
-                            <Input
-                              id={`workSubType-${index}`}
-                              value={entry.workSubType}
-                              onChange={(e) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: e.target.value } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                              placeholder="세부 유형을 입력하세요"
-                              className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                            />
-                          )
-                        }
-
-                        const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                        const projectNumber = selectedProject?.project_number || ''
-                        const workTypeOptions = getWorkTypeOptions(projectNumber)
-
-                        if (workTypeOptions.workSubTypes.length > 0 && entry.workType) {
-                          return (
-                            <Select
-                              value={entry.workSubType}
-                              onValueChange={(value) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: value } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                            >
-                              <SelectTrigger className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black">
-                                <SelectValue placeholder="세부 유형을 선택하세요" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {workTypeOptions.workSubTypes.map((subType) => (
-                                  <SelectItem key={subType} value={subType}>
-                                    {subType}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )
-                        } else {
-                          return (
-                            <Input
-                              id={`workSubType-${index}`}
-                              value={entry.workSubType}
-                              onChange={(e) => {
-                                const updated = [...workEntries]
-                                updated[index] = { ...updated[index], workSubType: e.target.value } as WorkEntry
-                                setWorkEntries(updated)
-                              }}
-                              placeholder="세부 유형을 입력하세요"
-                              className="mt-1 bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                            />
-                          )
-                        }
-                      })()}
-                    </div>
-                  </div>
-
-
-                  <div>
-                    <Label className="text-black font-bold">업무 내용</Label>
-                    <Textarea
-                      id={`content-${index}`}
-                      value={entry.workContent}
-                      onChange={(e) => {
-                        const updated = [...workEntries]
-                        updated[index] = { ...updated[index], workContent: e.target.value } as WorkEntry
-                        setWorkEntries(updated)
-                      }}
-                      placeholder="업무 내용을 상세히 입력하세요"
-                      className="mt-1 min-h-[100px] bg-white border-2 border-gray-400 focus:border-gray-600 text-black"
-                    />
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* 추가 버튼 */}
-            <Button
-              variant="outline"
-              onClick={addWorkEntry}
-              className="w-full border-dashed border-2 border-gray-400 hover:border-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-sky-50 text-black hover:text-black font-bold"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              업무 추가
-            </Button>
-
-            {/* 제출 버튼 */}
-            <div className="flex justify-end space-x-4 pt-6 border-t-2 border-gray-400">
+            {/* 버튼 영역 */}
+            <div className="pt-4 space-y-4">
               <Button
                 variant="outline"
-                onClick={resetForm}
-                className="px-6 border-2 border-gray-400 text-black hover:bg-gray-50 hover:border-gray-600 font-bold"
+                onClick={addWorkEntry}
+                className="w-full border-dashed border-gray-300 text-gray-500 hover:border-gray-400 hover:bg-gray-50"
               >
-                초기화
+                <Plus className="h-4 w-4 mr-2" />
+                항목 추가
               </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="bg-gradient-to-r from-blue-500 to-sky-500 hover:from-blue-600 hover:to-sky-600 text-white shadow-md px-6 font-bold"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    등록 중...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    작성 완료
-                  </>
-                )}
-              </Button>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  onClick={resetForm}
+                  className="text-gray-500 hover:bg-gray-100"
+                >
+                  초기화
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                >
+                  {loading ? '저장 중...' : '저장하기'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // 공개 페이지들 (인증 불필요)
-  const publicPaths = ['/', '/login', '/signup']
+  const publicPaths = ['/', '/login', '/signup', '/debug-page']
   
   // API 경로는 제외
   if (pathname.startsWith('/api/')) {
@@ -24,7 +24,7 @@ export function middleware(request: NextRequest) {
     
     if (!authToken) {
       // 인증되지 않은 경우 로그인 페이지로 리다이렉트
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL('/login?error=middleware_redirect', request.url))
     }
   }
   

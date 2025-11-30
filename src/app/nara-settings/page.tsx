@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
-import CommonHeader from '@/components/CommonHeader'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -192,14 +192,6 @@ export default function NaraSettingsPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <CommonHeader
-        currentUser={user ? { ...user, level: String(user.level) } : null}
-        isAdmin={user?.level === 'admin'}
-        title="입찰모니터링 설정"
-        backUrl="/settings"
-        onLogout={() => router.push('/login')}
-      />
-
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 에러/성공 메시지 */}
         {error && (

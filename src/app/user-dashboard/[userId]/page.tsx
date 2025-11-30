@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
-import CommonHeader from '@/components/CommonHeader'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
@@ -29,6 +29,26 @@ export default function UserDashboardPage() {
   const [targetUser, setTargetUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const loadTargetUser = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/users?id=${userId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setTargetUser(data.user)
+      } else {
+        setError('사용자 정보를 불러올 수 없습니다.')
+      }
+    } catch (err) {
+      console.error('사용자 정보 로드 오류:', err)
+      setError('사용자 정보를 불러오는 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }, [userId])
 
   useEffect(() => {
     console.log('사용자 대시보드 - 사용자 상태:', { currentUser, isAuthenticated, authLoading })
@@ -60,27 +80,7 @@ export default function UserDashboardPage() {
       console.log('사용자 대시보드 - 인증된 사용자, 페이지 표시')
       loadTargetUser()
     }
-  }, [authLoading, isAuthenticated, router, userId])
-
-  const loadTargetUser = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch(`/api/users?id=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setTargetUser(data.user)
-      } else {
-        setError('사용자 정보를 불러올 수 없습니다.')
-      }
-    } catch (err) {
-      console.error('사용자 정보 로드 오류:', err)
-      setError('사용자 정보를 불러오는 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [authLoading, isAuthenticated, router, userId, currentUser, loadTargetUser])
 
   if (authLoading || loading) {
     return (
@@ -100,13 +100,7 @@ export default function UserDashboardPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-white">
-        <CommonHeader
-          currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
-          isAdmin={currentUser?.level === 'admin'}
-          title="사용자 대시보드"
-          backUrl="/user-management"
-          onLogout={() => router.push('/login')}
-        />
+
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Alert className="border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -122,13 +116,7 @@ export default function UserDashboardPage() {
   if (!targetUser) {
     return (
       <div className="min-h-screen bg-white">
-        <CommonHeader
-          currentUser={currentUser ? { ...currentUser, level: String(currentUser.level) } : null}
-          isAdmin={currentUser?.level === 'admin'}
-          title="사용자 대시보드"
-          backUrl="/user-management"
-          onLogout={() => router.push('/login')}
-        />
+
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
@@ -160,14 +148,7 @@ export default function UserDashboardPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <CommonHeader
-        currentUser={targetUser ? { ...targetUser, level: String(targetUser.level) } : null}
-        isAdmin={targetUser?.level === 'admin'}
-        title={`${targetUser.name}님의 대시보드`}
-        backUrl="/user-management"
-        onLogout={() => router.push('/login')}
-        showUserSpecificMenus={true}
-      />
+
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 사용자 정보 카드 */}

@@ -35,6 +35,15 @@ export async function GET(request: NextRequest) {
         position,
         level,
         is_active,
+        stock_view,
+        stock_in,
+        stock_out,
+        stock_disposal,
+        work_tools,
+        daily_log,
+        work_manual,
+        sop,
+        user_management,
         created_at,
         updated_at
       `)
@@ -56,6 +65,15 @@ export async function GET(request: NextRequest) {
       position: user.position,
       level: user.level,
       is_active: user.is_active,
+      stock_view: user.stock_view,
+      stock_in: user.stock_in,
+      stock_out: user.stock_out,
+      stock_disposal: user.stock_disposal,
+      work_tools: user.work_tools,
+      daily_log: user.daily_log,
+      work_manual: user.work_manual,
+      sop: user.sop,
+      user_management: user.user_management,
       createdAt: user.created_at,
       updatedAt: user.updated_at
     }))
@@ -115,7 +133,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id, name, department, position, level, is_active } = await request.json()
+    const { 
+      id, name, department, position, level, is_active,
+      stock_view, stock_in, stock_out, stock_disposal, 
+      work_tools, daily_log, work_manual, sop, user_management 
+    } = await request.json()
 
     console.log('사용자 업데이트 요청:', { id, name, department, position, level, is_active })
 
@@ -128,6 +150,15 @@ export async function PUT(request: NextRequest) {
         position,
         level,
         is_active,
+        stock_view,
+        stock_in,
+        stock_out,
+        stock_disposal,
+        work_tools,
+        daily_log,
+        work_manual,
+        sop,
+        user_management,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

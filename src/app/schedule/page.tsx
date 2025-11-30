@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, ExternalLink, CalendarDays } from 'lucide-react'
-import CommonHeader from '@/components/CommonHeader'
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, ExternalLink, CalendarDays, LayoutList, Maximize2 } from 'lucide-react'
+
 // 로컬 이벤트 타입 정의
 interface LocalEvent {
   id: string
@@ -129,6 +129,7 @@ export default function SchedulePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<'1month' | '2months' | '3months'>('1month')
   const [calendarView, setCalendarView] = useState<'list' | 'calendar'>('list')
+  const [isSplitView, setIsSplitView] = useState(false)
   const [events, setEvents] = useState<LocalEvent[]>([])
   const [projectEvents, setProjectEvents] = useState<ProjectEvent[]>([])
   const [loadingEvents, setLoadingEvents] = useState(false)
@@ -311,6 +312,15 @@ export default function SchedulePage() {
 
 
 
+  // 뷰 모드 변경 시 스플릿 뷰 자동 설정
+  useEffect(() => {
+    if (viewMode === '2months' || viewMode === '3months') {
+      setIsSplitView(true)
+    } else {
+      setIsSplitView(false)
+    }
+  }, [viewMode])
+
   // 사용자 목록 가져오기
   const loadUsers = useCallback(async () => {
     setLoadingUsers(true)
@@ -424,7 +434,7 @@ export default function SchedulePage() {
       console.log('프로젝트 이벤트 로딩 시작...')
 
       // 현재 보기 모드에 따라 날짜 범위 계산
-      const today = new Date()
+      const today = currentDate
       let startDate: Date
       let endDate: Date
 
@@ -469,39 +479,15 @@ export default function SchedulePage() {
           })
         }
 
-        // 프로젝트 관리 API의 데이터도 처리 (기존 방식 유지)
-        console.log('프로젝트 API 호출 시작...')
-        const projectsResponse = await fetch('/api/projects', {
-          headers: {
-            'x-user-level': String(user?.level || '1')
-          }
-        })
-        console.log('프로젝트 API 응답 상태:', projectsResponse.status)
-
-        if (projectsResponse.ok) {
-          const projects = await projectsResponse.json()
-          console.log('API에서 받은 프로젝트 데이터:', projects)
-          console.log('프로젝트 개수:', projects.length)
-
-          // 프로젝트 데이터 상세 확인
-          projects.forEach((project: any, index: number) => {
-            console.log(`프로젝트 ${index + 1}:`, {
-              id: project.id,
-              name: project.project_name,
-              project_number: project.project_number,
-              assembly_date: project.assembly_date,
-              factory_test_date: project.factory_test_date,
-              site_test_date: project.site_test_date
-            })
-          })
+        // 프로젝트 관리 API의 데이터도 처리 (projects state 사용)
+        if (projects.length > 0) {
+          console.log('프로젝트 state 데이터 사용:', projects.length)
 
           projects.forEach((project: any) => {
             // 조완일
             if (project.assembly_date) {
-              console.log('조완일 데이터 발견:', project.assembly_date)
-              // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.assembly_date.split('-').map(Number)
-              const assemblyDate = new Date(year, month - 1, day) // month는 0부터 시작
+              const assemblyDate = new Date(year, month - 1, day)
               if (assemblyDate >= startDate && assemblyDate <= endDate) {
                 projectEvents.push({
                   id: `assembly-${project.id}`,
@@ -510,19 +496,16 @@ export default function SchedulePage() {
                   projectNumber: project.project_number,
                   date: project.assembly_date,
                   description: `${project.project_name} 조완`,
-                  isReadOnly: true, // 수정 불가
-                  icon: '🔧' // 조완 아이콘
+                  isReadOnly: true,
+                  icon: '🔧'
                 })
-                console.log('조완일 이벤트 추가됨')
               }
             }
 
             // 공시일
             if (project.factory_test_date) {
-              console.log('공장시운전일 데이터 발견:', project.factory_test_date)
-              // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.factory_test_date.split('-').map(Number)
-              const factoryDate = new Date(year, month - 1, day) // month는 0부터 시작
+              const factoryDate = new Date(year, month - 1, day)
               if (factoryDate >= startDate && factoryDate <= endDate) {
                 projectEvents.push({
                   id: `factory-${project.id}`,
@@ -531,19 +514,16 @@ export default function SchedulePage() {
                   projectNumber: project.project_number,
                   date: project.factory_test_date,
                   description: `${project.project_name} 공시`,
-                  isReadOnly: true, // 수정 불가
-                  icon: '🏭' // 공장시운전 아이콘
+                  isReadOnly: true,
+                  icon: '🏭'
                 })
-                console.log('공장시운전일 이벤트 추가됨')
               }
             }
 
             // 현시일
             if (project.site_test_date) {
-              console.log('현장시운전일 데이터 발견:', project.site_test_date)
-              // YYYY-MM-DD 형식을 직접 파싱하여 로컬 날짜로 처리
               const [year, month, day] = project.site_test_date.split('-').map(Number)
-              const siteDate = new Date(year, month - 1, day) // month는 0부터 시작
+              const siteDate = new Date(year, month - 1, day)
               if (siteDate >= startDate && siteDate <= endDate) {
                 projectEvents.push({
                   id: `site-${project.id}`,
@@ -552,10 +532,9 @@ export default function SchedulePage() {
                   projectNumber: project.project_number,
                   date: project.site_test_date,
                   description: `${project.project_name} 현시`,
-                  isReadOnly: true, // 수정 불가
-                  icon: '🏗️' // 현장시운전 아이콘
+                  isReadOnly: true,
+                  icon: '🏗️'
                 })
-                console.log('현장시운전일 이벤트 추가됨')
               }
             }
           })
@@ -567,21 +546,14 @@ export default function SchedulePage() {
         )
 
         console.log('최종 프로젝트 이벤트 설정 전:', uniqueEvents)
-        console.log('프로젝트 이벤트 개수:', uniqueEvents.length)
         setProjectEvents(uniqueEvents)
-        console.log('프로젝트 이벤트 설정 완료')
 
         // 프로젝트 이벤트를 LocalEvent 형태로 변환하여 events에 추가
         const convertedProjectEvents: LocalEvent[] = uniqueEvents.map(projectEvent => ({
           id: projectEvent.id,
           workstyle: '프로젝트',
           subCategory: projectEvent.type,
-          summary: `<span class="inline-block ${projectEvent.type === '조완'
-            ? 'bg-green-200 text-green-800'
-            : projectEvent.type === '공시'
-              ? 'bg-blue-200 text-blue-800'
-              : 'bg-orange-200 text-orange-800'
-            } rounded-full px-2 py-1 text-xs font-semibold">${projectEvent.type}</span> ${projectEvent.projectName}`,
+          summary: projectEvent.projectName,
           description: projectEvent.description || `${projectEvent.projectNumber} ${projectEvent.type}`,
           start: { date: projectEvent.date },
           end: { date: projectEvent.date },
@@ -599,23 +571,11 @@ export default function SchedulePage() {
           const nonProjectEvents = prevEvents.filter(event => !event.isProjectEvent)
           return [...nonProjectEvents, ...convertedProjectEvents]
         })
-        console.log('프로젝트 데이터 원본:', projects)
-        console.log('날짜 범위:', { startDate: startDate.toISOString().split('T')[0], endDate: endDate.toISOString().split('T')[0] })
-
-        // 각 프로젝트의 날짜 필드 확인
-        projects.forEach((project, index) => {
-          console.log(`프로젝트 ${index + 1}:`, {
-            name: project.project_name,
-            assembly_date: project.assembly_date,
-            factory_test_date: project.factory_test_date,
-            site_test_date: project.site_test_date
-          })
-        })
       }
     } catch (err) {
       console.error('프로젝트 이벤트 불러오기 실패:', err)
     }
-  }, [viewMode, user, projects])
+  }, [viewMode, user, currentDate, projects])
 
   const loadCalendarEvents = useCallback(async () => {
     setLoadingEvents(true)
@@ -813,14 +773,20 @@ export default function SchedulePage() {
     }
   }, [user, loadProjectEvents])
 
-  // 구글 캘린더에서 일정 가져오기
+  // 초기 데이터 로딩 (사용자, 프로젝트)
   useEffect(() => {
     if (isAuthenticated) {
-      loadCalendarEvents()
       loadUsers()
       loadProjects()
     }
-  }, [isAuthenticated, currentDate, viewMode, loadCalendarEvents, loadUsers, loadProjects, loadProjectEvents])
+  }, [isAuthenticated, loadUsers, loadProjects])
+
+  // 캘린더 이벤트 로딩 (날짜/뷰 변경 시)
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCalendarEvents()
+    }
+  }, [isAuthenticated, currentDate, viewMode, loadCalendarEvents])
 
   // 업무일지에 외근/출장 보고 추가
   const addToWorkDiary = async (event: LocalEvent, participant: User) => {
@@ -1464,7 +1430,7 @@ export default function SchedulePage() {
       return eventStart && eventEnd && dateStr && eventStart <= dateStr && eventEnd >= dateStr
     }).filter(event => {
       // 필터 적용
-      if (event.workstyle === '조완' || event.workstyle === '시운전') {
+      if (event.workstyle === '조완' || event.workstyle === '시운전' || event.workstyle === '프로젝트') {
         return filters.project
       } else if (event.workstyle === '반/연차') {
         return filters.vacation
@@ -1630,19 +1596,15 @@ export default function SchedulePage() {
       </div>
     )
   }
-
   const days = getDaysForViewMode(currentDate, viewMode)
   const monthHeaders = getMonthHeaders(currentDate, viewMode)
+
+
 
   return (
     <AuthGuard requiredLevel={3}>
       <div className="min-h-screen bg-blue-50">
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={user?.permissions?.includes('administrator') || false}
-          title="일정 관리"
-          backUrl="/"
-        />
+
 
         {/* 성공/에러 메시지 */}
         {success && (
@@ -1656,364 +1618,542 @@ export default function SchedulePage() {
           </div>
         )}
 
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden h-screen">
+          <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-[1920px] mx-auto space-y-6">
 
-          {/* 월 네비게이션 */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
-            <Button
-              onClick={previousMonth}
-              variant="outline"
-              size="sm"
-              className="flex items-center space-x-1 sm:space-x-2 min-h-[44px] px-3 sm:px-4"
-            >
-              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">이전 달</span>
-              <span className="inline sm:hidden">이전</span>
-            </Button>
-
-            <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 text-center">
-              {viewMode === '1month' ? formatDate(currentDate) :
-                viewMode === '2months' ? `${formatDate(currentDate)} - ${formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}` :
-                  `${formatDate(currentDate)} - ${formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 1))}`}
-            </h2>
-
-            <Button
-              onClick={nextMonth}
-              variant="outline"
-              size="sm"
-              className="flex items-center space-x-1 sm:space-x-2 min-h-[44px] px-3 sm:px-4"
-            >
-              <span className="hidden sm:inline">다음 달</span>
-              <span className="inline sm:hidden">다음</span>
-              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Button>
-          </div>
-
-          {/* 캘린더 그리드 */}
-          <Card className="mb-8">
-            <CardHeader className="bg-white">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <CardTitle className="flex items-center space-x-2 text-base sm:text-lg text-gray-900">
-                  <Calendar className="h-5 w-5" />
-                  <span>월간 일정</span>
-                </CardTitle>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-                  {/* 필터 체크박스들 */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={filters.project}
-                        onChange={(e) => setFilters(prev => ({ ...prev, project: e.target.checked }))}
-                        className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
-                      />
-                      <span className="text-gray-900">프로젝트</span>
-                    </label>
-                    <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={filters.vacation}
-                        onChange={(e) => setFilters(prev => ({ ...prev, vacation: e.target.checked }))}
-                        className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
-                      />
-                      <span className="text-gray-900">반/연차</span>
-                    </label>
-                    <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={filters.business}
-                        onChange={(e) => setFilters(prev => ({ ...prev, business: e.target.checked }))}
-                        className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
-                      />
-                      <span className="text-gray-900">출장/외근</span>
-                    </label>
-                    <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
-                      <input
-                        type="checkbox"
-                        checked={filters.asss}
-                        onChange={(e) => setFilters(prev => ({ ...prev, asss: e.target.checked }))}
-                        className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
-                      />
-                      <span className="text-gray-900">AS/SS</span>
-                    </label>
-                  </div>
-
-                  {/* 보기 모드 버튼들 */}
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Button
-                      onClick={() => setViewMode('1month')}
-                      variant={viewMode === '1month' ? 'default' : 'outline'}
-                      size="sm"
-                      className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '1month'
-                        ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
-                        }`}
-                    >
-                      1달
-                    </Button>
-                    <Button
-                      onClick={() => setViewMode('2months')}
-                      variant={viewMode === '2months' ? 'default' : 'outline'}
-                      size="sm"
-                      className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '2months'
-                        ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
-                        }`}
-                    >
-                      2달
-                    </Button>
-                    <Button
-                      onClick={() => setViewMode('3months')}
-                      variant={viewMode === '3months' ? 'default' : 'outline'}
-                      size="sm"
-                      className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '3months'
-                        ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
-                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
-                        }`}
-                    >
-                      3달
-                    </Button>
-                  </div>
-
-                  {user && Number(user.level) >= 5 && (
-                    <Button
-                      onClick={() => setShowStatisticsModal(true)}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center space-x-1 text-gray-900 bg-gray-100 hover:bg-gray-200 border-gray-300"
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>통계</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* 달력 컨테이너 */}
-              <div className={`grid gap-6 ${viewMode === '1month' ? 'grid-cols-1' : viewMode === '2months' ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                {monthHeaders.map((monthHeader, monthIndex) => {
-                  const monthDays = getDaysInMonth(new Date(monthHeader.year, monthHeader.month, 1))
-                  return (
-                    <div key={`month-${monthIndex}`} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-                      {/* 월 제목 - FullCalendar 스타일 */}
-                      <div className="text-center text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 bg-gray-50 px-4 py-3 rounded-t-lg">
-                        {monthHeader.name}
+              {/* 필터 및 컨트롤 패널 */}
+              <Card className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
+                <CardHeader className="px-8 py-6 border-b border-gray-100 bg-white">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-blue-50 rounded-2xl">
+                        <CalendarDays className="h-6 w-6 text-blue-600" />
                       </div>
-
-                      {/* 요일 헤더 - FullCalendar 스타일 */}
-                      <div className="grid grid-cols-7 gap-0 mb-2 bg-gray-100 rounded-lg">
-                        {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-                          <div key={day} className="p-3 text-center text-sm font-medium text-gray-600">
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* 날짜 그리드 */}
-                      <div className="grid grid-cols-7 gap-0">
-                        {monthDays.map(({ date, isCurrentMonth }, dayIndex) => {
-                          const dayEvents = getDayEvents(date)
-                          const isToday = date.toDateString() === new Date().toDateString()
-
-                          return (
-                            <div
-                              key={`${monthIndex}-${dayIndex}`}
-                              className={`min-h-[120px] p-2 border-r border-b border-gray-100 ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-                                } ${isToday ? 'bg-blue-50 border-blue-200' : ''} cursor-pointer hover:bg-gray-50 transition-colors`}
-                              style={{
-                                borderTop: '1px solid #d1d5db',
-                                borderBottom: '1px solid #d1d5db',
-                                borderLeft: dayIndex % 7 === 0 ? '1px solid #d1d5db' : 'none',
-                                borderRight: '1px solid #d1d5db'
-                              }}
-                              onDoubleClick={() => handleDateDoubleClick(date)}
-                            >
-                              <div className={`text-sm font-bold mb-2 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                                } ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center' : ''} ${isHoliday(date) ? 'text-red-600' :
-                                  date.getDay() === 0 ? 'text-red-600' :
-                                    date.getDay() === 6 ? 'text-blue-700' : ''
-                                }`}>
-                                {date.getDate()}
-                              </div>
-
-                              {/* 공휴일 표시 */}
-                              {isHoliday(date) && (
-                                <div className="text-xs text-red-600 font-medium mb-1">
-                                  {isHoliday(date)}
-                                </div>
-                              )}
-
-                              {/* 일정 표시 */}
-                              <div className="space-y-1">
-                                {dayEvents.slice(0, 3).map(event => {
-                                  // 프로젝트 이벤트인지 확인
-                                  const isProjectEvent = 'type' in event && 'projectName' in event
-
-                                  if (isProjectEvent) {
-                                    // 프로젝트 이벤트 렌더링
-                                    const projectEvent = event as unknown as ProjectEvent
-                                    const bgColor = projectEvent.type === '조완' ? 'bg-orange-100 border-orange-300' :
-                                      projectEvent.type === '공시' ? 'bg-blue-100 border-blue-300' : 'bg-purple-100 border-purple-300'
-                                    const textColor = projectEvent.type === '조완' ? 'text-orange-800' :
-                                      projectEvent.type === '공시' ? 'text-blue-800' : 'text-purple-800'
-
-                                    // 디버깅을 위한 로그
-                                    console.log('프로젝트 이벤트 렌더링:', {
-                                      id: projectEvent.id,
-                                      type: projectEvent.type,
-                                      projectName: projectEvent.projectName,
-                                      projectNumber: projectEvent.projectNumber
-                                    })
-
-                                    return (
-                                      <div
-                                        key={projectEvent.id}
-                                        className={`text-xs p-1.5 ${bgColor} ${textColor} rounded-lg truncate font-medium shadow-sm border-2`}
-                                        title={`${projectEvent.type} ${projectEvent.projectName} (${projectEvent.projectNumber})`}
-                                      >
-                                        <div className="text-[10px] leading-tight">
-                                          <span className="font-medium">{projectEvent.type}</span>
-                                          <span className="ml-1 opacity-80">{projectEvent.projectName || '프로젝트명 없음'}</span>
-                                        </div>
-                                      </div>
-                                    )
-                                  }
-
-                                  const isMultiDay = isMultiDayEvent(event as LocalEvent)
-                                  const position = getEventPosition(event as LocalEvent, date)
-
-                                  if (isMultiDay) {
-                                    // 기간이 긴 일정은 막대기 형태로 표시
-                                    return (
-                                      <div
-                                        key={event.id}
-                                        className={`text-xs p-1 cursor-pointer hover:opacity-80 group relative font-medium ${position.isStart
-                                          ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 border-l-4 border-blue-300'
-                                          : position.isEnd
-                                            ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-gray-900 border-r-4 border-blue-300'
-                                            : 'bg-blue-50 text-gray-900'
-                                          }`}
-                                        style={{
-                                          marginLeft: position.isStart ? '0' : '-1px',
-                                          marginRight: position.isEnd ? '0' : '-1px',
-                                          zIndex: 10,
-                                          borderRadius: position.isStart && position.isEnd
-                                            ? '4px'
-                                            : position.isStart
-                                              ? '4px 0 0 4px'
-                                              : position.isEnd
-                                                ? '0 4px 4px 0'
-                                                : '0'
-                                        }}
-                                        title={`${(event as LocalEvent).summary} (${position.totalDays}일간) - 드래그하여 이동, 더블클릭으로 수정`}
-                                        onDragStart={() => { }}
-                                        onDragEnd={() => { }}
-                                        onDoubleClick={(e) => {
-                                          e.stopPropagation()
-                                          handleEditEvent(event as LocalEvent)
-                                        }}
-                                      >
-                                        <span className="truncate block">
-                                          {position.isStart ? (
-                                            (event as LocalEvent).workstyle === '반/연차'
-                                              ? `[${(event as LocalEvent).subCategory === '반차'
-                                                ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
-                                                : (event as LocalEvent).subCategory || '연차'
-                                              }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
-                                              : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근'
-                                                ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
-                                                : (event as LocalEvent).summary
-                                          ) : (
-                                            // 외근/출장의 경우 모든 날에 동일한 제목 표시
-                                            (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
-                                              ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
-                                              : '⋯'
-                                          )}
-                                        </span>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleDeleteEvent((event as LocalEvent).id)
-                                          }}
-                                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600"
-                                          title="삭제"
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                    )
-                                  } else {
-                                    // 하루 일정은 기존 형태로 표시
-                                    return (
-                                      <div
-                                        key={event.id}
-                                        className="text-xs p-2 bg-blue-50 text-gray-900 rounded-lg truncate cursor-pointer hover:bg-blue-100 group relative font-medium shadow-sm border"
-                                        title={`${(event as LocalEvent).summary} - 더블클릭으로 수정`}
-                                        onDoubleClick={(e) => {
-                                          e.stopPropagation()
-                                          // 프로젝트 이벤트(조완, 공시, 현시)는 수정 불가
-                                          if ((event as any).isReadOnly) {
-                                            alert('프로젝트 관련 일정은 프로젝트 설정에서만 수정할 수 있습니다.')
-                                            return
-                                          }
-                                          handleEditEvent(event as LocalEvent)
-                                        }}
-                                      >
-                                        <span className="truncate block font-semibold">
-                                          {(event as LocalEvent).workstyle === '반/연차'
-                                            ? `[${(event as LocalEvent).subCategory === '반차'
-                                              ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
-                                              : (event as LocalEvent).subCategory || '연차'
-                                            }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
-                                            : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
-                                              ? (() => {
-                                                const tripType = (event as LocalEvent).subCategory || ((event as LocalEvent).workstyle === '출장' ? '출장' : '외근')
-                                                const summary = (event as LocalEvent).summary
-                                                const companions = (event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''
-
-                                                // 이미 [출장] 또는 [외근]이 포함된 경우 그대로 사용
-                                                if (summary.startsWith('[출장]') || summary.startsWith('[외근]')) {
-                                                  return `${summary}${companions}`
-                                                }
-
-                                                return `[${tripType}] ${summary}${companions}`
-                                              })()
-                                              : (event as any).isProjectEvent
-                                                ? <span dangerouslySetInnerHTML={{ __html: (event as LocalEvent).summary }} />
-                                                : (event as LocalEvent).summary
-                                          }
-                                        </span>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleDeleteEvent((event as LocalEvent).id)
-                                          }}
-                                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600 flex items-center justify-center"
-                                          title="삭제"
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                    )
-                                  }
-                                })}
-                                {dayEvents.length > 3 && (
-                                  <div className="text-xs text-gray-900 text-center">
-                                    +{dayEvents.length - 3} 더보기
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )
-                        })}
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newDate = new Date(currentDate)
+                              newDate.setMonth(newDate.getMonth() - 1)
+                              setCurrentDate(newDate)
+                            }}
+                            className="h-6 w-6 rounded-full hover:bg-gray-100"
+                          >
+                            <ChevronLeft className="h-4 w-4 text-gray-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const newDate = new Date(currentDate)
+                              newDate.setMonth(newDate.getMonth() + 1)
+                              setCurrentDate(newDate)
+                            }}
+                            className="h-6 w-6 rounded-full hover:bg-gray-100"
+                          >
+                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCurrentDate(new Date())}
+                            className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-medium px-2 h-6"
+                          >
+                            오늘
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  )
-                })}
+
+                    <div className="flex flex-wrap items-center gap-4">
+                      {/* 필터 체크박스들 */}
+                      <div className="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100">
+                        <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
+                          <input
+                            type="checkbox"
+                            checked={filters.project}
+                            onChange={(e) => setFilters(prev => ({ ...prev, project: e.target.checked }))}
+                            className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
+                          />
+                          <span className="text-gray-900">프로젝트</span>
+                        </label>
+                        <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
+                          <input
+                            type="checkbox"
+                            checked={filters.vacation}
+                            onChange={(e) => setFilters(prev => ({ ...prev, vacation: e.target.checked }))}
+                            className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
+                          />
+                          <span className="text-gray-900">반/연차</span>
+                        </label>
+                        <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
+                          <input
+                            type="checkbox"
+                            checked={filters.business}
+                            onChange={(e) => setFilters(prev => ({ ...prev, business: e.target.checked }))}
+                            className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
+                          />
+                          <span className="text-gray-900">출장/외근</span>
+                        </label>
+                        <label className="flex items-center space-x-1 text-xs sm:text-sm min-h-[44px]">
+                          <input
+                            type="checkbox"
+                            checked={filters.asss}
+                            onChange={(e) => setFilters(prev => ({ ...prev, asss: e.target.checked }))}
+                            className="w-5 h-5 sm:w-4 sm:h-4 text-blue-600"
+                          />
+                          <span className="text-gray-900">AS/SS</span>
+                        </label>
+                      </div>
+
+                      {/* 보기 모드 버튼들 */}
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Button
+                          onClick={() => setViewMode('1month')}
+                          variant={viewMode === '1month' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '1month'
+                            ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+                            }`}
+                        >
+                          1달
+                        </Button>
+                        <Button
+                          onClick={() => setViewMode('2months')}
+                          variant={viewMode === '2months' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '2months'
+                            ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+                            }`}
+                        >
+                          2달
+                        </Button>
+                        <Button
+                          onClick={() => setViewMode('3months')}
+                          variant={viewMode === '3months' ? 'default' : 'outline'}
+                          size="sm"
+                          className={`text-xs sm:text-sm min-h-[44px] px-3 sm:px-4 ${viewMode === '3months'
+                            ? 'bg-blue-800 hover:bg-blue-900 text-white border-2 border-blue-900 shadow-lg'
+                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+                            }`}
+                        >
+                          3달
+                        </Button>
+
+                        <div className="h-8 w-px bg-gray-300 mx-2" />
+
+                        <Button
+                          onClick={() => setShowAddEventModal(true)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 rounded-xl px-4 py-2"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          일정 추가
+                        </Button>
+
+                        <div className="flex items-center bg-white rounded-xl border border-gray-200 p-1 ml-2 shadow-sm">
+                          <Button
+                            variant={!isSplitView ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setIsSplitView(false)}
+                            className={`h-8 w-8 p-0 rounded-lg ${!isSplitView ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+                            title="전체 달력"
+                          >
+                            <Maximize2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant={isSplitView ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setIsSplitView(true)}
+                            className={`h-8 w-8 p-0 rounded-lg ${isSplitView ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:text-gray-900'}`}
+                            title="달력 + 목록"
+                          >
+                            <LayoutList className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {user && Number(user.level) >= 5 && (
+                          <Button
+                            onClick={() => setShowStatisticsModal(true)}
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center space-x-1 text-gray-900 bg-gray-100 hover:bg-gray-200 border-gray-300 ml-2"
+                          >
+                            <Users className="h-4 w-4" />
+                            <span>통계</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* 달력 컨테이너 */}
+                  <div className={`transition-all duration-300 ${isSplitView ? 'h-[500px] overflow-y-auto' : ''}`}>
+                    <div className={`grid gap-6 ${viewMode === '1month' ? 'grid-cols-1' : viewMode === '2months' ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                      {monthHeaders.map((monthHeader, monthIndex) => {
+                        const monthDays = getDaysInMonth(new Date(monthHeader.year, monthHeader.month, 1))
+                        const isCompactView = viewMode !== '1month'
+
+                        return (
+                          <div key={`month-${monthIndex}`} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                            {/* 월 제목 */}
+                            <div className="text-center text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 bg-gray-50 px-4 py-3 rounded-t-lg">
+                              {monthHeader.name}
+                            </div>
+
+                            {/* 요일 헤더 */}
+                            <div className="grid grid-cols-7 gap-0 mb-2 bg-gray-100 rounded-lg">
+                              {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+                                <div key={day} className="p-3 text-center text-sm font-medium text-gray-600">
+                                  {day}
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* 날짜 그리드 */}
+                            <div className="grid grid-cols-7 gap-0">
+                              {monthDays.map(({ date, isCurrentMonth }, dayIndex) => {
+                                const dayEvents = getDayEvents(date)
+                                const isToday = date.toDateString() === new Date().toDateString()
+
+                                return (
+                                  <div
+                                    key={`${monthIndex}-${dayIndex}`}
+                                    className={`${isCompactView ? 'min-h-[60px] p-1' : 'min-h-[120px] p-2'} border-r border-b border-gray-100 ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                                      } ${isToday ? 'bg-blue-50 border-blue-200' : ''} cursor-pointer hover:bg-gray-50 transition-colors`}
+                                    style={{
+                                      borderTop: '1px solid #d1d5db',
+                                      borderBottom: '1px solid #d1d5db',
+                                      borderLeft: dayIndex % 7 === 0 ? '1px solid #d1d5db' : 'none',
+                                      borderRight: '1px solid #d1d5db'
+                                    }}
+                                    onDoubleClick={() => handleDateDoubleClick(date)}
+                                  >
+                                    <div className={`text-sm font-bold mb-1 ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                                      } ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-6 h-6 flex items-center justify-center' : ''} ${isHoliday(date) ? 'text-red-600' :
+                                        date.getDay() === 0 ? 'text-red-600' :
+                                          date.getDay() === 6 ? 'text-blue-700' : ''
+                                      }`}>
+                                      {date.getDate()}
+                                    </div>
+
+                                    {/* 공휴일 표시 */}
+                                    {isHoliday(date) && !isCompactView && (
+                                      <div className="text-xs text-red-600 font-medium mb-1">
+                                        {isHoliday(date)}
+                                      </div>
+                                    )}
+
+                                    {/* 일정 표시 */}
+                                    {isCompactView ? (
+                                      // 점 표시 모드 (2달/3달 보기)
+                                      <div className="flex flex-wrap gap-1 content-start">
+                                        {dayEvents.map(event => {
+                                          let dotColor = 'bg-gray-400'
+                                          const isProjectEvent = 'type' in event
+
+                                          if (isProjectEvent || (event as any).isProjectEvent || (event as LocalEvent).workstyle === '프로젝트') {
+                                            const type = (event as any).type || (event as LocalEvent).subCategory
+                                            if (type === '조완') dotColor = 'bg-orange-500'
+                                            else if (type === '공시') dotColor = 'bg-blue-500'
+                                            else dotColor = 'bg-purple-500'
+                                          } else {
+                                            const lEvent = event as LocalEvent
+                                            if (lEvent.workstyle === '외근') dotColor = 'bg-blue-500'
+                                            else if (lEvent.workstyle === '출장') dotColor = 'bg-purple-500'
+                                            else if (lEvent.workstyle === '반/연차') dotColor = 'bg-green-500'
+                                            else if (lEvent.workstyle === '회의') dotColor = 'bg-yellow-500'
+                                          }
+
+                                          return (
+                                            <div
+                                              key={event.id}
+                                              className={`w-2 h-2 rounded-full ${dotColor}`}
+                                              title={'summary' in event ? event.summary : ''}
+                                            />
+                                          )
+                                        })}
+                                      </div>
+                                    ) : (
+                                      // 상세 표시 모드 (1달 보기)
+                                      <div className="space-y-1">
+                                        {dayEvents.slice(0, 3).map(event => {
+                                          const isProjectEvent = 'type' in event && 'projectName' in event
+
+                                          if (isProjectEvent) {
+                                            const projectEvent = event as unknown as ProjectEvent
+                                            const bgColor = projectEvent.type === '조완' ? 'bg-orange-100 border-orange-300' :
+                                              projectEvent.type === '공시' ? 'bg-blue-100 border-blue-300' : 'bg-purple-100 border-purple-300'
+                                            const textColor = projectEvent.type === '조완' ? 'text-orange-800' :
+                                              projectEvent.type === '공시' ? 'text-blue-800' : 'text-purple-800'
+
+                                            return (
+                                              <div
+                                                key={projectEvent.id}
+                                                className={`text-xs p-1.5 ${bgColor} ${textColor} rounded-lg truncate font-medium shadow-sm border-2`}
+                                                title={`${projectEvent.type} ${projectEvent.projectName} (${projectEvent.projectNumber})`}
+                                              >
+                                                <div className="text-[10px] leading-tight">
+                                                  <span className="font-medium">{projectEvent.type}</span>
+                                                  <span className="ml-1 opacity-80">{projectEvent.projectName || '프로젝트명 없음'}</span>
+                                                </div>
+                                              </div>
+                                            )
+                                          } else if ((event as any).isProjectEvent || (event as LocalEvent).workstyle === '프로젝트') {
+                                            // Converted project event rendering
+                                            const type = (event as LocalEvent).subCategory
+                                            const bgColor = type === '조완' ? 'bg-orange-100 border-orange-300' :
+                                              type === '공시' ? 'bg-blue-100 border-blue-300' : 'bg-purple-100 border-purple-300'
+                                            const textColor = type === '조완' ? 'text-orange-800' :
+                                              type === '공시' ? 'text-blue-800' : 'text-purple-800'
+                                            
+                                            // Extract project name from summary if possible, or use raw summary
+                                            // Summary format: <span ...>TYPE</span> ProjectName
+                                            const summary = (event as LocalEvent).summary
+                                            const projectName = summary.replace(/<[^>]*>/g, '').replace(type || '', '').trim()
+
+                                            return (
+                                              <div
+                                                key={event.id}
+                                                className={`text-xs p-1.5 ${bgColor} ${textColor} rounded-lg truncate font-medium shadow-sm border-2`}
+                                                title={`${type} ${projectName}`}
+                                              >
+                                                <div className="text-[10px] leading-tight">
+                                                  <span className="font-medium">{type}</span>
+                                                  <span className="ml-1 opacity-80">{projectName || '프로젝트명 없음'}</span>
+                                                </div>
+                                              </div>
+                                            )
+                                          }
+
+                                          const isMultiDay = isMultiDayEvent(event as LocalEvent)
+                                          const position = getEventPosition(event as LocalEvent, date)
+
+                                          if (isMultiDay) {
+                                            return (
+                                              <div
+                                                key={event.id}
+                                                className={`text-xs p-1 cursor-pointer hover:opacity-80 group relative font-medium ${position.isStart
+                                                  ? 'bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 border-l-4 border-blue-300'
+                                                  : position.isEnd
+                                                    ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-gray-900 border-r-4 border-blue-300'
+                                                    : 'bg-blue-50 text-gray-900'
+                                                  }`}
+                                                style={{
+                                                  marginLeft: position.isStart ? '0' : '-1px',
+                                                  marginRight: position.isEnd ? '0' : '-1px',
+                                                  zIndex: 10,
+                                                  borderRadius: position.isStart && position.isEnd
+                                                    ? '4px'
+                                                    : position.isStart
+                                                      ? '4px 0 0 4px'
+                                                      : position.isEnd
+                                                        ? '0 4px 4px 0'
+                                                        : '0'
+                                                }}
+                                                title={`${(event as LocalEvent).summary} (${position.totalDays}일간) - 드래그하여 이동, 더블클릭으로 수정`}
+                                                onDoubleClick={(e) => {
+                                                  e.stopPropagation()
+                                                  handleEditEvent(event as LocalEvent)
+                                                }}
+                                              >
+                                                <span className="truncate block">
+                                                  {position.isStart ? (
+                                                    (event as LocalEvent).workstyle === '반/연차'
+                                                      ? `[${(event as LocalEvent).subCategory === '반차'
+                                                        ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
+                                                        : (event as LocalEvent).subCategory || '연차'
+                                                      }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
+                                                      : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근'
+                                                        ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
+                                                        : (event as LocalEvent).summary
+                                                  ) : (
+                                                    (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
+                                                      ? `${(event as LocalEvent).summary}${(event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''}`
+                                                      : '⋯'
+                                                  )}
+                                                </span>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDeleteEvent((event as LocalEvent).id)
+                                                  }}
+                                                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600"
+                                                  title="삭제"
+                                                >
+                                                  ×
+                                                </button>
+                                              </div>
+                                            )
+                                          } else {
+                                            return (
+                                              <div
+                                                key={event.id}
+                                                className="text-xs p-2 bg-blue-50 text-gray-900 rounded-lg truncate cursor-pointer hover:bg-blue-100 group relative font-medium shadow-sm border"
+                                                title={`${(event as LocalEvent).summary} - 더블클릭으로 수정`}
+                                                onDoubleClick={(e) => {
+                                                  e.stopPropagation()
+                                                  if ((event as any).isReadOnly) {
+                                                    alert('프로젝트 관련 일정은 프로젝트 설정에서만 수정할 수 있습니다.')
+                                                    return
+                                                  }
+                                                  handleEditEvent(event as LocalEvent)
+                                                }}
+                                              >
+                                                <span className="truncate block font-semibold">
+                                                  {(event as LocalEvent).workstyle === '반/연차'
+                                                    ? `[${(event as LocalEvent).subCategory === '반차'
+                                                      ? `반차-${(event as LocalEvent).start?.dateTime?.includes('09:00') ? '오전' : '오후'}`
+                                                      : (event as LocalEvent).subCategory || '연차'
+                                                    }] ${(event as LocalEvent).participant?.name || '이름 없음'}`
+                                                    : (event as LocalEvent).workstyle === '출장' || (event as LocalEvent).workstyle === '외근' || (event as LocalEvent).subCategory === '출장' || (event as LocalEvent).subCategory === '외근'
+                                                      ? (() => {
+                                                        const tripType = (event as LocalEvent).subCategory || ((event as LocalEvent).workstyle === '출장' ? '출장' : '외근')
+                                                        const summary = (event as LocalEvent).summary
+                                                        const companions = (event as LocalEvent).companions?.length ? ` +${(event as LocalEvent).companions?.length}` : ''
+                                                        if (summary.startsWith('[출장]') || summary.startsWith('[외근]')) {
+                                                          return `${summary}${companions}`
+                                                        }
+                                                        return `[${tripType}] ${summary}${companions}`
+                                                      })()
+                                                      : (event as any).isProjectEvent
+                                                        ? <span dangerouslySetInnerHTML={{ __html: (event as LocalEvent).summary }} />
+                                                        : (event as LocalEvent).summary
+                                                  }
+                                                </span>
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDeleteEvent((event as LocalEvent).id)
+                                                  }}
+                                                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 hover:bg-red-600 flex items-center justify-center"
+                                                  title="삭제"
+                                                >
+                                                  ×
+                                                </button>
+                                              </div>
+                                            )
+                                          }
+                                        })}
+                                        {dayEvents.length > 3 && (
+                                          <div className="text-xs text-gray-900 text-center">
+                                            +{dayEvents.length - 3} 더보기
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Split View List Section */}
+              {isSplitView && (
+                <div className="mt-6 bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="h-8 w-1 bg-blue-500 rounded-full" />
+                    <h3 className="text-xl font-bold text-gray-800">
+                      {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월 일정 목록
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {events
+                      .filter(event => {
+                        const dateStr = event.start.date || event.start.dateTime?.split('T')[0] || ''
+                        if (!dateStr) return false
+                        const date = new Date(dateStr)
+                        return date.getFullYear() === currentDate.getFullYear() && date.getMonth() === currentDate.getMonth()
+                      })
+                      .sort((a, b) => {
+                        const dateA = a.start.date || a.start.dateTime?.split('T')[0] || ''
+                        const dateB = b.start.date || b.start.dateTime?.split('T')[0] || ''
+                        return dateA.localeCompare(dateB)
+                      })
+                      .map((event, index) => {
+                        const dateStr = event.start.date || event.start.dateTime?.split('T')[0] || ''
+                        const isProjectEvent = event.workstyle === '프로젝트' || event.isProjectEvent
+
+                        return (
+                          <div key={event.id + index} className="flex items-center p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all">
+                            <div className="flex-shrink-0 w-16 text-center mr-6">
+                              <div className="text-sm font-bold text-gray-500">{dateStr.split('-')[1]}월</div>
+                              <div className="text-xl font-bold text-gray-900">{dateStr.split('-')[2]}일</div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                {isProjectEvent ? (
+                                  <Badge variant="outline" className={`
+                                    ${event.subCategory === '조완' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                                      event.subCategory === '공시' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        'bg-purple-50 text-purple-700 border-purple-200'}
+                                  `}>
+                                    {event.subCategory}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200">
+                                    {event.workstyle}
+                                  </Badge>
+                                )}
+                                <h4 className="font-bold text-gray-900 truncate">
+                                  {event.summary}
+                                </h4>
+                              </div>
+                              <p className="text-sm text-gray-500 truncate">
+                                {event.description || '내용 없음'}
+                              </p>
+                        </div>
+
+                        {!isProjectEvent && (
+                          <div className="flex-shrink-0 ml-4 flex items-center gap-2">
+                            <div className="text-sm text-gray-600 font-medium">
+                              {(event as LocalEvent).participant?.name}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditEvent(event as LocalEvent)}
+                              className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  
+                {[...events, ...projectEvents].filter(event => {
+                    const dateStr = 'date' in event 
+                      ? event.date 
+                      : (event as LocalEvent).start.date || (event as LocalEvent).start.dateTime?.split('T')[0] || '';
+                    if (!dateStr) return false;
+                    const date = new Date(dateStr);
+                    return date.getFullYear() === currentDate.getFullYear() && date.getMonth() === currentDate.getMonth();
+                  }).length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      이번 달 일정이 없습니다.
+                    </div>
+                  )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          )}
 
 
           {/* 일정 추가 모달 */}
@@ -3066,6 +3206,8 @@ export default function SchedulePage() {
             </div>
           )}
 
+            </div>
+          </div>
         </div>
       </div>
     </AuthGuard>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Package, ArrowUp, AlertTriangle } from 'lucide-react'
+import { Package, ArrowUp, AlertTriangle, X } from 'lucide-react'
 
 // 엄격한 타입 정의
 interface StockOutFormData {
@@ -122,112 +122,139 @@ export default function StockOutModal({ isOpen, onClose, onSave, selectedItems =
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl bg-gray-50" aria-describedby="stock-out-description">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <Package className="h-8 w-8 text-red-600" />
-            <span className="text-2xl font-bold text-black">재고 출고</span>
-          </DialogTitle>
-          <p id="stock-out-description" className="text-gray-600 mt-1">
-            선택된 재고를 출고 처리합니다.
-          </p>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl bg-white p-0 overflow-hidden border-0 shadow-2xl rounded-2xl" aria-describedby="stock-out-description">
+        {/* Header Section */}
+        <div className="bg-rose-50/50 px-8 py-6 border-b border-rose-100">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-rose-950">
+              <div className="p-2.5 bg-rose-100 rounded-xl">
+                <Package className="h-6 w-6 text-rose-600" />
+              </div>
+              재고 출고
+            </DialogTitle>
+            <p id="stock-out-description" className="text-rose-600/80 mt-2 text-sm font-medium">
+              선택된 자재를 출고 처리하고 재고에서 차감합니다.
+            </p>
+          </DialogHeader>
+        </div>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 선택된 항목 표시 */}
-          {selectedItems.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="text-sm font-medium text-blue-900 mb-3">
-                선택된 항목 ({selectedItems.length}개)
+        <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* 선택된 항목 표시 */}
+            {selectedItems.length > 0 ? (
+              <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-rose-900 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-rose-500 rounded-full"></span>
+                    선택된 항목 ({selectedItems.length}개)
+                  </h4>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                  {selectedItems.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center p-3 bg-white rounded-lg border border-rose-100 shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 text-sm">{item.product}</span>
+                        <span className="text-xs text-gray-500">{item.spec}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-medium text-rose-600 bg-rose-50 px-2 py-1 rounded-md">
+                          현재: {item.closing_quantity || item.current_quantity}개
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-1">
+                          위치: {item.location}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {selectedItems.map((item) => (
-                  <div key={item.id} className="text-sm text-blue-700 flex justify-between items-center p-2 bg-blue-100 rounded">
-                    <span className="font-medium">{item.product}</span>
-                    <span className="text-blue-600 font-bold">현재: {item.closing_quantity || item.current_quantity}개</span>
-                    <span className="text-blue-600 font-bold">위치: {item.location}</span>
-                  </div>
-                ))}
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3 text-yellow-800">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                <span className="text-sm font-medium">출고할 항목을 먼저 선택해주세요.</span>
+              </div>
+            )}
+
+            {/* 입력 필드 그룹 */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <span className="w-1 h-4 bg-rose-500 rounded-full"></span>
+                출고 정보
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    출고 수량 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.requestQuantity}
+                    onChange={(e) => setFormData({...formData, requestQuantity: parseInt(e.target.value) || 0})}
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-rose-500 rounded-xl focus:ring-4 focus:ring-rose-500/10 transition-all duration-200 font-medium"
+                    placeholder="0"
+                    min="1"
+                    max="999999"
+                    required
+                  />
+                  {selectedItems.length > 0 && (
+                    <p className="text-xs text-rose-500 font-medium mt-1 ml-1">
+                      최대 가능: {Math.min(...selectedItems.map(item => item.closing_quantity || item.current_quantity))}개
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    프로젝트/용도
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.project}
+                    onChange={(e) => setFormData({...formData, project: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-rose-500 rounded-xl focus:ring-4 focus:ring-rose-500/10 transition-all duration-200 font-medium"
+                    placeholder="용도를 입력하세요"
+                    maxLength={100}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  비고
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border-transparent focus:bg-white border focus:border-rose-500 rounded-xl focus:ring-4 focus:ring-rose-500/10 transition-all duration-200 font-medium resize-none"
+                  rows={3}
+                  placeholder="추가 메모를 입력하세요"
+                  maxLength={500}
+                />
               </div>
             </div>
-          )}
 
-          {selectedItems.length === 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2 text-yellow-800">
-                <AlertTriangle className="h-5 w-5" />
-                <span className="text-sm font-medium">출고할 항목을 선택해주세요</span>
-              </div>
+            <div className="flex gap-3 pt-4 border-t border-gray-100">
+              <Button 
+                type="button" 
+                onClick={handleClose} 
+                variant="outline" 
+                className="flex-1 h-12 border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-bold transition-all"
+              >
+                취소
+              </Button>
+              <Button 
+                type="submit" 
+                className="flex-1 h-12 bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-200 rounded-xl font-bold transition-all"
+                disabled={selectedItems.length === 0}
+              >
+                <ArrowUp className="h-5 w-5 mr-2" />
+                출고 처리
+              </Button>
             </div>
-          )}
-
-          {/* 필수 필드들 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-black mb-1">
-                출고 수량 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={formData.requestQuantity}
-                onChange={(e) => setFormData({...formData, requestQuantity: parseInt(e.target.value) || 0})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                placeholder="출고할 수량을 입력하세요"
-                min="1"
-                max="999999"
-                required
-              />
-              {selectedItems.length > 0 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  최대 출고 가능: {Math.min(...selectedItems.map(item => item.closing_quantity || item.current_quantity))}개
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-black mb-1">
-                프로젝트/용도
-              </label>
-              <input
-                type="text"
-                value={formData.project}
-                onChange={(e) => setFormData({...formData, project: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-                placeholder="프로젝트명 또는 용도를 입력하세요"
-                maxLength={100}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-black mb-1">
-              비고
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black text-black bg-white"
-              rows={3}
-              placeholder="추가 메모를 입력하세요"
-              maxLength={500}
-            />
-          </div>
-
-          <div className="flex space-x-3 pt-2">
-            <Button 
-              type="submit" 
-              className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100"
-              disabled={selectedItems.length === 0}
-            >
-              <ArrowUp className="h-4 w-4 mr-2" />
-              출고 처리
-            </Button>
-            <Button type="button" onClick={handleClose} variant="outline" className="flex-1 bg-white text-black border border-gray-300 hover:bg-gray-100">
-              취소
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   )
-} 
+}
