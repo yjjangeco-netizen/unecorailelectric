@@ -625,11 +625,10 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
       
       // DB에 저장 (에러 처리 개선)
       try {
-        // Append Level to product name
-        const level = user?.level || '1'
+        // Level prefix 제거
         const dataToSave = {
           ...formData,
-          product: `[Level ${level}] ${formData.product}`
+          product: formData.product
         }
         const result = await saveStockInToDB(dataToSave)
         
@@ -667,14 +666,13 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
       onClose()
     }
   }
-
   // 엑셀 파일 처리
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      alert('엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.')
+    if (!file.name.endsWith('.csv')) {
+      alert('CSV 파일(.csv)만 업로드 가능합니다.')
       return
     }
 
@@ -684,8 +682,9 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
       setExcelData(data)
       alert(`${data.length}개의 품목이 성공적으로 읽혔습니다.`)
     } catch (error) {
-      console.error('엑셀 파일 처리 오류:', error)
-      alert('엑셀 파일 처리 중 오류가 발생했습니다.')
+      console.error('CSV 파일 처리 오류:', error)
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
+      alert(`CSV 파일 처리 중 오류가 발생했습니다.\n\n상세 오류:\n${errorMessage}`)
     } finally {
       setIsProcessingExcel(false)
     }
@@ -783,77 +782,81 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
 
     setIsSaving(true)
     try {
-      // 권한 확인 (재고 입고 권한 또는 level2 이상 필요)
+      // 권한 확인 (재고 입고 권한 또는 level1 이상 필요)
       let hasPermission = false
       if (user?.stock_in) {
         hasPermission = true
       } else {
-        hasPermission = await checkDbPermission('level2')
+        hasPermission = await checkDbPermission('level1')
       }
 
       if (!hasPermission) {
-        throw new Error('입고 권한이 부족합니다. (재고 입고 권한 또는 Level 2 이상 필요)')
+        throw new Error('입고 권한이 부족합니다. (재고 입고 권한 또는 Level 1 이상 필요)')
       }
 
       // 권한 기반으로 데이터베이스 작업 실행
-      await executeWithDbPermission(async () => {
-        // 현재 최대 인덱스 번호 조회
-        const { data: maxIndexData, error: maxIndexError } = await supabase
-          .from('items')
-          .select('id')
-          .order('id', { ascending: false })
-          .limit(1)
-          .single()
-
-        let nextIndex = 1
-        if (maxIndexData && !maxIndexError && maxIndexData.id) {
-          // 기존 ID가 숫자인 경우에만 파싱
-          const currentMaxId = parseInt(String(maxIndexData.id))
-          if (!isNaN(currentMaxId)) {
-            nextIndex = currentMaxId + 1
-          }
-        }
-
-        // 각 품목을 순차적으로 처리하여 입고 순서대로 인덱스 할당
-        const validItems = excelData.filter((item): item is ExcelStockInData => item !== null && item !== undefined)
+      // 각 품목을 순차적으로 처리하여 입고 API 호출
+      const validItems = excelData.filter((item): item is ExcelStockInData => item !== null && item !== undefined)
+      
+      // 임시 토큰 생성
+      const token = user ? `temp_${user.id}_${Date.now()}` : 'temp_guest'
+      
+      let successCount = 0
+      let failCount = 0
+      
+      for (let i = 0; i < validItems.length; i++) {
+        const item = validItems[i]
+        // Level prefix 제거
+        const productName = item.product
         
-        for (let i = 0; i < validItems.length; i++) {
-          const item = validItems[i]
-          // Append Level to product name
-          const level = user?.level || '1'
-          item.product = `[Level ${level}] ${item.product}`
-          if (!item) continue
-          
-          // UUID 생성 (crypto.randomUUID 사용)
-          const stockInIndex = crypto.randomUUID()
-
-          // 트랜잭션으로 묶어서 에러 발생 시 전체 롤백
-          const { data: result, error: transactionError } = await supabase.rpc('process_stock_in_transaction', {
-            p_product: item.product,
-            p_spec: item.spec,
-            p_maker: item.maker || '',
-            p_unit_price: item.unitPrice || 0,
-            p_stock_status: item.stockStatus,
-            p_note: item.note || '',
-            p_purpose: item.purpose || '재고관리',
-            p_quantity: item.quantity,
-            p_received_by: 'yjjang',
-            p_event_date: item.stockInDate || new Date().toISOString().split('T')[0],
-            p_location: item.location || '창고A'
+        try {
+          // API를 통한 입고 처리
+          const response = await fetch('/api/stock/in', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: productName,
+              specification: item.spec,
+              maker: item.maker || '',
+              location: item.location || '창고A',
+              quantity: item.quantity,
+              unit_price: item.unitPrice || 0,
+              stock_status: item.stockStatus,
+              reason: item.purpose || '재고관리',
+              note: item.note || '',
+              userLevel: user?.level || '1',
+              received_by: user?.username || user?.name || 'unknown'
+            })
           })
 
-          if (transactionError) {
-            console.error(`품목 ${i + 1} 트랜잭션 오류:`, transactionError)
-            throw new Error(`품목 ${i + 1} 입고 실패: ${transactionError.message}`)
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'API 오류')
+          }
+          
+          const result = await response.json()
+          if (!result.ok) {
+             throw new Error(result.error || '알 수 없는 오류')
           }
 
-          console.log(`품목 ${i + 1} 입고 완료 - 인덱스: ${stockInIndex}`)
+          console.log(`품목 ${i + 1} 입고 완료: ${productName}`)
+          successCount++
+        } catch (error) {
+          console.error(`품목 ${i + 1} 입고 실패:`, error)
+          failCount++
+          // 개별 실패 시 전체 중단하지 않고 계속 진행할지 여부 결정 (여기서는 계속 진행)
         }
+      }
 
-        return { success: true, processedCount: excelData.length }
-      }, 'level2')
-
-      alert(`${excelData.length}개 품목의 입고가 완료되었습니다!`)
+      if (failCount > 0) {
+        alert(`${successCount}개 성공, ${failCount}개 실패했습니다. 콘솔을 확인해주세요.`)
+      } else {
+        alert(`${successCount}개 품목의 입고가 완료되었습니다!`)
+      }
+      
       setExcelData([])
       onClose()
       
@@ -892,12 +895,18 @@ export default function StockInModal({ isOpen, onClose, onSave, existingStock: _
 
   // CSV 템플릿 다운로드
   const downloadCSVTemplate = () => {
-    const csvContent = 'product,spec,location,quantity,maker,unitPrice,purpose,note,stockStatus\n품목명,규격,위치,수량,제조사,단가,용도,비고,품목상태\n전선,2.0SQ x 100m,창고A-01,50,대한전선,10000,재고관리,고품질 동전선,신품\n케이블 타이,100mm,창고B-03,200,한국케이블,500,재고관리,내열성 우수,신품'
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    // 한글 헤더, 올바른 순서
+    const csvContent = '품목명,규격,위치,수량,단가,품목상태,제조사,용도,비고\n전선,2.0SQ x 100m,창고A-01,50,10000,신품,대한전선,재고관리,고품질 동전선\n케이블 타이,100mm,창고B-03,200,500,신품,한국케이블,재고관리,내열성 우수'
+    
+    // UTF-8 BOM 추가 (엑셀에서 한글 깨짐 방지)
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     link.download = '입고템플릿.csv'
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
   }
 
   // 취소 버튼 전용 핸들러 (저장 전 확인)

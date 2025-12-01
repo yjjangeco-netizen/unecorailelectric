@@ -36,6 +36,7 @@ export const stockInSchema = z.object({
   stock_status: z.nativeEnum(STOCK_STATUS).default(STOCK_STATUS.NEW),
   reason: optionalString,
   note: optionalString,
+  received_by: optionalString, // 작성자 정보 추가
 })
 
 // 출고 스키마 (데이터베이스와 일치)

@@ -28,6 +28,7 @@ interface StockHistoryItem {
   notes: string
   remaining: number
   itemCondition?: 'new' | 'used-new' | 'used-used' | 'broken'
+  handler: string
 }
 
 export default function StockHistoryModal({ isOpen, onClose, item }: StockHistoryModalProps) {
@@ -95,13 +96,10 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
     try {
       console.log('재고 내역 로드 시작:', item.id)
       
-      // 입고 이력 조회
+      // 입고 이력 조회 (조인 제거)
       const { data: stockInData, error: stockInError } = await supabase
         .from('stock_in')
-        .select(`
-          *,
-          items(name, specification, maker)
-        `)
+        .select('*')
         .eq('item_id', item.id)
         .order('received_at', { ascending: false })
 
@@ -110,13 +108,10 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
         throw new Error(`입고 이력 조회 실패: ${stockInError.message}`)
       }
 
-      // 출고 이력 조회
+      // 출고 이력 조회 (조인 제거)
       const { data: stockOutData, error: stockOutError } = await supabase
         .from('stock_out')
-        .select(`
-          *,
-          items(name, specification, maker)
-        `)
+        .select('*')
         .eq('item_id', item.id)
         .order('issued_at', { ascending: false })
 
@@ -129,9 +124,9 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       const allHistory = [
         ...((stockInData as any)?.map((inItem: any) => ({
           id: `in-${inItem.id}`,
-          itemName: inItem.items?.name || inItem.product || '', // items 조인 결과 또는 기존 필드 사용
-          spec: inItem.items?.specification || inItem.spec || '',
-          maker: inItem.items?.maker || inItem.maker || '',
+          itemName: inItem.product || '', // items 조인 제거로 product 필드 사용
+          spec: inItem.spec || '',
+          maker: inItem.maker || '',
           purpose: inItem.purpose,
           unitPrice: inItem.unit_price,
           quantity: inItem.quantity,
@@ -140,13 +135,14 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
           transactionDate: inItem.received_at,
           notes: inItem.note,
           remaining: 0, // TODO: 누적 계산 로직 추가
-          itemCondition: inItem.item_condition
+          itemCondition: inItem.item_condition,
+          handler: inItem.received_by || '-' // received_by를 handler로 매핑
         })) ?? []),
         ...((stockOutData as any)?.map((outItem: any) => ({
           id: `out-${outItem.id}`,
-          itemName: outItem.items?.name || outItem.product || '',
-          spec: outItem.items?.specification || outItem.spec || '',
-          maker: outItem.items?.maker || outItem.maker || '',
+          itemName: outItem.product || '',
+          spec: outItem.spec || '',
+          maker: outItem.maker || '',
           purpose: outItem.purpose,
           unitPrice: outItem.unit_price,
           quantity: -outItem.quantity, // 출고는 음수로 표시
@@ -155,7 +151,8 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
           transactionDate: outItem.issued_at,
           notes: outItem.note,
           remaining: 0, // TODO: 누적 계산 로직 추가
-          itemCondition: outItem.item_condition
+          itemCondition: outItem.item_condition,
+          handler: outItem.issued_by || '-' // issued_by를 handler로 매핑
         })) ?? [])
       ].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
 
@@ -164,7 +161,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       const stockOutTotal = (stockOutData as any)?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
       const hasStock = stockInTotal > stockOutTotal
       
-      if (!hasStock) {
+      if (!hasStock && allHistory.length === 0) {
         setStockHistory([])
         setError('현재 재고가 없는 품목입니다.')
         return
@@ -250,6 +247,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">날짜</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">구분</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">수량</th>
+                          <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">처리자</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">품목상태</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">비고</th>
                           <th className="px-3 py-2 text-left text-xs font-medium text-black uppercase tracking-wider">남은 재고</th>
@@ -276,6 +274,9 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
                               }`}>
                                 {history.quantity > 0 ? '+' : ''}{history.quantity}개
                               </span>
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap text-sm text-black">
+                              {history.handler}
                             </td>
                             <td className="px-3 py-2 whitespace-nowrap">
                               {history.transactionType === 'in' ? (
