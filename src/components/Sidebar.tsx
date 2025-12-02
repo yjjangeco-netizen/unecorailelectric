@@ -45,6 +45,7 @@ export default function Sidebar() {
       key: 'daily_log',
       subItems: [
         { name: '업무일지 작성', href: '/work-diary/write' },
+        { name: '업무일지 작성 내역', href: '/work-diary/history' },
         { name: '외근/출장 보고', href: '/business-trip-reports' },
         { name: '통계', href: '/work-diary/advanced-stats' }
       ]

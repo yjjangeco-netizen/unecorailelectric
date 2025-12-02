@@ -47,9 +47,27 @@ export async function GET(request: NextRequest) {
     if (projectId && projectId !== 'all') query = query.eq('project_id', projectId)
 
     // 사용자 필터
-    if (userId && userId !== 'all') query = query.eq('user_id', userId)
+    // Level 5 또는 Admin은 모든 사용자의 데이터를 볼 수 있음
+    // 단, userId 파라미터가 명시적으로 제공되면 해당 사용자로 필터링
+    const isAdminOrLevel5 = userLevel === '5' || userLevel?.toLowerCase() === 'administrator'
+    
+    if (userId && userId !== 'all') {
+      // 특정 사용자 필터링 요청이 있는 경우
+      query = query.eq('user_id', userId)
+    } else if (!isAdminOrLevel5) {
+      // 일반 사용자는 자신의 데이터만 볼 수 있음 (userId가 없거나 all일 때)
+      // 여기서 userId는 요청 헤더나 세션에서 가져온 현재 로그인한 사용자의 ID여야 함
+      // 현재 클라이언트에서 userId를 쿼리 파라미터로 보내주고 있다고 가정
+      if (userId) {
+        query = query.eq('user_id', userId)
+      } else {
+        // 안전을 위해 userId가 없으면 빈 결과 반환하거나 에러 처리
+        // 여기서는 빈 결과 반환
+        return NextResponse.json({ data: [], total: 0, page, limit, totalPages: 0 })
+      }
+    }
 
-    // 레벨별 권한 제한
+    // 레벨별 권한 제한 (allowedUserIds)
     if (allowedUserIds && allowedUserIds !== '') {
       const userIds = allowedUserIds.split(',').filter(id => id.trim() !== '')
       if (userIds.length > 0) {
@@ -161,6 +179,8 @@ export async function GET(request: NextRequest) {
         userId: diary.user_id,
         createdAt: diary.created_at,
         updatedAt: diary.updated_at,
+        isConfirmed: diary.is_confirmed || false,
+        adminComment: diary.admin_comment || '',
         
         // 프로젝트 정보 (통계용)
         project: project ? {

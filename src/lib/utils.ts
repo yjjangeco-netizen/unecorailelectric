@@ -50,7 +50,7 @@ export const getStockStatusBgColor = (status: string): string => {
 }
 
 /**
- * 날짜 형식으로 포맷팅
+ * 날짜 형식으로 포맷팅 (YYYY-MM-DD)
  */
 export const formatDate = (dateString: string): string => {
   try {
@@ -58,11 +58,10 @@ export const formatDate = (dateString: string): string => {
     if (isNaN(date.getTime())) {
       throw new Error('Invalid date string')
     }
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   } catch (error) {
     log.warn('날짜 포맷팅 오류', 'formatDate', { dateString, error })
     return '날짜 오류'
@@ -283,4 +282,4 @@ export const normalizeOrderBy = (orderBy?: string): string => {
   if (!orderBy) return 'product'
   if (orderBy === 'name') return 'product'
   return ALLOW.includes(orderBy) ? orderBy : 'product'
-} 
+}

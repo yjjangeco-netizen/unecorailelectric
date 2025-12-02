@@ -69,19 +69,9 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       return
     }
 
-    // item 객체의 실제 데이터 확인
-    console.log('전달받은 item 객체:', item)
-    console.log('품목명:', item.name)
-    console.log('현재 재고:', item.current_quantity)
-    console.log('품목 상태:', item.stock_status)
-
     // ID 형식 검증 - UUID 또는 숫자 ID 모두 허용
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     const numericIdRegex = /^\d+$/
-    
-    console.log('ID 검증 시작:', { id: item.id, type: typeof item.id })
-    console.log('UUID 패턴 매치:', uuidRegex.test(item.id))
-    console.log('숫자 ID 패턴 매치:', numericIdRegex.test(item.id))
     
     if (!uuidRegex.test(item.id) && !numericIdRegex.test(item.id)) {
       console.error('잘못된 ID 형식:', item.id)
@@ -89,13 +79,10 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
       return
     }
 
-    console.log('ID 검증 통과:', item.id)
     setLoading(true)
     setError('')
     
     try {
-      console.log('재고 내역 로드 시작:', item.id)
-      
       // 입고 이력 조회 (조인 제거)
       const { data: stockInData, error: stockInError } = await supabase
         .from('stock_in')
@@ -167,7 +154,6 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
         return
       }
 
-      console.log('재고 내역 로드 완료:', allHistory.length, '건')
       setStockHistory(allHistory)
       
     } catch (err) {

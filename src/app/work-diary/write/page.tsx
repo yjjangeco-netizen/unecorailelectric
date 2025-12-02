@@ -21,6 +21,7 @@ import {
   Search
 } from 'lucide-react'
 import ProjectSearchModal from '@/components/ProjectSearchModal'
+import { ProjectCombobox } from '@/components/ProjectCombobox'
 
 interface WorkEntry {
   id?: number | undefined
@@ -83,21 +84,10 @@ export default function WorkDiaryWritePage() {
 
   // 프로젝트명에 따른 작업유형/세부유형 설정 함수
   const getWorkTypeOptions = (projectName: string) => {
-    const wsmsKeywords = ['cncwl', 'cncuwl', 'wsms', 'm&d', 'tandem', 'cncdwl']
-    const hasWsmsKeyword = wsmsKeywords.some(keyword =>
-      projectName.toLowerCase().includes(keyword.toLowerCase())
-    )
-
-    if (hasWsmsKeyword) {
-      return {
-        workTypes: ['신규', '보완', 'AS', 'SS', 'OV'],
-        workSubTypes: ['내근', '출장', '외근', '전화']
-      }
-    }
-
+    // 모든 프로젝트에 대해 동일한 작업 유형/세부 유형 옵션 제공
     return {
-      workTypes: [],
-      workSubTypes: []
+      workTypes: ['신규', '보완', 'AS', 'SS', 'OV', '기타'],
+      workSubTypes: ['내근', '출장', '외근', '전화']
     }
   }
 
@@ -340,9 +330,10 @@ export default function WorkDiaryWritePage() {
                               className="bg-white h-9"
                             />
                           ) : (
-                            <Select
+                            <ProjectCombobox
+                              projects={projects}
                               value={entry.projectId}
-                              onValueChange={(value) => {
+                              onChange={(value) => {
                                 const updated = [...workEntries]
                                 updated[index] = {
                                   ...updated[index],
@@ -353,30 +344,15 @@ export default function WorkDiaryWritePage() {
                                 }
                                 setWorkEntries(updated)
                               }}
-                            >
-                              <SelectTrigger className="bg-white h-9">
-                                <SelectValue placeholder="프로젝트 선택" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {projects.map((project) => (
-                                  <SelectItem key={project.id} value={project.id.toString()}>
-                                    {project.name}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="other">기타</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          )}
-                          {entry.projectId !== 'other' && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              onClick={() => openProjectSearch(index)}
-                              className="shrink-0 h-9 w-9"
-                            >
-                              <Search className="h-4 w-4 text-gray-500" />
-                            </Button>
+                              onSelectProject={(project) => {
+                                // ProjectCombobox handles the selection, but we might need to do something else here if needed
+                                // Currently onChange handles the state update, so this might be redundant or for additional logic
+                                // But we need to update workType/SubType based on project if we revert to conditional logic
+                                // Since we made workType always dropdown, we just need to update the state.
+                                // The onChange above handles the ID.
+                                // Let's just ensure we don't need to do anything else.
+                              }}
+                            />
                           )}
                         </div>
                       </div>
@@ -386,7 +362,7 @@ export default function WorkDiaryWritePage() {
                         <Label className="text-xs font-medium text-gray-500">작업 유형</Label>
                         {(() => {
                           const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_number || '')
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.name || '')
                           
                           if (workTypeOptions.workTypes.length > 0) {
                             return (
@@ -401,7 +377,7 @@ export default function WorkDiaryWritePage() {
                                 <SelectTrigger className="bg-white h-9">
                                   <SelectValue placeholder="선택" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-white">
                                   {workTypeOptions.workTypes.map((type) => (
                                     <SelectItem key={type} value={type}>{type}</SelectItem>
                                   ))}
@@ -428,9 +404,9 @@ export default function WorkDiaryWritePage() {
                         <Label className="text-xs font-medium text-gray-500">세부 유형</Label>
                         {(() => {
                           const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_number || '')
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.name || '')
                           
-                          if (workTypeOptions.workSubTypes.length > 0 && entry.workType) {
+                          if (workTypeOptions.workSubTypes.length > 0) {
                             return (
                               <Select
                                 value={entry.workSubType}
@@ -443,7 +419,7 @@ export default function WorkDiaryWritePage() {
                                 <SelectTrigger className="bg-white h-9">
                                   <SelectValue placeholder="선택" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-white">
                                   {workTypeOptions.workSubTypes.map((type) => (
                                     <SelectItem key={type} value={type}>{type}</SelectItem>
                                   ))}

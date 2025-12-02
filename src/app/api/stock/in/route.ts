@@ -13,10 +13,7 @@ export async function POST(request: NextRequest) {
       const authHeader = request.headers.get('authorization')
       const token = authHeader?.replace('Bearer ', '')
       
-      console.log('=== 인증 확인 디버깅 ===')
-      console.log('authHeader:', authHeader)
-      console.log('token:', token ? '토큰 존재' : '토큰 없음')
-      console.log('=== 인증 확인 디버깅 끝 ===')
+
       
       if (!token) {
         return NextResponse.json(
@@ -49,20 +46,7 @@ export async function POST(request: NextRequest) {
       const validatedData = stockInSchema.parse(body)
       const userLevel = body.userLevel || '1' // userLevel 추출
 
-      // 디버깅: 전송할 데이터 로그
-      console.log('=== API 입고 처리 디버깅 ===')
-      console.log('전송할 데이터:', {
-        p_item_name: validatedData.name,
-        p_specification: validatedData.specification,
-        p_maker: validatedData.maker,
-        p_location: validatedData.location,
-        p_quantity: validatedData.quantity,
-        p_unit_price: validatedData.unit_price,
-        p_stock_status: validatedData.stock_status,
-        p_reason: validatedData.reason,
-        p_note: validatedData.note,
-        p_received_by: validatedData.received_by || user.email || user.id
-      })
+
 
       // 저장 프로시저 호출
       const { data: result, error } = await supabase.rpc('process_stock_in', {
@@ -79,7 +63,7 @@ export async function POST(request: NextRequest) {
       })
 
       // 디버깅: 결과 로그
-      console.log('함수 실행 결과:', { result, error })
+
 
       if (error) {
         throw new Error(`입고 처리 실패: ${error.message}`)
@@ -122,7 +106,7 @@ export async function POST(request: NextRequest) {
           // 여기서 에러를 던지면 트랜잭션이 아니므로 items 테이블만 업데이트되고 stock_in은 누락될 수 있음.
           // 하지만 로그를 남기고 진행.
         } else {
-          console.log('stock_in 테이블 저장 성공')
+          // console.log('stock_in 테이블 저장 성공')
         }
       } catch (insertErr) {
         console.error('stock_in 테이블 저장 중 예외 발생:', insertErr)
@@ -161,7 +145,7 @@ export async function POST(request: NextRequest) {
           created_at: new Date().toISOString()
         }
 
-        console.log('stock_history 저장 시도:', historyData)
+
 
         const { error: historyError } = await supabase
           .from('stock_history')
@@ -170,7 +154,7 @@ export async function POST(request: NextRequest) {
         if (historyError) {
           console.error('Failed to log stock history:', historyError)
         } else {
-          console.log('stock_history 저장 성공')
+          // console.log('stock_history 저장 성공')
         }
       } catch (hErr) {
         console.error('Exception logging history:', hErr)

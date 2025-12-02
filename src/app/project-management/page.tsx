@@ -367,12 +367,12 @@ export default function ProjectManagementPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          projectName: formData.projectName,
-          projectNumber: formData.projectNumber,
-          assemblyDate: formData.assemblyDate,
-          factoryTestDate: formData.factoryTestDate,
-          siteTestDate: formData.siteTestDate,
-          remarks: formData.description
+          name: formData.projectName,
+          project_number: formData.projectNumber,
+          assembly_date: formData.assemblyDate,
+          factory_test_date: formData.factoryTestDate,
+          site_test_date: formData.siteTestDate,
+          description: formData.description
         })
       })
 
