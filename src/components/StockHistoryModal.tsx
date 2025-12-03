@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Package, Info } from 'lucide-react'
@@ -55,14 +55,7 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
     }
   }
 
-  // 실제 입출고 내역 데이터 로드
-  useEffect(() => {
-    if (item && isOpen) {
-      loadStockHistory()
-    }
-  }, [item, isOpen])
-
-  const loadStockHistory = async () => {
+  const loadStockHistory = useCallback(async () => {
     if (!item?.id) {
       console.error('품목 ID가 없습니다:', item)
       setError('품목 ID가 없습니다.')
@@ -162,7 +155,13 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
     } finally {
       setLoading(false)
     }
-  }
+  }, [item])
+
+  useEffect(() => {
+    if (item && isOpen) {
+      loadStockHistory()
+    }
+  }, [item, isOpen, loadStockHistory])
 
   const formatDate = (dateString: string) => {
     try {

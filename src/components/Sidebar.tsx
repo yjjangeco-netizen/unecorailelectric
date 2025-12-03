@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { 
   Home, 
   Package2, 
@@ -123,7 +124,7 @@ export default function Sidebar() {
       <div className="h-16 flex items-center px-4 border-b border-gray-800 bg-[#1c1c1c]">
         <div className="flex items-center gap-3 overflow-hidden w-full">
           <div className="min-w-[32px] h-8 flex items-center justify-center">
-            <img src="/logo_new.png" alt="Logo" className="h-8 w-8 object-contain" />
+            <Image src="/logo_new.png" alt="Logo" width={32} height={32} className="h-8 w-8 object-contain" />
           </div>
           {!isCollapsed && (
             <div className="flex items-center justify-between flex-1 min-w-0">

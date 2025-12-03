@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -91,16 +91,9 @@ export default function WorkDiaryHistoryPage() {
     }
   }, [authLoading, isAuthenticated, router])
 
-  useEffect(() => {
-    if (user) {
-      fetchDiaries()
-      if (isLevel5OrAdmin) {
-        fetchUsers()
-      }
-    }
-  }, [user, page, startDate, endDate, filterUserId])
 
-  const fetchUsers = async () => {
+
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users', {
         headers: {
@@ -115,9 +108,9 @@ export default function WorkDiaryHistoryPage() {
     } catch (error) {
       console.error('Failed to fetch users:', error)
     }
-  }
+  }, [user?.id, user?.level])
 
-  const fetchDiaries = async () => {
+  const fetchDiaries = useCallback(async () => {
     try {
       setLoading(true)
       const queryParams = new URLSearchParams({
@@ -156,7 +149,16 @@ export default function WorkDiaryHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, user?.level, user?.id, isLevel5OrAdmin, filterUserId, startDate, endDate])
+
+  useEffect(() => {
+    if (user) {
+      fetchDiaries()
+      if (isLevel5OrAdmin) {
+        fetchUsers()
+      }
+    }
+  }, [user, isLevel5OrAdmin, fetchDiaries, fetchUsers])
 
   // Group diaries by date and user
   const groupedDiaries = diaries.reduce((acc, diary) => {
