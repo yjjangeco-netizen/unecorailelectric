@@ -50,7 +50,7 @@ interface AdditionalOption {
   location: string
 }
 
-export default function ProjectDetailModal({ project, isOpen, onClose, onSave, onDelete }: ProjectDetailModalProps) {
+export default function ProjectEditModal({ project, isOpen, onClose, onSave, onDelete }: ProjectDetailModalProps) {
   const [currentProject, setCurrentProject] = useState<Project | null>(project)
   const [activeTab, setActiveTab] = useState('basic')
   const [motors, setMotors] = useState<MotorSpec[]>([])
