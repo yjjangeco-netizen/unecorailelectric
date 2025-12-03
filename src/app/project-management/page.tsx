@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 
-import ProjectDetailModal from '@/components/ProjectDetailModal'
+import ProjectEditModal from '@/components/ProjectEditModal'
 import SpecificationGenerator from '@/components/SpecificationGenerator'
 import type { Project } from '@/lib/types'
 import {
@@ -1008,7 +1008,7 @@ export default function ProjectManagementPage() {
           </Card>
 
           {/* 프로젝트 상세 모달 */}
-          <ProjectDetailModal
+          <ProjectEditModal
             project={selectedProject}
             isOpen={showDetailModal}
             onClose={handleCloseDetailModal}
