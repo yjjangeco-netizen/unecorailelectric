@@ -856,6 +856,7 @@ export default function ProjectManagementPage() {
                   <table className="w-full border-collapse table-fixed">
                     <thead>
                       <tr className="bg-slate-100 border-b-2 border-slate-200">
+                        <th className="text-left p-3 font-semibold text-slate-800 w-24">구분</th>
                         <th className="text-left p-3 font-semibold text-slate-800 w-32">
                           <button
                             onClick={() => {
@@ -874,7 +875,6 @@ export default function ProjectManagementPage() {
                             )}
                           </button>
                         </th>
-                        <th className="text-left p-3 font-semibold text-slate-800 w-32">구분</th>
                         <th className="text-left p-3 font-semibold text-slate-800 w-48">
                           <button
                             onClick={() => {
@@ -971,7 +971,6 @@ export default function ProjectManagementPage() {
                     <tbody>
                       {filteredProjects.map((project) => (
                         <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                          <td className="p-3 text-slate-600 text-sm font-mono">{project.project_number}</td>
                           <td className="p-3 text-slate-600 text-sm">
                             {(() => {
                               switch(project.category) {
@@ -983,6 +982,7 @@ export default function ProjectManagementPage() {
                               }
                             })()}
                           </td>
+                          <td className="p-3 text-slate-600 text-sm font-mono">{project.project_number}</td>
                           <td className="p-3 text-slate-800 font-medium text-sm">{getUpdatedProjectName(project)}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.assembly_date ? formatDate(project.assembly_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.factory_test_date ? formatDate(project.factory_test_date) : '-'}</td>
