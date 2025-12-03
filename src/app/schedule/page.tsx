@@ -33,8 +33,12 @@ interface CalendarEvent {
     location?: string
     participant?: string
     status?: string
+    category?: string
+    participantId?: string
   }
 }
+
+import EventModal from '@/components/EventModal'
 
 export default function SchedulePage() {
   const { user, isAuthenticated, loading } = useUser()
@@ -43,7 +47,8 @@ export default function SchedulePage() {
   
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -58,11 +63,6 @@ export default function SchedulePage() {
     
     setIsLoadingEvents(true)
     try {
-      // Calculate date range (e.g., current month +/- 1 month)
-      // For simplicity, we'll fetch a broad range or let the API handle filtering if needed.
-      // Here we'll fetch all relevant events for now or implement range fetching.
-      
-      // Fetching from multiple endpoints as per original logic
       const [scheduleRes, businessTripRes, leaveRes, eventsRes] = await Promise.all([
         fetch(`/api/schedule?startDate=2024-01-01&endDate=2025-12-31`, { headers: { 'x-user-level': String(user.level || '1') } }),
         fetch('/api/business-trips'),
@@ -78,7 +78,7 @@ export default function SchedulePage() {
         if (data.projectEvents) {
           data.projectEvents.forEach((e: any) => {
             newEvents.push({
-              id: `proj-${e.id}`,
+              id: e.id,
               title: `[${e.eventType}] ${e.project?.projectName || ''}`,
               start: e.eventDate,
               allDay: true,
@@ -150,9 +150,11 @@ export default function SchedulePage() {
             borderColor: 'transparent',
             extendedProps: {
               type: 'general',
+              category: event.category,
               description: event.description,
               location: event.location,
-              participant: event.participant_name
+              participant: event.participant_name,
+              participantId: event.participant_id
             }
           })
         })
@@ -172,6 +174,25 @@ export default function SchedulePage() {
       fetchEvents()
     }
   }, [isAuthenticated])
+
+  const handleAddEvent = () => {
+    setSelectedEvent(null)
+    setIsEventModalOpen(true)
+  }
+
+  const handleEventClick = (info: any) => {
+    const type = info.event.extendedProps.type
+    if (type === 'general') {
+      // Only allow editing if it's a general event
+      // Check permission: only creator or admin can edit (handled in backend, but UI feedback is good)
+      // For now, open modal for all general events, let backend reject if unauthorized
+      setSelectedEvent(info.event)
+      setIsEventModalOpen(true)
+    } else {
+      // Show simple alert for other types
+      alert(`[${info.event.title}]\n${info.event.extendedProps.description || ''}`)
+    }
+  }
 
   if (loading) {
     return (
@@ -201,7 +222,10 @@ export default function SchedulePage() {
                 {isLoadingEvents ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                 새로고침
               </Button>
-              {/* Add Event Button could go here */}
+              <Button onClick={handleAddEvent} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                일정 등록
+              </Button>
             </div>
           </div>
 
@@ -274,7 +298,7 @@ export default function SchedulePage() {
                 }}
                 locale={koLocale}
                 events={events}
-                editable={false} // Set to true if drag & drop is implemented
+                editable={false}
                 selectable={true}
                 selectMirror={true}
                 dayMaxEvents={true}
@@ -282,17 +306,19 @@ export default function SchedulePage() {
                 height="auto"
                 contentHeight="auto"
                 aspectRatio={1.8}
-                eventClick={(info) => {
-                  alert(`이벤트: ${info.event.title}\n설명: ${info.event.extendedProps.description || '없음'}`)
-                }}
-                // dateClick={(info) => {
-                //   alert('Date clicked: ' + info.dateStr);
-                // }}
+                eventClick={handleEventClick}
               />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <EventModal 
+        isOpen={isEventModalOpen} 
+        onClose={() => setIsEventModalOpen(false)} 
+        onSave={fetchEvents}
+        event={selectedEvent}
+      />
     </AuthGuard>
   )
 }
