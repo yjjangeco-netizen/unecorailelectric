@@ -874,6 +874,7 @@ export default function ProjectManagementPage() {
                             )}
                           </button>
                         </th>
+                        <th className="text-left p-3 font-semibold text-slate-800 w-32">구분</th>
                         <th className="text-left p-3 font-semibold text-slate-800 w-48">
                           <button
                             onClick={() => {
@@ -971,6 +972,17 @@ export default function ProjectManagementPage() {
                       {filteredProjects.map((project) => (
                         <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                           <td className="p-3 text-slate-600 text-sm font-mono">{project.project_number}</td>
+                          <td className="p-3 text-slate-600 text-sm">
+                            {(() => {
+                              switch(project.category) {
+                                case 'individual': return '개별업무';
+                                case 'standardization': return '업무 표준화';
+                                case 'wheel_conversion': return '차륜관리프로그램 변환';
+                                case 'project': 
+                                default: return '프로젝트';
+                              }
+                            })()}
+                          </td>
                           <td className="p-3 text-slate-800 font-medium text-sm">{getUpdatedProjectName(project)}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.assembly_date ? formatDate(project.assembly_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.factory_test_date ? formatDate(project.factory_test_date) : '-'}</td>
