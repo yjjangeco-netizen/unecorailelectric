@@ -565,7 +565,10 @@ export default function ProjectManagementPage() {
                   사양서 출력
                 </Button>
                 <Button
-                  onClick={() => setShowAddForm(true)}
+                  onClick={() => {
+                    setSelectedProject(null)
+                    setShowDetailModal(true)
+                  }}
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -1007,13 +1010,14 @@ export default function ProjectManagementPage() {
             </CardContent>
           </Card>
 
-          {/* 프로젝트 상세 모달 */}
+          {/* 프로젝트 상세 모달 (추가/편집 통합) */}
           <ProjectEditModal
             project={selectedProject}
             isOpen={showDetailModal}
             onClose={handleCloseDetailModal}
             onSave={handleSaveProjectDetail}
             onDelete={handleDelete}
+            isNewProject={!selectedProject}
           />
 
           {/* 사양서 생성기 모달 */}
