@@ -32,6 +32,7 @@ export interface Project {
   id: number; // DB: INTEGER
   project_number: string;
   project_name: string; // DB: project_name
+  category?: string; // DB: category
   description?: string;
   ProjectStatus: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete'; // DB: ProjectStatus
   is_active: boolean;

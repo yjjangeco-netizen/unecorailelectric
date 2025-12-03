@@ -33,6 +33,7 @@ export async function GET(_request: NextRequest) {
         id: item.id.toString(), // INTEGER to STRING
         project_number: item.project_number || '',
         name: item.project_name || '', // FIXED: project_name
+        category: item.category || 'project', // DB: category
         description: item.description || '',
         status: item.ProjectStatus || 'Manufacturing',
         priority: item.priority || 'medium',
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
         {
           project_number: projectData.project_number,
           project_name: projectData.name, // FIXED: project_name
+          category: projectData.category || 'project', // DB: category
           description: projectData.description || null,
           ProjectStatus: projectData.status || 'Manufacturing', // FIXED: ProjectStatus
           priority: projectData.priority || 'medium',

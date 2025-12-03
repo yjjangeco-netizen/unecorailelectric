@@ -44,6 +44,7 @@ export async function GET(
       id: data.id.toString(),
       project_number: data.project_number || '',
       name: data.project_name || '',
+      category: data.category || 'project', // DB: category
       description: data.description || '',
       status: data.ProjectStatus || 'Manufacturing',
       priority: data.priority || 'medium',
@@ -60,7 +61,55 @@ export async function GET(
       client_contact: data.client_contact || '',
       created_by: data.created_by || '',
       created_at: data.created_at || '',
-      updated_at: data.updated_at || ''
+      updated_at: data.updated_at || '',
+      
+      // 기본 정보
+      base_name: data.base_name || '',
+      
+      // 사양 정보
+      hardware_version: data.hardware_version || '',
+      has_disk: data.has_disk || false,
+      incoming_power: data.incoming_power || '',
+      primary_breaker: data.primary_breaker || '',
+      
+      // 전원사양
+      pvr_ampere: data.pvr_ampere || 0,
+      frequency: data.frequency || 0,
+      
+      // Drive 사양
+      spindle_spec: data.spindle_spec || '',
+      tool_post_spec: data.tool_post_spec || '',
+      pump_low_spec: data.pump_low_spec || '',
+      pump_high_spec: data.pump_high_spec || '',
+      crusher_spec: data.crusher_spec || '',
+      conveyor_spec: data.conveyor_spec || '',
+      dust_collector_spec: data.dust_collector_spec || '',
+      
+      // 380V motor 사양
+      vehicle_transfer_device: data.vehicle_transfer_device || '',
+      oil_heater: data.oil_heater || '',
+      cooling_fan: data.cooling_fan || '',
+      chiller: data.chiller || '',
+      
+      // 220V motor 사양
+      lubrication: data.lubrication || '',
+      grease: data.grease || '',
+      
+      // 차륜관리시스템
+      cctv_spec: data.cctv_spec || '',
+      automatic_cover: data.automatic_cover || '',
+      ups_spec: data.ups_spec || '',
+      configuration: data.configuration || '',
+      
+      // 색상
+      main_color: data.main_color || '',
+      auxiliary_color: data.auxiliary_color || '',
+      
+      // 옵션
+      warning_light: data.warning_light || false,
+      buzzer: data.buzzer || false,
+      speaker: data.speaker || false,
+      automatic_rail: data.automatic_rail || false,
     }
 
     console.log('조회된 프로젝트:', project)
@@ -100,6 +149,7 @@ export async function PUT(
     // 모든 필드 업데이트 (프론트엔드 필드명과 API 필드명 매핑)
     if (projectData.project_number) updateData.project_number = projectData.project_number
     if (projectData.name !== undefined) updateData.project_name = projectData.name
+    if (projectData.category !== undefined) updateData.category = projectData.category
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status) {
       updateData.ProjectStatus = projectData.status

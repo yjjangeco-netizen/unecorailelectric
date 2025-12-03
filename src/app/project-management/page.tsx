@@ -189,11 +189,15 @@ export default function ProjectManagementPage() {
   const [formData, setFormData] = useState({
     projectName: '',
     projectNumber: '',
+    category: 'project',
     assemblyDate: '',
     factoryTestDate: '',
     siteTestDate: '',
     description: ''
   })
+
+  // 카테고리 필터 상태
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   // 인증 상태 확인
 
@@ -285,6 +289,15 @@ export default function ProjectManagementPage() {
       )
     }
 
+    // 카테고리 필터링
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(project => {
+        // 기존 데이터 호환성을 위해 category가 없는 경우 'project'로 간주
+        const projectCategory = project.category || 'project'
+        return projectCategory === categoryFilter
+      })
+    }
+
     // 정렬
     const sortedFiltered = filtered.sort((a: Project, b: Project) => {
       let aValue, bValue
@@ -331,7 +344,7 @@ export default function ProjectManagementPage() {
     })
 
     setFilteredProjects(sortedFiltered)
-  }, [projects, searchTerm, showDemolishedProjects, showLatheProjects, showGrindingProjects, statusFilters, sortBy, sortOrder])
+  }, [projects, searchTerm, showDemolishedProjects, showLatheProjects, showGrindingProjects, statusFilters, sortBy, sortOrder, categoryFilter])
 
   // 상태 필터 체크박스 핸들러
   const handleStatusFilterChange = (status: string) => {
@@ -347,6 +360,7 @@ export default function ProjectManagementPage() {
     setFormData({
       projectName: '',
       projectNumber: '',
+      category: 'project',
       assemblyDate: '',
       factoryTestDate: '',
       siteTestDate: '',
@@ -369,6 +383,7 @@ export default function ProjectManagementPage() {
         body: JSON.stringify({
           name: formData.projectName,
           project_number: formData.projectNumber,
+          category: formData.category,
           assembly_date: formData.assemblyDate,
           factory_test_date: formData.factoryTestDate,
           site_test_date: formData.siteTestDate,
@@ -395,6 +410,7 @@ export default function ProjectManagementPage() {
     setFormData({
       projectName: project.project_name,
       projectNumber: project.project_number,
+      category: project.category || 'project',
       assemblyDate: project.assembly_date || '',
       factoryTestDate: project.factory_test_date || '',
       siteTestDate: project.site_test_date || '',
@@ -416,6 +432,7 @@ export default function ProjectManagementPage() {
         body: JSON.stringify({
           name: formData.projectName,
           project_number: formData.projectNumber,
+          category: formData.category,
           assembly_date: formData.assemblyDate,
           factory_test_date: formData.factoryTestDate,
           site_test_date: formData.siteTestDate,
@@ -553,7 +570,7 @@ export default function ProjectManagementPage() {
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-md"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  프로젝트 추가
+                  추가
                 </Button>
               </div>
             </div>
@@ -584,6 +601,20 @@ export default function ProjectManagementPage() {
                     className="mt-1 border-green-200 focus:border-green-400 bg-white text-gray-900"
                     placeholder="프로젝트명을 입력하세요"
                   />
+                </div>
+                <div>
+                  <Label className="text-green-700 font-medium">업무 구분</Label>
+                  <select
+                    id="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-green-200 focus:border-green-400 bg-white text-gray-900 shadow-sm p-2 border"
+                  >
+                    <option value="project">프로젝트</option>
+                    <option value="individual">개별업무</option>
+                    <option value="standardization">업무 표준화</option>
+                    <option value="wheel_conversion">차륜관리프로그램 변환</option>
+                  </select>
                 </div>
                 <div>
                   <Label className="text-green-700 font-medium">프로젝트번호</Label>
@@ -718,6 +749,22 @@ export default function ProjectManagementPage() {
                     >
                       {sortOrder === 'asc' ? '↑' : '↓'}
                     </button>
+                  </div>
+
+                  {/* 카테고리 필터 */}
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-sm text-slate-700 font-medium">구분:</Label>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="all">전체</option>
+                      <option value="project">프로젝트</option>
+                      <option value="individual">개별업무</option>
+                      <option value="standardization">업무 표준화</option>
+                      <option value="wheel_conversion">차륜관리프로그램 변환</option>
+                    </select>
                   </div>
 
                   {/* 프로젝트 타입 필터 */}
