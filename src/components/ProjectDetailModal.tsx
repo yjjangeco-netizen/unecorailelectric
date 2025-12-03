@@ -291,7 +291,8 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
 
   if (!currentProject) return null;
 
-  return <Dialog open={isOpen} onOpenChange={onClose}>
+  const modalContent = (
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[1200px] h-[90vh] p-0 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <DialogHeader className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white flex flex-row items-center justify-between shrink-0">
@@ -936,4 +937,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
         }}
       />
     </Dialog>
-  }
+  )
+
+  return modalContent
+}
