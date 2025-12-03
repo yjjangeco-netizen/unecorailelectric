@@ -1014,8 +1014,17 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
                 취소
               </Button>
               <Button onClick={handleSave} className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
-                <Save className="h-4 w-4 mr-2" />
-                변경사항 저장
+                {isNewProject || !project ? (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    프로젝트 추가
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    변경사항 저장
+                  </>
+                )}
               </Button>
             </div>
           </div>
