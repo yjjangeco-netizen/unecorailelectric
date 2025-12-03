@@ -363,6 +363,34 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
                       id="project_name" 
                       value={currentProject.project_name || ''} 
                       onChange={handleChange} 
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-gray-600 font-medium">업무 구분</Label>
+                    <Select 
+                      value={currentProject.category || 'project'} 
+                      onValueChange={(value) => handleChange({ target: { id: 'category', value } } as any)}
+                    >
+                      <SelectTrigger className="h-12 border-gray-200 focus:ring-4 focus:ring-blue-500/10 rounded-xl">
+                        <SelectValue placeholder="업무 구분 선택" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white shadow-lg border-gray-100">
+                        <SelectItem value="project">프로젝트</SelectItem>
+                        <SelectItem value="individual">개별업무</SelectItem>
+                        <SelectItem value="standardization">업무 표준화</SelectItem>
+                        <SelectItem value="wheel_conversion">차륜관리프로그램 변환</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="base_name" className="text-gray-600 font-medium">기지명</Label>
+                    <Input 
+                      id="base_name" 
+                      value={currentProject.base_name || ''} 
+                      onChange={handleChange}
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="client_name" className="text-gray-600 font-medium">고객사명</Label>
