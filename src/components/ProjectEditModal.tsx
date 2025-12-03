@@ -290,8 +290,8 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
   }
 
   if (!currentProject) return null;
-  // Force Vercel rebuild to pick up syntax fix
-  const modalContent = (
+
+  return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[1200px] h-[90vh] p-0 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
@@ -938,6 +938,4 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
       />
     </Dialog>
   )
-
-  return modalContent
 }
