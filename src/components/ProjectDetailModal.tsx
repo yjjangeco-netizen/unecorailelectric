@@ -282,7 +282,8 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
 
   const handleDelete = () => {
     if (currentProject && onDelete) {
-      if (confirm('정말로 이 프로젝트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+      // Encoding issue fix: Using English for confirmation
+      if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
         onDelete(currentProject.id);
       }
     }
