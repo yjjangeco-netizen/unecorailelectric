@@ -115,7 +115,9 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json()
-        const trips = data.trips || []
+        // API가 배열을 직접 반환하거나 { trips: [...] } 형태로 반환
+        const trips = Array.isArray(data) ? data : (data.trips || [])
+        console.log('출장/외근 데이터:', trips)
 
         // 레벨 5 이상은 모든 사용자의 항목, 그 외는 자신의 것만
         const isLevel5OrAdmin = String(user.level) === '5' || String(user.level).toLowerCase() === 'administrator'
@@ -123,36 +125,38 @@ export default function DashboardPage() {
           ? trips
           : trips.filter((trip: any) => trip.user_id === user.id)
 
-        // LocalEvent 형식으로 변환
-        const formattedTrips: LocalEvent[] = filteredTrips.map((trip: any) => ({
-          id: trip.id,
-          category: '출장/외근',
-          subCategory: trip.trip_type === 'business' ? '출장' : '외근',
-          subSubCategory: trip.purpose || '기타',
-          summary: `[${trip.trip_type === 'business' ? '출장' : '외근'}] ${trip.title}`,
-          description: trip.purpose,
-          location: trip.location || '미지정',
-          start: {
-            dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
-            date: trip.start_date
-          },
-          end: {
-            dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
-            date: trip.end_date
-          },
-          participant: {
-            id: trip.user_id,
-            name: trip.user_name,
-            level: trip.user_level || '1'
-          },
-          createdBy: {
-            id: trip.created_by || trip.user_id,
-            name: trip.created_by_name || trip.user_name,
-            level: trip.created_by_level || trip.user_level || '1'
-          },
-          createdAt: trip.created_at,
-          reported: false // 기본적으로 미보고로 설정
-        }))
+        // LocalEvent 형식으로 변환 (미보고만 필터링)
+        const formattedTrips: LocalEvent[] = filteredTrips
+          .filter((trip: any) => trip.report_status !== 'submitted') // 미보고만
+          .map((trip: any) => ({
+            id: trip.id,
+            category: '출장/외근',
+            subCategory: trip.trip_type === 'business' ? '출장' : '외근',
+            subSubCategory: trip.purpose || '기타',
+            summary: `[${trip.trip_type === 'business' ? '출장' : '외근'}] ${trip.title}`,
+            description: trip.purpose,
+            location: trip.location || '미지정',
+            start: {
+              dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
+              date: trip.start_date
+            },
+            end: {
+              dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
+              date: trip.end_date
+            },
+            participant: {
+              id: trip.user_id,
+              name: trip.user_name,
+              level: trip.user_level || '1'
+            },
+            createdBy: {
+              id: trip.created_by || trip.user_id,
+              name: trip.created_by_name || trip.user_name,
+              level: trip.created_by_level || trip.user_level || '1'
+            },
+            createdAt: trip.created_at,
+            reported: trip.report_status === 'submitted'
+          }))
 
         // localStorage의 businessTrips도 함께 조회
         const storedBusinessTrips = localStorage.getItem('businessTrips')
@@ -349,16 +353,9 @@ export default function DashboardPage() {
     loadVacationEvents()
   }, [loadVacationEvents])
 
-  // 프로젝트 일정 로드 (오늘 기준 3개월치)
+  // 프로젝트 일정 로드 (오늘 기준 앞뒤 1개월)
   const loadProjectEvents = useCallback(async () => {
     console.log('대시보드 프로젝트 일정 로드 시작:', { userId: user?.id, level: user?.level })
-    console.log('레벨 체크:', {
-      isAdmin: String(user?.level).toLowerCase() === 'administrator',
-      numericLevel: parseInt(String(user?.level || '0')),
-      condition: String(user?.level).toLowerCase() !== 'administrator' && parseInt(String(user?.level || '0')) < 1,
-      userLevel: user?.level,
-      userId: user?.id
-    })
     if (!user?.id) {
       console.log('대시보드 프로젝트 일정 로드 중단: 사용자 없음')
       return
@@ -366,14 +363,16 @@ export default function DashboardPage() {
 
     setLoadingProjects(true)
     try {
-      // 오늘 날짜 기준으로 3개월 범위 계산
+      // 오늘 날짜 기준으로 앞뒤 1개월 범위 계산
       const today = new Date()
-      const threeMonthsLater = new Date(today)
-      threeMonthsLater.setMonth(today.getMonth() + 3)
+      const oneMonthBefore = new Date(today)
+      oneMonthBefore.setMonth(today.getMonth() - 1)
+      const oneMonthLater = new Date(today)
+      oneMonthLater.setMonth(today.getMonth() + 1)
 
       // 날짜를 YYYY-MM-DD 형식으로 변환
-      const startDate = today.toISOString().split('T')[0]
-      const endDate = threeMonthsLater.toISOString().split('T')[0]
+      const startDate = oneMonthBefore.toISOString().split('T')[0]
+      const endDate = oneMonthLater.toISOString().split('T')[0]
 
       // 일정 API 호출
       const response = await fetch(`/api/schedule?startDate=${startDate}&endDate=${endDate}`)
@@ -407,7 +406,7 @@ export default function DashboardPage() {
             if (project.assembly_date) {
               const [year, month, day] = project.assembly_date.split('-').map(Number)
               const assemblyDate = new Date(year, month - 1, day)
-              if (assemblyDate >= today && assemblyDate <= threeMonthsLater) {
+              if (assemblyDate >= oneMonthBefore && assemblyDate <= oneMonthLater) {
                 projectEvents.push({
                   id: `assembly-${project.id}`,
                   projectId: project.id,
@@ -424,7 +423,7 @@ export default function DashboardPage() {
             if (project.factory_test_date) {
               const [year, month, day] = project.factory_test_date.split('-').map(Number)
               const factoryDate = new Date(year, month - 1, day)
-              if (factoryDate >= today && factoryDate <= threeMonthsLater) {
+              if (factoryDate >= oneMonthBefore && factoryDate <= oneMonthLater) {
                 projectEvents.push({
                   id: `factory-${project.id}`,
                   projectId: project.id,
@@ -441,7 +440,7 @@ export default function DashboardPage() {
             if (project.site_test_date) {
               const [year, month, day] = project.site_test_date.split('-').map(Number)
               const siteDate = new Date(year, month - 1, day)
-              if (siteDate >= today && siteDate <= threeMonthsLater) {
+              if (siteDate >= oneMonthBefore && siteDate <= oneMonthLater) {
                 projectEvents.push({
                   id: `site-${project.id}`,
                   projectId: project.id,
@@ -829,7 +828,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">프로젝트 일정</h2>
-                    <p className="text-gray-500 text-sm mt-1">향후 3개월 내 프로젝트 일정</p>
+                    <p className="text-gray-500 text-sm mt-1">오늘 기준 앞뒤 1개월 일정</p>
                   </div>
                 </div>
               </CardHeader>
