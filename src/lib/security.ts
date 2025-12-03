@@ -35,24 +35,8 @@ export function verifyToken(token: string): { userId: string; username: string; 
 export function validatePasswordStrength(password: string): { isValid: boolean; errors: string[] } {
   const errors: string[] = []
 
-  if (password.length < 8) {
-    errors.push('비밀번호는 최소 8자 이상이어야 합니다')
-  }
-
-  if (!/[A-Z]/.test(password)) {
-    errors.push('비밀번호는 대문자를 포함해야 합니다')
-  }
-
-  if (!/[a-z]/.test(password)) {
-    errors.push('비밀번호는 소문자를 포함해야 합니다')
-  }
-
-  if (!/\d/.test(password)) {
-    errors.push('비밀번호는 숫자를 포함해야 합니다')
-  }
-
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    errors.push('비밀번호는 특수문자를 포함해야 합니다')
+  if (password.length < 4) {
+    errors.push('비밀번호는 최소 4자 이상이어야 합니다')
   }
 
   return {

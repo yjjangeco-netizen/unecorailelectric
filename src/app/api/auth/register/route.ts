@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
 
-    const { username, password, name, department, position, level } = await request.json()
+    const { username, password, name, department, position, email, level } = await request.json()
 
     // 필수 필드 검증
-    if (!username || !password || !name || !department || !position || !level) {
+    if (!username || !password || !name || !department || !position) {
       return NextResponse.json(
         { error: '모든 필수 필드를 입력해주세요' },
         { status: 400 }
@@ -74,13 +74,15 @@ export async function POST(request: NextRequest) {
     // 비밀번호 해시화
     const hashedPassword = await hashPassword(password)
 
-    // 사용자 생성
+    // 사용자 생성 (UUID 자동 생성)
     const { data: newUser, error: createError } = await supabase
       .from('users')
       .insert({
+        id: crypto.randomUUID(),
         username: sanitizedUsername,
         password: hashedPassword,
         name: sanitizedName,
+        email: email,
         department: sanitizedDepartment,
         position: sanitizedPosition,
         level: level,

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import UserEditModal from '@/components/UserEditModal'
+import UserAddModal from '@/components/UserAddModal'
 import { Package, User, Plus, Edit, Trash2, Search, Globe, Shield, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import type { User as UserType, PositionType, DepartmentType, PermissionType } from '@/lib/types'
 
@@ -377,6 +378,13 @@ export default function UserManagementPage() {
             onSave={handleSaveUser}
           />
         )}
+
+        {/* 새 사용자 추가 모달 */}
+        <UserAddModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={loadUsers}
+        />
           </div>
         </div>
       </div>

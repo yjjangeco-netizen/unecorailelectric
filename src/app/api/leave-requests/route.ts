@@ -51,6 +51,45 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const leaveId = searchParams.get('id')
+    
+    if (!leaveId) {
+      return NextResponse.json({ error: '연차/반차 ID가 필요합니다' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const supabase = createApiClient()
+
+    const { data, error } = await supabase
+      .from('leave_requests')
+      .update({
+        leave_type: body.leave_type,
+        start_date: body.start_date,
+        end_date: body.end_date,
+        start_time: body.start_time,
+        end_time: body.end_time,
+        total_days: body.total_days,
+        reason: body.reason,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', leaveId)
+      .select()
+
+    if (error) {
+      console.error('연차/반차 수정 오류:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('연차/반차 수정 실패:', error)
+    return NextResponse.json({ error: '서버 오류' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -102,8 +141,9 @@ export async function POST(request: NextRequest) {
       end_date,
       start_time,
       end_time,
-        total_days: total_days || 1,
-        reason: reason || '개인사유'
+      total_days: total_days || 1,
+      reason: reason || '개인사유',
+      status: 'approved'  // 즉시 승인 상태로 등록
     }
     
     console.log('삽입할 데이터:', insertData)

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CalendarIcon, Clock, MapPin, AlignLeft, Trash2 } from 'lucide-react'
+import { CalendarIcon, Clock, MapPin, Trash2 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 
 interface EventModalProps {
@@ -15,35 +15,44 @@ interface EventModalProps {
   onClose: () => void
   onSave: () => void
   event?: any // If provided, we are in edit mode
+  selectedDate?: Date | null // For creating event on specific date
 }
 
-export default function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) {
+export default function EventModal({ isOpen, onClose, onSave, event, selectedDate }: EventModalProps) {
   const { user } = useUser()
   const [formData, setFormData] = useState({
     category: '업무',
     summary: '',
     startDate: '',
-    startTime: '',
+    startTime: '09:00',
     endDate: '',
-    endTime: '',
+    endTime: '18:00',
     location: '',
     description: '',
     participantId: '',
     participantName: ''
   })
+  
+  const [projectSearch, setProjectSearch] = useState('')
+  const [projects, setProjects] = useState<any[]>([])
+  const [showProjectList, setShowProjectList] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
       if (event) {
         // Edit mode: populate form
+        // event.start가 Date 객체이거나 문자열일 수 있음
+        const startStr = typeof event.start === 'string' ? event.start : event.start.toISOString()
+        const endStr = event.end ? (typeof event.end === 'string' ? event.end : event.end.toISOString()) : startStr
+        
         setFormData({
           category: event.extendedProps?.category || '업무',
           summary: event.title.replace(/^\[.*?\]\s*/, ''), // Remove [Category] prefix
-          startDate: event.startStr.split('T')[0],
-          startTime: event.startStr.split('T')[1]?.substring(0, 5) || '',
-          endDate: event.endStr ? event.endStr.split('T')[0] : event.startStr.split('T')[0],
-          endTime: event.endStr ? event.endStr.split('T')[1]?.substring(0, 5) : '',
+          startDate: startStr.split('T')[0],
+          startTime: startStr.split('T')[1]?.substring(0, 5) || '',
+          endDate: endStr.split('T')[0],
+          endTime: endStr.split('T')[1]?.substring(0, 5) || '',
           location: event.extendedProps?.location || '',
           description: event.extendedProps?.description || '',
           participantId: event.extendedProps?.participantId || user?.id || '',
@@ -51,13 +60,13 @@ export default function EventModal({ isOpen, onClose, onSave, event }: EventModa
         })
       } else {
         // Create mode: reset form
-        const today = new Date().toISOString().split('T')[0]
+        const targetDate = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
         setFormData({
           category: '업무',
           summary: '',
-          startDate: today,
+          startDate: targetDate,
           startTime: '09:00',
-          endDate: today,
+          endDate: targetDate,
           endTime: '18:00',
           location: '',
           description: '',
@@ -66,7 +75,7 @@ export default function EventModal({ isOpen, onClose, onSave, event }: EventModa
         })
       }
     }
-  }, [isOpen, event, user])
+  }, [isOpen, event, user, selectedDate])
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -252,13 +261,12 @@ export default function EventModal({ isOpen, onClose, onSave, event }: EventModa
             <Label htmlFor="description" className="text-right pt-2">
               내용
             </Label>
-            <div className="col-span-3 relative">
-              <AlignLeft className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <div className="col-span-3">
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
-                className="pl-9 min-h-[100px]"
+                className="min-h-[100px]"
                 placeholder="상세 내용 입력 (선택)"
               />
             </div>

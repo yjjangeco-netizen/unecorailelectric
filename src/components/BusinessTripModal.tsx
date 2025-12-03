@@ -1,456 +1,516 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  Users, 
-  X, 
-  Save, 
-  Send,
-  AlertTriangle,
-  CheckCircle
-} from 'lucide-react'
+import { CalendarIcon, Clock, MapPin, Search } from 'lucide-react'
+import { useUser } from '@/hooks/useUser'
+import { format, parseISO } from 'date-fns'
 
 interface BusinessTripModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: any) => void
-  trip?: any
-  projects?: any[]
-  users?: any[]
-  mode: 'create' | 'edit' | 'view'
+  onSave: () => void
+  selectedDate?: Date | null
+  event?: any // 편집 모드
 }
 
-export default function BusinessTripModal({
-  isOpen,
-  onClose,
-  onSave,
-  trip,
-  projects = [],
-  users = [],
-  mode = 'create'
-}: BusinessTripModalProps) {
+export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDate, event }: BusinessTripModalProps) {
+  const { user } = useUser()
   const [formData, setFormData] = useState({
-    trip_type: 'business_trip',
-    sub_type: '',
-    title: '',
-    description: '',
-    start_date: '',
-    end_date: '',
-    start_time: '',
-    end_time: '',
+    tripType: 'field_work', // 'field_work' 또는 'business_trip'
+    category: 'project', // 'project', 'as_ss', 'etc'
+    subType: '', // category에 따라 다름
+    projectId: '',
+    projectName: '',
+    startDate: '',
+    startTime: '09:00',
+    endDate: '',
+    endTime: '18:00',
     location: '',
-    purpose: '',
-    project_id: '',
-    companions: [] as string[]
+    purpose: ''
   })
-
-  const [errors, setErrors] = useState<{
-    title?: string
-    start_date?: string
-    end_date?: string
-    location?: string
-    purpose?: string
-    sub_type?: string
-  }>({})
+  
+  const [projectSearch, setProjectSearch] = useState('')
+  const [projects, setProjects] = useState<any[]>([])
+  const [showProjectList, setShowProjectList] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // 초기 데이터 설정
   useEffect(() => {
-    if (trip && mode !== 'create') {
-      setFormData({
-        trip_type: trip.trip_type || 'business_trip',
-        sub_type: trip.sub_type || '',
-        title: trip.title || '',
-        description: trip.description || '',
-        start_date: trip.start_date || '',
-        end_date: trip.end_date || '',
-        start_time: trip.start_time || '',
-        end_time: trip.end_time || '',
-        location: trip.location || '',
-        purpose: trip.purpose || '',
-        project_id: trip.project_id || '',
-        companions: trip.companions || []
-      })
-    } else if (mode === 'create') {
-      // 새 신청 시 기본값 설정
-      const today = new Date()
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
+    if (isOpen) {
+      loadProjects()
       
-      setFormData({
-        trip_type: 'business_trip',
-        sub_type: '',
-        title: '',
-        description: '',
-        start_date: today.toISOString().split('T')[0] || '',
-        end_date: tomorrow.toISOString().split('T')[0] || '',
-        start_time: '09:00',
-        end_time: '18:00',
-        location: '',
-        purpose: '',
-        project_id: '',
-        companions: []
-      })
+      if (event && event.extendedProps?.type === 'business_trip') {
+        // 편집 모드
+        const startDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
+        const endDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : startDate
+        
+        setFormData({
+          tripType: event.extendedProps?.tripType || 'field_work',
+          category: event.extendedProps?.category || 'project',
+          subType: event.extendedProps?.subType || '',
+          projectId: event.extendedProps?.projectId || '',
+          projectName: event.extendedProps?.projectName || '',
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          startTime: format(startDate, 'HH:mm'),
+          endDate: format(endDate, 'yyyy-MM-dd'),
+          endTime: format(endDate, 'HH:mm'),
+          location: event.extendedProps?.location || '',
+          purpose: event.extendedProps?.description || ''
+        })
+        setProjectSearch(event.extendedProps?.projectName || '')
+      } else {
+        // 생성 모드
+        const targetDate = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        setFormData({
+          tripType: 'field_work',
+          category: 'project',
+          subType: '',
+          projectId: '',
+          projectName: '',
+          startDate: targetDate,
+          startTime: '09:00',
+          endDate: targetDate,
+          endTime: '18:00',
+          location: '',
+          purpose: ''
+        })
+        setProjectSearch('')
+      }
     }
-  }, [trip, mode])
-
-  // 유효성 검사
-  const validateForm = () => {
-    const newErrors: {
-      title?: string
-      start_date?: string
-      end_date?: string
-      location?: string
-      purpose?: string
-      sub_type?: string
-    } = {}
-
-    if (!formData.title.trim()) {
-      newErrors.title = '제목은 필수입니다.'
+  }, [isOpen, selectedDate, event])
+  
+  const loadProjects = async () => {
+    try {
+      const response = await fetch('/api/projects')
+      if (response.ok) {
+        const data = await response.json()
+        setProjects(data.projects || [])
+      }
+    } catch (error) {
+      console.error('프로젝트 로드 실패:', error)
     }
+  }
+  
+  // 프로젝트 검색 필터링
+  const filteredProjects = projectSearch.trim() 
+    ? projects.filter(project => {
+        const searchLower = projectSearch.toLowerCase()
+        return (
+          project.project_name?.toLowerCase().includes(searchLower) ||
+          project.project_number?.toLowerCase().includes(searchLower)
+        )
+      }).slice(0, 10) // 검색 시 상위 10개
+    : projects.slice(0, 20) // 전체 보기 시 상위 20개
 
-    if (!formData.start_date) {
-      newErrors.start_date = '시작일은 필수입니다.'
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value }
+      
+      // category가 변경되면 subType 초기화
+      if (field === 'category') {
+        updated.subType = ''
+      }
+      
+      return updated
+    })
+  }
+  
+  // category에 따른 세부유형 옵션
+  const getSubTypeOptions = () => {
+    switch (formData.category) {
+      case 'project':
+        return [
+          { value: 'none', label: '선택안함' },
+          { value: '현장답사', label: '현장답사' },
+          { value: '공장시운전', label: '공장시운전' },
+          { value: '현장시운전', label: '현장시운전' },
+          { value: '운용자교육', label: '운용자교육' },
+          { value: '보완작업', label: '보완작업' },
+          { value: '기타', label: '기타' }
+        ]
+      case 'as_ss':
+        return [
+          { value: 'none', label: '선택안함' },
+          { value: 'AS', label: 'AS' },
+          { value: 'SS', label: 'SS' }
+        ]
+      default:
+        return []
     }
-
-    if (!formData.end_date) {
-      newErrors.end_date = '종료일은 필수입니다.'
-    }
-
-    if (formData.start_date && formData.end_date && formData.start_date > formData.end_date) {
-      newErrors.end_date = '종료일은 시작일보다 늦어야 합니다.'
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = '장소는 필수입니다.'
-    }
-
-    if (!formData.purpose.trim()) {
-      newErrors.purpose = '목적은 필수입니다.'
-    }
-
-    if (formData.trip_type === 'business_trip' && !formData.sub_type) {
-      newErrors.sub_type = '출장 세부구분은 필수입니다.'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  }
+  
+  const handleProjectSelect = (project: any) => {
+    setFormData(prev => ({
+      ...prev,
+      projectId: project.id,
+      projectName: project.project_name || project.project_number
+    }))
+    setProjectSearch(project.project_name || project.project_number)
+    setShowProjectList(false)
   }
 
-  // 폼 제출
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleDelete = async () => {
+    if (!event) return
     
-    if (!validateForm()) {
+    if (!confirm('이 일정을 삭제하시겠습니까?')) {
       return
     }
 
     setIsSubmitting(true)
-    
     try {
-      await onSave(formData)
+      let apiUrl = ''
+      let eventId = ''
+      
+      // ID 형식에 따라 API 엔드포인트 결정
+      if (event.id.startsWith('trip-')) {
+        eventId = event.id.replace('trip-', '')
+        apiUrl = `/api/business-trips?id=${eventId}`
+      } else if (event.id.startsWith('event-')) {
+        eventId = event.id.replace('event-', '')
+        apiUrl = `/api/events?id=${eventId}`
+      } else {
+        throw new Error('알 수 없는 일정 형식입니다')
+      }
+      
+      console.log('삭제 요청:', { eventId, apiUrl, userId: user?.id, userLevel: user?.level })
+      
+      const response = await fetch(apiUrl, {
+        method: 'DELETE',
+        headers: {
+          'x-user-level': user?.level?.toString() || '1',
+          'x-user-id': user?.id || ''
+        }
+      })
+
+      const data = await response.json()
+      console.log('삭제 응답:', { status: response.status, data })
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete event')
+      }
+
+      alert('일정이 삭제되었습니다')
+      onSave()
       onClose()
     } catch (error) {
-      console.error('Form submission error:', error)
+      console.error('Error deleting event:', error)
+      alert(`일정 삭제 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // 동행자 토글
-  const toggleCompanion = (userId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      companions: prev.companions.includes(userId)
-        ? prev.companions.filter(id => id !== userId)
-        : [...prev.companions, userId]
-    }))
-  }
+  const handleSubmit = async () => {
+    if (!formData.location.trim()) {
+      alert('장소를 입력해주세요')
+      return
+    }
+    
+    if (!formData.purpose.trim()) {
+      alert('내용을 입력해주세요')
+      return
+    }
 
-  // 출장 세부구분 옵션
-  const getSubTypeOptions = (tripType: string) => {
-    if (tripType === 'business_trip') {
-      return [
-        { value: '시운전', label: '시운전' },
-        { value: '현장답사', label: '현장답사' },
-        { value: '보완작업', label: '보완작업' },
-        { value: 'AS', label: 'AS' },
-        { value: 'SS', label: 'SS' }
-      ]
-    } else {
-      return [
-        { value: '현장점검', label: '현장점검' },
-        { value: '고객방문', label: '고객방문' },
-        { value: '교육', label: '교육' },
-        { value: '기타', label: '기타' }
-      ]
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        user_id: user?.id,
+        user_name: user?.name,
+        trip_type: formData.tripType,
+        category: formData.category,
+        sub_type: formData.subType || null,
+        project_id: formData.projectId || null,
+        title: formData.location, // 장소를 제목으로 사용
+        location: formData.location,
+        purpose: formData.purpose,
+        start_date: formData.startDate,
+        start_time: formData.startTime || null,
+        end_date: formData.endDate,
+        end_time: formData.endTime || null,
+        status: 'approved' // 자동 승인
+      }
+
+      let url = '/api/business-trips'
+      let method = 'POST'
+      
+      if (event) {
+        // 편집 모드
+        if (event.id.startsWith('trip-')) {
+          url = `/api/business-trips?id=${event.id.replace('trip-', '')}`
+          method = 'PUT'
+        } else if (event.id.startsWith('event-')) {
+          url = `/api/events?id=${event.id.replace('event-', '')}`
+          method = 'PUT'
+        }
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-level': user?.level?.toString() || '1',
+          'x-user-id': user?.id || ''
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save trip')
+      }
+
+      alert(event ? '일정이 수정되었습니다' : '일정이 등록되었습니다')
+      onSave()
+      onClose()
+    } catch (error) {
+      console.error('Error saving trip:', error)
+      alert(`일정 저장 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              {mode === 'create' ? '출장/외근 신청' : 
-               mode === 'edit' ? '출장/외근 수정' : '출장/외근 상세'}
-            </CardTitle>
-            <CardDescription>
-              {mode === 'create' ? '새로운 출장 또는 외근을 신청하세요' :
-               mode === 'edit' ? '출장/외근 정보를 수정하세요' : '출장/외근 상세 정보를 확인하세요'}
-            </CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </CardHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] bg-white max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold">
+            {event ? '일정 수정' : '일정 등록'}
+          </DialogTitle>
+        </DialogHeader>
         
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 기본 정보 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="trip_type">구분 *</Label>
-                <Select
-                  value={formData.trip_type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, trip_type: value, sub_type: '' }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="구분 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="business_trip">출장</SelectItem>
-                    <SelectItem value="field_work">외근</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="grid gap-5 py-4">
+          {/* 선택 (외근/출장) */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="tripType" className="text-right font-semibold">
+              선택 <span className="text-red-500">*</span>
+            </Label>
+            <Select value={formData.tripType} onValueChange={(value) => handleChange('tripType', value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="외근/출장 선택" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="field_work">외근</SelectItem>
+                <SelectItem value="business_trip">출장</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-              <div>
-                <Label htmlFor="sub_type">세부구분 *</Label>
-                <Select
-                  value={formData.sub_type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, sub_type: value }))}
-                  disabled={mode === 'view'}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="세부구분 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getSubTypeOptions(formData.trip_type).map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.sub_type && <p className="text-red-500 text-sm mt-1">{errors.sub_type}</p>}
-              </div>
-            </div>
+          {/* 구분 (프로젝트/AS/SS/기타) */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right font-semibold">
+              구분 <span className="text-red-500">*</span>
+            </Label>
+            <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="구분 선택" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                <SelectItem value="project">프로젝트</SelectItem>
+                <SelectItem value="as_ss">AS/SS</SelectItem>
+                <SelectItem value="etc">기타</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div>
-              <Label htmlFor="title">제목 *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="출장/외근 제목을 입력하세요"
-                className="mt-1"
-                disabled={mode === 'view'}
-              />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="description">상세 내용</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="출장/외근 상세 내용을 입력하세요"
-                className="mt-1 min-h-[100px]"
-                disabled={mode === 'view'}
-              />
-            </div>
-
-            {/* 날짜 및 시간 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="start_date">시작일 *</Label>
-                <Input
-                  id="start_date"
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-                {errors.start_date && <p className="text-red-500 text-sm mt-1">{errors.start_date}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="end_date">종료일 *</Label>
-                <Input
-                  id="end_date"
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-                {errors.end_date && <p className="text-red-500 text-sm mt-1">{errors.end_date}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="start_time">시작 시간</Label>
-                <Input
-                  id="start_time"
-                  type="time"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="end_time">종료 시간</Label>
-                <Input
-                  id="end_time"
-                  type="time"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-              </div>
-            </div>
-
-            {/* 장소 및 목적 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="location">장소 *</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="출장/외근 장소를 입력하세요"
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-                {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="purpose">목적 *</Label>
-                <Input
-                  id="purpose"
-                  value={formData.purpose}
-                  onChange={(e) => setFormData(prev => ({ ...prev, purpose: e.target.value }))}
-                  placeholder="출장/외근 목적을 입력하세요"
-                  className="mt-1"
-                  disabled={mode === 'view'}
-                />
-                {errors.purpose && <p className="text-red-500 text-sm mt-1">{errors.purpose}</p>}
-              </div>
-            </div>
-
-            {/* 프로젝트 선택 */}
-            <div>
-              <Label htmlFor="project">관련 프로젝트</Label>
-              <Select
-                value={formData.project_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value }))}
-                disabled={mode === 'view'}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="관련 프로젝트 선택 (선택사항)" />
+          {/* 세부 유형 (구분에 따라 다름) */}
+          {formData.category !== 'etc' && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="subType" className="text-right font-semibold">
+                세부 유형
+              </Label>
+              <Select value={formData.subType || 'none'} onValueChange={(value) => handleChange('subType', value === 'none' ? '' : value)}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="선택 (선택사항)" />
                 </SelectTrigger>
-                <SelectContent>
-                  {projects.map(project => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name} ({project.project_number})
+                <SelectContent className="bg-white">
+                  {getSubTypeOptions().map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          )}
 
-            {/* 동행자 선택 */}
-            <div>
-              <Label className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                동행자 선택
-              </Label>
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-                {users.map((user) => (
-                  <label key={user.id} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.companions.includes(user.id)}
-                      onChange={() => toggleCompanion(user.id)}
-                      className="rounded"
-                      disabled={mode === 'view'}
-                    />
-                    <span className="text-sm">{user.first_name} {user.last_name}</span>
-                  </label>
-                ))}
+          {/* 프로젝트 검색 */}
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right pt-2 font-semibold">
+              프로젝트
+            </Label>
+            <div className="col-span-3 relative">
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={projectSearch}
+                  onChange={(e) => {
+                    setProjectSearch(e.target.value)
+                    setShowProjectList(true)
+                  }}
+                  onFocus={() => setShowProjectList(true)}
+                  onBlur={() => {
+                    // 약간의 지연을 줘서 클릭 이벤트가 먼저 처리되도록
+                    setTimeout(() => setShowProjectList(false), 200)
+                  }}
+                  placeholder="프로젝트 검색..."
+                  className="w-full pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setProjectSearch('')
+                    setShowProjectList(true)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <Search className="h-4 w-4 text-gray-500" />
+                </button>
               </div>
-              {formData.companions.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.companions.map(companionId => {
-                    const companion = users.find(u => u.id === companionId)
-                    return companion ? (
-                      <Badge key={companionId} variant="secondary">
-                        {companion.first_name} {companion.last_name}
-                      </Badge>
-                    ) : null
-                  })}
+              
+              {showProjectList && filteredProjects.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  <div className="sticky top-0 bg-gray-50 px-4 py-2 border-b border-gray-200 text-xs text-gray-600">
+                    {projectSearch.trim() 
+                      ? `검색 결과 ${filteredProjects.length}개` 
+                      : `전체 프로젝트 (${filteredProjects.length}개)`
+                    }
+                  </div>
+                  {filteredProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project)}
+                      className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900">{project.project_name}</div>
+                      {project.project_number && (
+                        <div className="text-xs text-gray-500 mt-0.5">{project.project_number}</div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
+          </div>
 
-            {/* 제출 버튼 */}
-            {mode !== 'view' && (
-              <div className="flex justify-end gap-4 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  취소
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      처리 중...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      {mode === 'create' ? '신청하기' : '수정하기'}
-                    </>
-                  )}
-                </Button>
+          {/* 시작 */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right font-semibold">
+              시작 <span className="text-red-500">*</span>
+            </Label>
+            <div className="col-span-3 flex gap-2">
+              <div className="flex-1 relative">
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  className="pl-9"
+                />
               </div>
+              <div className="w-32 relative">
+                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) => handleChange('startTime', e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 종료 */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right font-semibold">
+              종료 <span className="text-red-500">*</span>
+            </Label>
+            <div className="col-span-3 flex gap-2">
+              <div className="flex-1 relative">
+                <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="w-32 relative">
+                <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) => handleChange('endTime', e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 장소 */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="location" className="text-right font-semibold">
+              장소 <span className="text-red-500">*</span>
+            </Label>
+            <div className="col-span-3 relative">
+              <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => handleChange('location', e.target.value)}
+                className="pl-9"
+                placeholder="방문 장소 입력"
+              />
+            </div>
+          </div>
+
+          {/* 내용 */}
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="purpose" className="text-right pt-2 font-semibold">
+              내용 <span className="text-red-500">*</span>
+            </Label>
+            <div className="col-span-3 relative">
+              <Textarea
+                id="purpose"
+                value={formData.purpose}
+                onChange={(e) => handleChange('purpose', e.target.value)}
+                className="min-h-[100px]"
+                placeholder="업무 내용을 입력하세요"
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="flex justify-between">
+          <div>
+            {event && (
+              <Button 
+                variant="destructive" 
+                onClick={handleDelete} 
+                disabled={isSubmitting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                삭제
+              </Button>
             )}
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+              취소
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+              {isSubmitting ? (event ? '수정 중...' : '등록 중...') : (event ? '수정하기' : '등록하기')}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

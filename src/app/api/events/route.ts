@@ -41,6 +41,73 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const eventId = searchParams.get('id')
+    
+    if (!eventId) {
+      return NextResponse.json({ error: '이벤트 ID가 필요합니다' }, { status: 400 })
+    }
+
+    const body = await request.json()
+    const supabase = createApiClient()
+
+    const { data, error } = await supabase
+      .from('events')
+      .update({
+        category: body.category,
+        summary: body.title || body.location,
+        description: body.purpose || body.description,
+        location: body.location,
+        start_date: body.start_date,
+        start_time: body.start_time,
+        end_date: body.end_date,
+        end_time: body.end_time
+      })
+      .eq('id', eventId)
+      .select()
+
+    if (error) {
+      console.error('이벤트 수정 오류:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('이벤트 수정 실패:', error)
+    return NextResponse.json({ error: '서버 오류' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const eventId = searchParams.get('id')
+    
+    if (!eventId) {
+      return NextResponse.json({ error: '이벤트 ID가 필요합니다' }, { status: 400 })
+    }
+
+    const supabase = createApiClient()
+
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', eventId)
+
+    if (error) {
+      console.error('이벤트 삭제 오류:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('이벤트 삭제 실패:', error)
+    return NextResponse.json({ error: '서버 오류' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

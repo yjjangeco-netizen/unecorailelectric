@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     console.log('쿼리 파라미터:', { status, trip_type, project_id })
 
-    // RLS 우회를 위해 간단한 쿼리로 변경
+    // 기본 조회 (프로젝트 조인 제거 - 별도로 처리)
     let query = supabase
       .from('business_trips')
       .select('*')
@@ -45,8 +45,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    console.log('출장/외근 API 응답 데이터:', data)
-    return NextResponse.json({ trips: data || [] })
+    // 프로젝트 이름을 추가하여 반환
+    const tripsWithProjects = data?.map(trip => ({
+      ...trip,
+      project_name: trip.projects?.project_name || null
+    })) || []
+    
+    console.log('출장/외근 API 응답 데이터:', tripsWithProjects)
+    return NextResponse.json(tripsWithProjects)
   } catch (error) {
     console.error('출장/외근 API 예상치 못한 오류:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
@@ -80,16 +86,20 @@ export async function POST(request: NextRequest) {
 
     // 출장/외근 생성
     const insertData = {
-      user_id: userId,
-      user_name: userName || 'Unknown',
-      title,
-      purpose,
-      location,
-      start_date: startDate,
-      end_date: endDate,
-      start_time: startTime || null,
-      end_time: endTime || null,
-      status: 'approved'
+      user_id: body.user_id,
+      user_name: body.user_name || 'Unknown',
+      trip_type: body.trip_type || 'field_work',
+      category: body.category || 'project',
+      sub_type: body.sub_type || null,
+      project_id: body.project_id || null,
+      title: body.title,
+      purpose: body.purpose,
+      location: body.location,
+      start_date: body.start_date,
+      end_date: body.end_date,
+      start_time: body.start_time || null,
+      end_time: body.end_time || null,
+      status: body.status || 'approved'
     }
     
     console.log('DB에 삽입할 데이터:', insertData)

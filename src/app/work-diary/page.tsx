@@ -15,8 +15,12 @@ import {
   Users,
   BarChart3,
   MapPin,
-  Briefcase
+  Briefcase,
+  Printer,
+  Sparkles
 } from 'lucide-react'
+import WorkDiaryReportModal from '@/components/WorkDiaryReportModal'
+import WorkDiarySummaryModal from '@/components/WorkDiarySummaryModal'
 
 interface WorkDiaryEntry {
   id: number
@@ -68,6 +72,8 @@ export default function WorkDiaryPage() {
   const [businessTripReports, setBusinessTripReports] = useState<BusinessTripReport[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingReports, setLoadingReports] = useState(true)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false)
 
   // 인증 상태 확인 및 리다이렉트
   useEffect(() => {
@@ -149,7 +155,7 @@ export default function WorkDiaryPage() {
 
               {/* Action Cards Grid */}
               {/* Action Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
                 {/* 업무일지 작성 카드 */}
                 <div 
                   onClick={() => router.push('/work-diary/write')}
@@ -164,6 +170,23 @@ export default function WorkDiaryPage() {
                   </p>
                   <div className="flex items-center text-orange-600 font-semibold text-sm">
                     작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                </div>
+
+                {/* AI 업무일지 요약 카드 */}
+                <div 
+                  onClick={() => setIsSummaryModalOpen(true)}
+                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Sparkles className="h-7 w-7 text-purple-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">업무일지 요약</h3>
+                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
+                    AI가 업무를 분석하고 인사이트를 제공합니다.
+                  </p>
+                  <div className="flex items-center text-purple-600 font-semibold text-sm">
+                    분석하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                 </div>
 
@@ -200,7 +223,36 @@ export default function WorkDiaryPage() {
                     작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                 </div>
+
+                {/* 보고서 출력 카드 */}
+                <div 
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    <Printer className="h-7 w-7 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">보고서 출력</h3>
+                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
+                    업무 일지를 보고서로 출력하고 관리합니다.
+                  </p>
+                  <div className="flex items-center text-green-600 font-semibold text-sm">
+                    작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                </div>
               </div>
+
+              {/* 보고서 모달 */}
+              <WorkDiaryReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+              />
+
+              {/* AI 요약 모달 */}
+              <WorkDiarySummaryModal
+                isOpen={isSummaryModalOpen}
+                onClose={() => setIsSummaryModalOpen(false)}
+              />
 
 
             </div>
