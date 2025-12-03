@@ -67,17 +67,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('출장/외근 신청 요청 데이터:', body)
     
-    const {
-      userId,
-      userName,
-      title,
-      purpose,
-      location,
-      startDate,
-      endDate,
-      startTime,
-      endTime
-    } = body
+    // snake_case와 camelCase 모두 지원
+    const userId = body.user_id || body.userId
+    const userName = body.user_name || body.userName
 
     if (!userId) {
       console.log('User ID 누락')
@@ -86,8 +78,8 @@ export async function POST(request: NextRequest) {
 
     // 출장/외근 생성
     const insertData = {
-      user_id: body.user_id,
-      user_name: body.user_name || 'Unknown',
+      user_id: userId,
+      user_name: userName || 'Unknown',
       trip_type: body.trip_type || 'field_work',
       category: body.category || 'project',
       sub_type: body.sub_type || null,
