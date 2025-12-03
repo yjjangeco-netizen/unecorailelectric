@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS projects (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   project_number VARCHAR(50) UNIQUE NOT NULL,
   name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) DEFAULT 'project', -- project, individual, standardization, wheel_conversion
   description TEXT,
   status VARCHAR(50) DEFAULT 'active', -- active, demolished, manufacturing, warranty
   priority VARCHAR(20) DEFAULT 'medium', -- low, medium, high, urgent

@@ -105,8 +105,8 @@ export default function Sidebar() {
       return level === '5'
     }
     if (item.key === 'settings') {
-      // user_management 권한 필드 확인, 없으면 레벨 5만
-      return user?.user_management === true || (level === '5')
+      // 설정 메뉴는 레벨 5(관리자)만 접근 가능
+      return level === '5'
     }
     return false
   })

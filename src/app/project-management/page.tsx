@@ -454,23 +454,22 @@ export default function ProjectManagementPage() {
   }
 
   // 프로젝트 삭제
-  const handleDelete = async (projectId: string) => {
-    if (confirm('이 프로젝트를 삭제하시겠습니까?')) {
-      try {
-        const response = await fetch(`/api/projects/${projectId}`, {
-          method: 'DELETE'
-        })
+  const handleDelete = async (projectId: number) => {
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE'
+      })
 
-        if (!response.ok) {
-          throw new Error('프로젝트 삭제 실패')
-        }
-
-        // 성공 시 목록 다시 로드
-        await loadProjects()
-      } catch (error) {
-        console.error('프로젝트 삭제 실패:', error)
-        alert('프로젝트 삭제에 실패했습니다.')
+      if (!response.ok) {
+        throw new Error('프로젝트 삭제 실패')
       }
+
+      // 성공 시 목록 다시 로드
+      await loadProjects()
+      handleCloseDetailModal()
+    } catch (error) {
+      console.error('프로젝트 삭제 실패:', error)
+      alert('프로젝트 삭제에 실패했습니다.')
     }
   }
 
@@ -535,7 +534,7 @@ export default function ProjectManagementPage() {
   // }
 
   return (
-    <AuthGuard requiredLevel={3}>
+    <AuthGuard requiredLevel={5}>
       <div className="min-h-screen bg-white">
 
 
@@ -1014,6 +1013,7 @@ export default function ProjectManagementPage() {
             isOpen={showDetailModal}
             onClose={handleCloseDetailModal}
             onSave={handleSaveProjectDetail}
+            onDelete={handleDelete}
           />
 
           {/* 사양서 생성기 모달 */}

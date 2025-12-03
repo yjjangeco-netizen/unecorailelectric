@@ -5,13 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Project } from '@/lib/types'
-import { X, Save, Settings, Zap, Cpu, Palette, CheckSquare, Plus, Trash2, Edit2, FileText } from 'lucide-react'
+import { X, Save, Settings, Zap, Cpu, Palette, Plus, Trash2, Edit2, FileText, AlertTriangle } from 'lucide-react'
 import MotorSpecModal from './MotorSpecModal'
 import BulkMotorAddModal from './BulkMotorAddModal'
 import SpecificationGenerator from './SpecificationGenerator'
@@ -21,6 +20,7 @@ interface ProjectDetailModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (project: Project) => void
+  onDelete?: (projectId: number) => void
 }
 
 interface MotorSpec {
@@ -50,7 +50,7 @@ interface AdditionalOption {
   location: string
 }
 
-export default function ProjectDetailModal({ project, isOpen, onClose, onSave }: ProjectDetailModalProps) {
+export default function ProjectDetailModal({ project, isOpen, onClose, onSave, onDelete }: ProjectDetailModalProps) {
   const [currentProject, setCurrentProject] = useState<Project | null>(project)
   const [activeTab, setActiveTab] = useState('basic')
   const [motors, setMotors] = useState<MotorSpec[]>([])
@@ -280,56 +280,68 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
     }
   };
 
+  const handleDelete = () => {
+    if (currentProject && onDelete) {
+      if (confirm('정말로 이 프로젝트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+        onDelete(currentProject.id);
+      }
+    }
+  }
+
   if (!currentProject) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[1200px] h-[90vh] p-0 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-8 py-5 border-b border-gray-100 bg-slate-50/50 flex flex-row items-center justify-between shrink-0">
-          <div className="flex flex-col gap-1">
+        <DialogHeader className="px-8 py-6 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white flex flex-row items-center justify-between shrink-0">
+          <div className="flex flex-col gap-1.5">
             <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-              <Settings className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Settings className="h-6 w-6 text-blue-600" />
+              </div>
               프로젝트 설정
             </DialogTitle>
-            <p className="text-sm text-gray-500 font-medium">
-              {currentProject.project_name || '새 프로젝트'} <span className="mx-2">|</span> {currentProject.project_number || '미지정'}
+            <p className="text-sm text-gray-500 font-medium pl-14">
+              {currentProject.project_name || '새 프로젝트'} <span className="mx-2 text-gray-300">|</span> {currentProject.project_number || '미지정'}
             </p>
           </div>
-          {/* Close button is handled by DialogPrimitive usually, but we can add a custom one if needed or rely on default X */}
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full">
+            <X className="h-6 w-6" />
+          </Button>
         </DialogHeader>
 
         {/* Main Content with Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-8 pt-6 pb-2 shrink-0">
-            <TabsList className="grid w-full grid-cols-5 h-12 p-1 bg-slate-100/80 rounded-xl">
+          <div className="px-8 pt-6 pb-2 shrink-0 bg-white">
+            <TabsList className="grid w-full grid-cols-5 h-14 p-1.5 bg-slate-100/80 rounded-2xl">
               <TabsTrigger 
                 value="basic" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all"
+                className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all text-gray-500 hover:text-gray-900"
               >
                 기본정보
               </TabsTrigger>
               <TabsTrigger 
                 value="hardware" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all"
+                className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all text-gray-500 hover:text-gray-900"
               >
                 하드웨어
               </TabsTrigger>
               <TabsTrigger 
                 value="power" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all"
+                className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all text-gray-500 hover:text-gray-900"
               >
                 전원사양
               </TabsTrigger>
               <TabsTrigger 
                 value="motor" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all"
+                className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all text-gray-500 hover:text-gray-900"
               >
                 모터사양
               </TabsTrigger>
               <TabsTrigger 
                 value="option" 
-                className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all"
+                className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-medium transition-all text-gray-500 hover:text-gray-900"
               >
                 옵션사양
               </TabsTrigger>
@@ -351,7 +363,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                       id="project_name" 
                       value={currentProject.project_name || ''} 
                       onChange={handleChange} 
-                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -360,7 +372,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                       value={currentProject.category || 'project'} 
                       onValueChange={(value) => handleChange({ target: { id: 'category', value } } as any)}
                     >
-                      <SelectTrigger className="h-11 border-gray-200">
+                      <SelectTrigger className="h-12 border-gray-200 focus:ring-4 focus:ring-blue-500/10 rounded-xl">
                         <SelectValue placeholder="업무 구분 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -377,7 +389,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                       id="base_name" 
                       value={currentProject.base_name || ''} 
                       onChange={handleChange}
-                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -386,7 +398,7 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                       id="client_name" 
                       value={currentProject.client_name || ''} 
                       onChange={handleChange}
-                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
                     />
                   </div>
                   <div className="space-y-2">
@@ -395,13 +407,13 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
                       id="client_contact" 
                       value={currentProject.client_contact || ''} 
                       onChange={handleChange}
-                      className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="ProjectStatus" className="text-gray-600 font-medium">프로젝트 상태</Label>
                     <Select value={currentProject.ProjectStatus} onValueChange={(value) => handleChange({ target: { id: 'ProjectStatus', value } } as any)}>
-                      <SelectTrigger className="h-11 border-gray-200">
+                      <SelectTrigger className="h-12 border-gray-200 focus:ring-4 focus:ring-blue-500/10 rounded-xl">
                         <SelectValue placeholder="상태 선택" />
                       </SelectTrigger>
                       <SelectContent>
@@ -871,14 +883,28 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave }:
 
         {/* Footer */}
         <DialogFooter className="px-8 py-5 border-t border-gray-100 bg-gray-50/50 shrink-0">
-          <div className="flex justify-end gap-3 w-full">
-            <Button variant="outline" onClick={onClose} className="h-11 px-6 border-gray-300 text-gray-700 hover:bg-white hover:text-gray-900">
-              취소
-            </Button>
-            <Button onClick={handleSave} className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
-              <Save className="h-4 w-4 mr-2" />
-              변경사항 저장
-            </Button>
+          <div className="flex justify-between w-full items-center">
+            <div>
+              {onDelete && (
+                <Button 
+                  variant="ghost" 
+                  onClick={handleDelete} 
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  프로젝트 삭제
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={onClose} className="h-11 px-6 border-gray-300 text-gray-700 hover:bg-white hover:text-gray-900">
+                취소
+              </Button>
+              <Button onClick={handleSave} className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20">
+                <Save className="h-4 w-4 mr-2" />
+                변경사항 저장
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>

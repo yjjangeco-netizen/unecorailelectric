@@ -244,10 +244,6 @@ export async function DELETE(
     const userId = request.headers.get('x-user-id')
     const userLevel = request.headers.get('x-user-level')
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized: 인증이 필요합니다.' }, { status: 401 })
-    }
-
     // 권한 확인: Level 5 또는 Admin만 삭제 가능
     const isLevel5 = userLevel === '5'
     const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
