@@ -363,19 +363,6 @@ export default function ProjectDetailModal({ project, isOpen, onClose, onSave, o
                       id="project_name" 
                       value={currentProject.project_name || ''} 
                       onChange={handleChange} 
-                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category" className="text-gray-600 font-medium">업무 구분</Label>
-                    <Select 
-                      value={currentProject.category || 'project'} 
-                    <Input 
-                      id="base_name" 
-                      value={currentProject.base_name || ''} 
-                      onChange={handleChange}
-                      className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
-                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="client_name" className="text-gray-600 font-medium">고객사명</Label>
