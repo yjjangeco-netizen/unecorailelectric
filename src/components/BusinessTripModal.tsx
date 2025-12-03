@@ -89,21 +89,23 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
       const response = await fetch('/api/projects')
       if (response.ok) {
         const data = await response.json()
-        setProjects(data.projects || [])
+        // API가 배열을 직접 반환하거나 { projects: [] } 형태일 수 있음
+        const projectList = Array.isArray(data) ? data : (data.projects || [])
+        console.log('프로젝트 로드됨:', projectList.length)
+        setProjects(projectList)
       }
     } catch (error) {
       console.error('프로젝트 로드 실패:', error)
     }
   }
   
-  // 프로젝트 검색 필터링
+  // 프로젝트 검색 필터링 (name 또는 project_name 모두 지원)
   const filteredProjects = projectSearch.trim() 
     ? projects.filter(project => {
         const searchLower = projectSearch.toLowerCase()
-        return (
-          project.project_name?.toLowerCase().includes(searchLower) ||
-          project.project_number?.toLowerCase().includes(searchLower)
-        )
+        const projectName = (project.name || project.project_name || '').toLowerCase()
+        const projectNumber = (project.project_number || '').toLowerCase()
+        return projectName.includes(searchLower) || projectNumber.includes(searchLower)
       }).slice(0, 10) // 검색 시 상위 10개
     : projects.slice(0, 20) // 전체 보기 시 상위 20개
 
@@ -145,12 +147,13 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
   }
   
   const handleProjectSelect = (project: any) => {
+    const displayName = project.name || project.project_name || project.project_number || ''
     setFormData(prev => ({
       ...prev,
       projectId: project.id,
-      projectName: project.project_name || project.project_number
+      projectName: displayName
     }))
-    setProjectSearch(project.project_name || project.project_number)
+    setProjectSearch(displayName)
     setShowProjectList(false)
   }
 
@@ -277,7 +280,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] bg-white max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] bg-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {event ? '일정 수정' : '일정 등록'}
@@ -389,7 +392,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                       onClick={() => handleProjectSelect(project)}
                       className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
                     >
-                      <div className="font-medium text-gray-900">{project.project_name}</div>
+                      <div className="font-medium text-gray-900">{project.name || project.project_name}</div>
                       {project.project_number && (
                         <div className="text-xs text-gray-500 mt-0.5">{project.project_number}</div>
                       )}
@@ -405,7 +408,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
             <Label className="text-right font-semibold">
               시작 <span className="text-red-500">*</span>
             </Label>
-            <div className="col-span-3 flex gap-2">
+            <div className="col-span-3 flex gap-3">
               <div className="flex-1 relative">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
@@ -415,7 +418,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                   className="pl-9"
                 />
               </div>
-              <div className="w-32 relative">
+              <div className="w-40 relative">
                 <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   type="time"
@@ -432,7 +435,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
             <Label className="text-right font-semibold">
               종료 <span className="text-red-500">*</span>
             </Label>
-            <div className="col-span-3 flex gap-2">
+            <div className="col-span-3 flex gap-3">
               <div className="flex-1 relative">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
@@ -442,7 +445,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                   className="pl-9"
                 />
               </div>
-              <div className="w-32 relative">
+              <div className="w-40 relative">
                 <Clock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
                   type="time"
