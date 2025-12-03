@@ -649,10 +649,10 @@ export default function DashboardPage() {
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       {user && (String(user.level) === '5' || String(user.level).toLowerCase() === 'administrator')
-                        ? 'All Business Trips (Unreported)'
-                        : 'My Business Trips (Unreported)'}
+                        ? '전체 출장/외근 (미보고)'
+                        : '내 출장/외근 (미보고)'}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">Manage your business trips and reports</p>
+                    <p className="text-gray-500 text-sm mt-1">출장/외근을 관리하고 보고서를 작성하세요</p>
                   </div>
                 </div>
               </CardHeader>
@@ -673,10 +673,10 @@ export default function DashboardPage() {
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                          <TableHead className="w-[100px]">State</TableHead>
-                          <TableHead>Summary</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
+                          <TableHead className="w-[100px]">구분</TableHead>
+                          <TableHead>내용</TableHead>
+                          <TableHead>날짜</TableHead>
+                          <TableHead className="text-right">작업</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -750,8 +750,8 @@ export default function DashboardPage() {
                     <Calendar className="h-6 w-6 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Upcoming Leaves</h2>
-                    <p className="text-gray-500 text-sm mt-1">Scheduled leaves from today onwards</p>
+                    <h2 className="text-xl font-bold text-gray-900">연월차 예정</h2>
+                    <p className="text-gray-500 text-sm mt-1">오늘 이후 예정된 연/월차</p>
                   </div>
                 </div>
               </CardHeader>
@@ -762,17 +762,17 @@ export default function DashboardPage() {
                       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Calendar className="h-8 w-8 text-gray-400" />
                       </div>
-                      <p className="text-gray-900 font-medium text-lg">No upcoming leaves</p>
-                      <p className="text-gray-500 text-sm mt-1">Enjoy your work!</p>
+                      <p className="text-gray-900 font-medium text-lg">예정된 연월차가 없습니다</p>
+                      <p className="text-gray-500 text-sm mt-1">오늘도 화이팅!</p>
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                          <TableHead className="w-[80px]">Type</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Status</TableHead>
+                          <TableHead className="w-[80px]">구분</TableHead>
+                          <TableHead>이름</TableHead>
+                          <TableHead>날짜</TableHead>
+                          <TableHead className="text-right">상태</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -828,8 +828,8 @@ export default function DashboardPage() {
                     <BarChart3 className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Project Schedule</h2>
-                    <p className="text-gray-500 text-sm mt-1">Upcoming project milestones (3 months)</p>
+                    <h2 className="text-xl font-bold text-gray-900">프로젝트 일정</h2>
+                    <p className="text-gray-500 text-sm mt-1">향후 3개월 내 프로젝트 일정</p>
                   </div>
                 </div>
               </CardHeader>
@@ -837,23 +837,23 @@ export default function DashboardPage() {
                 {loadingProjects ? (
                   <div className="text-center py-12">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading schedule...</p>
+                    <p className="text-gray-600">일정 로딩 중...</p>
                   </div>
                 ) : projectEvents.length === 0 ? (
                   <div className="text-center py-12">
                     <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-900 font-medium text-lg">No upcoming projects</p>
-                    <p className="text-gray-500 text-sm mt-1">Add schedules in Project Management</p>
+                    <p className="text-gray-900 font-medium text-lg">예정된 프로젝트가 없습니다</p>
+                    <p className="text-gray-500 text-sm mt-1">프로젝트 관리에서 일정을 추가하세요</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                          <TableHead className="w-[100px]">Type</TableHead>
-                          <TableHead>Project</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead className="text-right">Description</TableHead>
+                          <TableHead className="w-[100px]">유형</TableHead>
+                          <TableHead>프로젝트</TableHead>
+                          <TableHead>날짜</TableHead>
+                          <TableHead className="text-right">설명</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

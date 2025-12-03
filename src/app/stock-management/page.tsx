@@ -425,11 +425,11 @@ export default function StockManagementPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'new': return 'New'
-      case 'used-new': return 'Used (New)'
-      case 'used-used': return 'Used'
-      case 'broken': return 'Broken'
-      default: return 'Unknown'
+      case 'new': return '신품'
+      case 'used-new': return '중고(신품급)'
+      case 'used-used': return '중고'
+      case 'broken': return '고장'
+      default: return '미확인'
     }
   }
 
@@ -459,7 +459,7 @@ export default function StockManagementPage() {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">로딩 중...</p>
         </div>
       </div>
     )
@@ -529,8 +529,8 @@ export default function StockManagementPage() {
             <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
               <div className="px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Inventory Items</h2>
-                  <p className="text-gray-500 text-sm mt-1">Manage and track your stock items</p>
+                  <h2 className="text-2xl font-bold text-gray-900">재고 품목</h2>
+                  <p className="text-gray-500 text-sm mt-1">재고 품목을 관리하고 추적하세요</p>
                 </div>
               </div>
 
@@ -548,7 +548,7 @@ export default function StockManagementPage() {
                       className="h-10 px-4 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 rounded-xl transition-all"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Stock In
+                      입고
                     </Button>
                   )}
 
@@ -563,7 +563,7 @@ export default function StockManagementPage() {
                       }`}
                     >
                       <Package className="w-4 h-4 mr-2" />
-                      Stock Out
+                      출고
                     </Button>
                   )}
 
@@ -578,7 +578,7 @@ export default function StockManagementPage() {
                       }`}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Disposal
+                      폐기
                     </Button>
                   )}
                   
@@ -593,7 +593,7 @@ export default function StockManagementPage() {
                       }`}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
+                      삭제
                     </Button>
                   )}
 
@@ -603,7 +603,7 @@ export default function StockManagementPage() {
                       className="h-10 px-4 text-sm font-semibold bg-gray-800 hover:bg-gray-900 text-white shadow-md shadow-gray-300 rounded-xl transition-all"
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Closing
+                      마감
                     </Button>
                   )}
 
@@ -623,7 +623,7 @@ export default function StockManagementPage() {
                    <div className="relative w-full sm:w-64">
                      <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                      <Input 
-                       placeholder="Search..." 
+                       placeholder="검색..." 
                        value={searchTerm}
                        onChange={(e) => setSearchTerm(e.target.value)}
                        className="pl-10 bg-white border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
@@ -646,12 +646,12 @@ export default function StockManagementPage() {
                           className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                         />
                       </TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('name')}>Product Info</TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('category')}>Category</TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('location')}>Location</TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right cursor-pointer hover:text-gray-700" onClick={() => handleSort('currentStock')}>Stock</TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('status')}>Status</TableHead>
-                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('name')}>제품정보</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('category')}>카테고리</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('location')}>위치</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right cursor-pointer hover:text-gray-700" onClick={() => handleSort('currentStock')}>재고</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('status')}>상태</TableHead>
+                      <TableHead className="py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">작업</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -660,14 +660,14 @@ export default function StockManagementPage() {
                         <TableCell colSpan={7} className="h-32 text-center text-gray-500">
                           <div className="flex flex-col items-center justify-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                            Loading data...
+                            데이터 로딩 중...
                           </div>
                         </TableCell>
                       </TableRow>
                     ) : filteredItems.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="h-32 text-center text-gray-500">
-                          No items found matching your criteria.
+                          검색 조건에 맞는 품목이 없습니다.
                         </TableCell>
                       </TableRow>
                     ) : (
