@@ -52,8 +52,8 @@ export default function WorkDiaryWritePage() {
 
   // 상태 관리
   const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0])
-  const [dailyStartTime, setDailyStartTime] = useState('09:00')
-  const [dailyEndTime, setDailyEndTime] = useState('18:00')
+  const [dailyStartTime, setDailyStartTime] = useState('08:00')
+  const [dailyEndTime, setDailyEndTime] = useState('17:00')
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
     { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
     { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
@@ -248,8 +248,8 @@ export default function WorkDiaryWritePage() {
   }
 
   const resetForm = () => {
-    setDailyStartTime('09:00')
-    setDailyEndTime('18:00')
+    setDailyStartTime('08:00')
+    setDailyEndTime('17:00')
     setWorkEntries([
       { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
       { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
