@@ -339,8 +339,10 @@ export async function POST(request: NextRequest) {
       return Math.max(0, workHours - regularHours)
     }
 
-    // 근무시간과 초과근무시간 자동 계산
-    const workHours = body.startTime && body.endTime ? calculateWorkHours(body.startTime, body.endTime) : 0
+    // 근무시간: 클라이언트에서 전달된 값 우선 사용, 없으면 자동 계산
+    const workHours = body.workHours != null && body.workHours > 0 
+      ? body.workHours 
+      : (body.startTime && body.endTime ? calculateWorkHours(body.startTime, body.endTime) : 0)
     const overtimeHours = calculateOvertimeHours(workHours)
 
     // 데이터베이스에 업무일지 생성

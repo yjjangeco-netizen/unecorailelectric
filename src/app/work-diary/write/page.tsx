@@ -30,11 +30,14 @@ interface WorkEntry {
   workType: string // 신규, 보완, AS, SS, OV (WSMS 프로젝트만)
   workSubType: string // 출장, 외근, 전화 (WSMS 프로젝트만)
   customProjectName: string // 기타 프로젝트명
-  startTime?: string // 출근시간 (HH:MM)
-  endTime?: string // 퇴근시간 (HH:MM)
-  workHours?: number // 계산된 근무시간 (퇴근시간 - 출근시간 - 1시간)
-  overtimeHours?: number // 초과근무시간
+  workHours: number // 작업시간 (30분 단위)
 }
+
+// 30분 단위 작업시간 옵션 생성 (0.5 ~ 12시간)
+const WORK_HOURS_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
+  value: (i + 1) * 0.5,
+  label: `${(i + 1) * 0.5}시간`
+}))
 
 interface Project {
   id: number
@@ -52,9 +55,9 @@ export default function WorkDiaryWritePage() {
   const [dailyStartTime, setDailyStartTime] = useState('09:00')
   const [dailyEndTime, setDailyEndTime] = useState('18:00')
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
-    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' }
+    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
+    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
+    { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 }
   ])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
@@ -142,7 +145,7 @@ export default function WorkDiaryWritePage() {
   }
 
   const addWorkEntry = () => {
-    setWorkEntries([...workEntries, { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' }])
+    setWorkEntries([...workEntries, { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 }])
   }
 
   const removeWorkEntry = (index: number) => {
@@ -173,9 +176,38 @@ export default function WorkDiaryWritePage() {
 
       if (validEntries.length === 0) {
         alert('최소 하나의 업무 내용을 입력해주세요.')
+        setLoading(false)
         return
       }
 
+      // 총 작업시간 계산
+      const totalWorkHours = validEntries.reduce((sum, entry) => sum + (entry.workHours || 0), 0)
+
+      // 허용 가능한 작업시간 계산 (퇴근시간 - 출근시간 - 1시간)
+      const allowedWorkHours = calculateWorkHours(dailyStartTime, dailyEndTime)
+
+      // 작업시간이 0인 항목 체크
+      const entriesWithoutHours = validEntries.filter(entry => !entry.workHours || entry.workHours <= 0)
+      if (entriesWithoutHours.length > 0) {
+        alert('모든 업무 항목에 작업 시간을 입력해주세요.')
+        setLoading(false)
+        return
+      }
+
+      // 총 작업시간이 허용 시간보다 큰 경우 경고
+      if (totalWorkHours > allowedWorkHours) {
+        const confirmSubmit = window.confirm(
+          `⚠️ 작업시간 초과 경고\n\n` +
+          `총 작업시간: ${totalWorkHours}시간\n` +
+          `허용 시간 (퇴근-출근-점심1시간): ${allowedWorkHours}시간\n` +
+          `초과: ${(totalWorkHours - allowedWorkHours).toFixed(1)}시간\n\n` +
+          `입력한 시간을 다시 확인해주세요.\n그래도 저장하시겠습니까?`
+        )
+        if (!confirmSubmit) {
+          setLoading(false)
+          return
+        }
+      }
 
       // 각 업무 항목을 개별적으로 API에 전송
       for (const entry of validEntries) {
@@ -193,7 +225,8 @@ export default function WorkDiaryWritePage() {
             workSubType: entry.workSubType,
             customProjectName: entry.projectId === 'other' ? entry.customProjectName : null,
             startTime: dailyStartTime,
-            endTime: dailyEndTime
+            endTime: dailyEndTime,
+            workHours: entry.workHours // 개별 항목의 작업시간
           })
         })
 
@@ -218,9 +251,9 @@ export default function WorkDiaryWritePage() {
     setDailyStartTime('09:00')
     setDailyEndTime('18:00')
     setWorkEntries([
-      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' },
-      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '' }
+      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
+      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 },
+      { projectId: '', workContent: '', workType: '', workSubType: '', customProjectName: '', workHours: 0 }
     ])
   }
 
@@ -283,9 +316,20 @@ export default function WorkDiaryWritePage() {
 
             {/* 업무 내용 입력 */}
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <h3 className="text-lg font-semibold text-gray-900">업무 내용</h3>
-                <span className="text-sm text-gray-500">총 {workEntries.length}건의 업무</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">총 {workEntries.length}건의 업무</span>
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-700">
+                      총 작업시간: {workEntries.reduce((sum, e) => sum + (e.workHours || 0), 0)}시간
+                    </span>
+                    <span className="text-xs text-blue-500">
+                      / 허용: {calculateWorkHours(dailyStartTime, dailyEndTime)}시간
+                    </span>
+                  </div>
+                </div>
               </div>
               
               {workEntries.map((entry, index) => (
@@ -309,10 +353,10 @@ export default function WorkDiaryWritePage() {
                     )}
                   </div>
 
-                  <div className="p-4 space-y-4 bg-white">
+                    <div className="p-4 space-y-4 bg-white">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                      {/* 프로젝트 선택 (4/12) */}
-                      <div className="md:col-span-4 space-y-1.5">
+                      {/* 프로젝트 선택 (3/12) */}
+                      <div className="md:col-span-3 space-y-1.5">
                         <Label className="text-xs font-medium text-gray-500">프로젝트</Label>
                         <div className="flex space-x-2">
                           {entry.projectId === 'other' ? (
@@ -344,14 +388,7 @@ export default function WorkDiaryWritePage() {
                                 }
                                 setWorkEntries(updated)
                               }}
-                              onSelectProject={(project) => {
-                                // ProjectCombobox handles the selection, but we might need to do something else here if needed
-                                // Currently onChange handles the state update, so this might be redundant or for additional logic
-                                // But we need to update workType/SubType based on project if we revert to conditional logic
-                                // Since we made workType always dropdown, we just need to update the state.
-                                // The onChange above handles the ID.
-                                // Let's just ensure we don't need to do anything else.
-                              }}
+                              onSelectProject={() => {}}
                             />
                           )}
                         </div>
@@ -441,8 +478,32 @@ export default function WorkDiaryWritePage() {
                         })()}
                       </div>
 
-                      {/* 업무 내용 (4/12) */}
-                      <div className="md:col-span-4 space-y-1.5">
+                      {/* 작업 시간 (2/12) */}
+                      <div className="md:col-span-2 space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-500">작업 시간</Label>
+                        <Select
+                          value={entry.workHours > 0 ? entry.workHours.toString() : ''}
+                          onValueChange={(value) => {
+                            const updated = [...workEntries]
+                            updated[index] = { ...updated[index], workHours: parseFloat(value) }
+                            setWorkEntries(updated)
+                          }}
+                        >
+                          <SelectTrigger className="bg-white h-9">
+                            <SelectValue placeholder="시간 선택" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white max-h-60">
+                            {WORK_HOURS_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value.toString()}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 업무 내용 (3/12) */}
+                      <div className="md:col-span-3 space-y-1.5">
                         <Label className="text-xs font-medium text-gray-500">상세 내용</Label>
                         <Textarea
                           value={entry.workContent}
