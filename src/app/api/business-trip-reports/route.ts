@@ -114,11 +114,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { id, status, approvedBy } = await request.json()
+    const { id, status, approvedBy, title, content, rejectReason } = await request.json()
 
     const updateData: any = {
       updated_at: new Date().toISOString()
     }
+
+    // 제목/내용 수정
+    if (title) updateData.title = title
+    if (content) updateData.content = content
 
     if (status) {
       updateData.status = status
@@ -132,7 +136,7 @@ export async function PUT(request: NextRequest) {
       .from('business_trip_reports')
       .update(updateData)
       .eq('id', id)
-      .select()
+      .select('*, trip_id')
 
     if (error) {
       console.error('보고서 업데이트 오류:', error)
@@ -142,10 +146,32 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // 보고서 상태에 따라 business_trips의 report_status도 업데이트
+    if (data && data[0]?.trip_id && status) {
+      let tripReportStatus = 'submitted'
+      
+      if (status === 'rejected') {
+        // 반려되면 다시 보고해야 하므로 pending으로 변경
+        tripReportStatus = 'rejected'
+      } else if (status === 'approved') {
+        tripReportStatus = 'approved'
+      } else if (status === 'submitted') {
+        tripReportStatus = 'submitted'
+      }
+
+      await supabaseServer
+        .from('business_trips')
+        .update({ 
+          report_status: tripReportStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', data[0].trip_id)
+    }
+
     return NextResponse.json({
       success: true,
       message: '보고서가 업데이트되었습니다.',
-      report: data[0]
+      report: data?.[0]
     })
   } catch (error) {
     console.error('보고서 업데이트 오류:', error)

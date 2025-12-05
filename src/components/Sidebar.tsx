@@ -18,7 +18,7 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/useUser'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -26,16 +26,6 @@ export default function Sidebar() {
   const { user, logout } = useUser()
   const [isPinned, setIsPinned] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>([])
-
-  const isCollapsed = !isPinned && !isHovered
-
-  const toggleExpand = (key: string) => {
-    setExpandedItems(prev => 
-      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-    )
-  }
-
   const navigationItems = [
     { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
     { name: '재고관리', href: '/stock-management', icon: Package2, key: 'stock_view' },
@@ -68,6 +58,51 @@ export default function Sidebar() {
     },
   ]
 
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    const activeItem = navigationItems.find(item => 
+      item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href))
+    )
+    return activeItem ? [activeItem.key] : []
+  })
+
+  // Update expanded items when pathname changes (but don't collapse manually opened ones)
+  useEffect(() => {
+    const activeItem = navigationItems.find(item => 
+      item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href))
+    )
+    if (activeItem) {
+      setExpandedItems(prev => {
+        if (!prev.includes(activeItem.key)) {
+          return [...prev, activeItem.key]
+        }
+        return prev
+      })
+    }
+  }, [pathname])
+
+  // Automatically expand active items
+  useEffect(() => {
+    const activeItem = navigationItems.find(item => 
+      item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href))
+    )
+    if (activeItem) {
+      setExpandedItems(prev => {
+        if (!prev.includes(activeItem.key)) {
+          return [...prev, activeItem.key]
+        }
+        return prev
+      })
+    }
+  }, [pathname])
+
+
+  const isCollapsed = !isPinned && !isHovered
+
+  const toggleExpand = (key: string) => {
+    setExpandedItems(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    )
+  }
 
   // Filter items based on user permissions (individual permissions take priority over level)
   const filteredItems = navigationItems.filter(item => {
@@ -114,7 +149,7 @@ export default function Sidebar() {
   return (
     <aside 
       className={cn(
-        "flex flex-col h-screen bg-[#1c1c1c] text-white transition-all duration-300 border-r border-gray-800 z-50",
+        "flex flex-col h-screen bg-[#1c1c1c] text-white transition-all duration-300 border-r border-gray-800 z-[60]",
         isCollapsed ? "w-16" : "w-64"
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -154,7 +189,9 @@ export default function Sidebar() {
       <nav className="flex-1 py-6 px-2 space-y-1 overflow-y-auto">
         {filteredItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href || (item.subItems && pathname.startsWith(item.href))
+          const isActive = pathname === item.href || 
+            (pathname.startsWith(item.href) && item.href !== '/') ||
+            (item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href)))
           const isExpanded = expandedItems.includes(item.key)
           
           return (

@@ -223,6 +223,65 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
     }
   }, [project, isOpen, loadMotorSpecs])
 
+  // 프로젝트 번호 변경 시 프로젝트명 자동 생성
+  useEffect(() => {
+    if (!currentProject.project_number) return
+
+    // 프로젝트명이 비어있거나 '현장'으로 시작하는 자동 생성된 이름인 경우에만 업데이트
+    const shouldUpdate = !currentProject.project_name || 
+                        currentProject.project_name.trim() === '' ||
+                        currentProject.project_name.startsWith('현장 ') ||
+                        currentProject.project_name.includes('선반') ||
+                        currentProject.project_name.includes('전삭기')
+
+    if (shouldUpdate) {
+      const projectNumber = currentProject.project_number
+      let generatedName = ''
+
+      if (projectNumber.startsWith('CNCWL')) {
+        const number = projectNumber.replace('CNCWL-', '')
+        const siteNames: { [key: string]: string } = {
+          '0902': '월배선반', '1501': '제천선반', '1601': '도봉선반', '1701': '군자선반',
+          '1702': '덕하선반', '1801': '고덕선반', '1901': '대단선반', '2101': '대전시설장비',
+          '2102': '시흥선반', '2201': '대단선반', '2202': 'GTX A', '2301': '호포선반',
+          '2302': '귤현선반', '2401': '월배선반', '2402': '시흥2호기', '2501': '개화선반',
+          '9201': '부단 철거', '9202': '신정 철거', '9301': '부단화차 철거', '9401': '서단(1호기) 철거',
+          '9402': '분당 철거', '9403': '고덕 철거', '9404': '도봉 V4.5 철거', '9501': '대단(1호기) 철거',
+          '9502': '군자 철거', '9601': '월배', '9602': '지축(1호기)', '9701': '서단(2호기) 철거',
+          '9702': '호포 철거', '9703': '시흥', '9801': '부단(시설2호기)', '9802': '귤현 철거',
+          '9901': '제천 V6.1', '9902': '부단(수송2호기)', '0001': '대단(2호기)'
+        }
+        generatedName = siteNames[number] || `선반 현장 ${number}`
+      } else if (projectNumber.startsWith('CNCUWL')) {
+        const number = projectNumber.replace('CNCUWL-', '')
+        const siteNames: { [key: string]: string } = {
+          '9401': '월배전삭기', '9501': '모란전삭기', '9502': '도봉전삭기', '9601': '호포전삭기',
+          '9602': '안심전삭기', '9603': '귤현전삭기', '9701': '천왕전삭기', '9801': '광양전삭기',
+          '9802': '부곡전삭기', '9901': '신내전삭기', '0001': '광주전삭기', '0002': '이문전삭기',
+          '0201': '창동전삭기', '0301': '판암전삭기', '0302': '문양전삭기', '0303': '지축전삭기',
+          '0304': '대저전삭기', '0401': '분당전삭기', '0501': '노포전삭기', '0502': '영종전삭기',
+          '0503': '문산전삭기', '0504': '개화전삭기', '0601': '신정전삭기', '0701': '김해전삭기',
+          '0702': '당진전삭기', '0801': '제천전삭기', '0901': '평내전삭기', '1001': '용문전삭기',
+          '1101': '인천2호선전삭기', '1206': '신분당전삭기', '1207': '브라질전삭기', '1301': '김포경전철전삭기',
+          '1302': '소사원시_시흥전삭기', '1303': '고덕전삭기', '1401': '우이신설전삭기', '1402': '방화전삭기',
+          '1501': '부발전삭기', '1502': '포스코전삭기', '1601': '천왕전삭기', '1602': '신평전삭기',
+          '1603': '강릉전삭기', '1701': '도봉전삭기', '1702': '덕하전삭기', '1703': '자카르타전삭기',
+          '1901': '수서전삭기', '1902': '호포전삭기', '1903': '가야전삭기', '2001': '귤현전삭기',
+          '2002': '이문전삭기', '2101': '대구월배전삭기', '2102': '익산전삭기', '2103': '신내전삭기',
+          '2104': '군자전삭기', '2201': 'GTX-A 파주전삭기', '2301': '병점동탄전삭기', '2401': '지축전삭기',
+          '2501': '안심전삭기', '2502': '개화전삭기', '2506': '진접전삭기'
+        }
+        generatedName = siteNames[number] || `전삭기 현장 ${number}`
+      } else {
+        generatedName = `현장 ${projectNumber}`
+      }
+
+      if (generatedName && generatedName !== currentProject.project_name) {
+        setCurrentProject(prev => ({ ...prev, project_name: generatedName }))
+      }
+    }
+  }, [currentProject.project_number])
+
   // 카테고리 변경 시 탭 확인
   useEffect(() => {
     if (!availableTabs.includes(activeTab)) {

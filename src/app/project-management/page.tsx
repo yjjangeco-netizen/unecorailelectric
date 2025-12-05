@@ -475,7 +475,14 @@ export default function ProjectManagementPage() {
 
   // 프로젝트 상세 모달 열기
   const handleOpenDetailModal = (project: Project) => {
-    setSelectedProject(project)
+    // 프로젝트명이 없으면 생성된 이름 사용
+    const projectWithComputedName = {
+      ...project,
+      project_name: (project.project_name && project.project_name.trim() !== '') 
+        ? project.project_name 
+        : getUpdatedProjectName(project)
+    }
+    setSelectedProject(projectWithComputedName)
     setShowDetailModal(true)
   }
 
@@ -483,29 +490,54 @@ export default function ProjectManagementPage() {
   const handleCloseDetailModal = () => {
     setSelectedProject(null)
     setShowDetailModal(false)
+    // Radix UI Dialog가 닫힐 때 포커스 트랩이나 포인터 이벤트 잠금을 제대로 해제하지 못하는 경우를 대비
+    setTimeout(() => {
+      document.body.style.pointerEvents = 'auto'
+      document.body.style.overflow = 'auto'
+    }, 100)
   }
 
-  // 프로젝트 상세 정보 저장
+  // 프로젝트 상세 정보 저장 (추가/수정 통합)
   const handleSaveProjectDetail = async (project: Project) => {
     try {
-      const response = await fetch(`/api/projects/${project.id}`, {
-        method: 'PUT',
+      // 새 프로젝트인 경우 POST, 기존 프로젝트는 PUT
+      const isNewProject = !project.id || project.id === 0
+      
+      const url = isNewProject ? '/api/projects' : `/api/projects/${project.id}`
+      const method = isNewProject ? 'POST' : 'PUT'
+      
+      console.log('프로젝트 저장:', { isNewProject, url, method, project })
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(project)
+        body: JSON.stringify({
+          ...project,
+          project_name: project.project_name || '',
+          project_number: project.project_number || '',
+          category: project.category || 'project',
+          ProjectStatus: project.ProjectStatus || 'Manufacturing',
+          is_active: project.is_active !== false
+        })
       })
 
       if (!response.ok) {
-        throw new Error('프로젝트 수정 실패')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || (isNewProject ? '프로젝트 추가 실패' : '프로젝트 수정 실패'))
       }
 
       // 성공 시 목록 다시 로드
       await loadProjects()
       handleCloseDetailModal()
+      // alert는 UI 블로킹을 유발할 수 있으므로 제거하거나 비간섭적 알림으로 대체 권장
+      console.log(isNewProject ? '프로젝트 추가 완료' : '프로젝트 수정 완료')
+      
+      // router.refresh를 호출하지 않아도 상태 업데이트로 리렌더링됨
     } catch (error) {
-      console.error('프로젝트 수정 실패:', error)
-      alert('프로젝트 수정에 실패했습니다.')
+      console.error('프로젝트 저장 실패:', error)
+      alert(`프로젝트 저장에 실패했습니다: ${error}`)
     }
   }
 
@@ -551,10 +583,6 @@ export default function ProjectManagementPage() {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   뒤로가기
                 </Button>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">프로젝트 관리</h1>
-                  <p className="text-gray-600">프로젝트를 생성, 수정, 관리합니다</p>
-                </div>
               </div>
               <div className="flex gap-3">
                 <Button

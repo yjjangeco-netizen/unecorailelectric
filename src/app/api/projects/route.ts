@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,11 +8,7 @@ export async function GET(_request: NextRequest) {
   try {
     console.log('프로젝트 조회 시작...')
     
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-    
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
     
     const { data, error } = await supabase
       .from('projects')
@@ -113,15 +109,17 @@ export async function GET(_request: NextRequest) {
 // 프로젝트 생성
 export async function POST(request: NextRequest) {
   try {
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-    
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     const projectData = await request.json()
+    
+    // name 또는 project_name 모두 허용
+    const projectName = projectData.name || projectData.project_name
+    
+    console.log('프로젝트 생성 요청 데이터:', projectData)
+    console.log('프로젝트명:', projectName, '프로젝트번호:', projectData.project_number)
 
-    if (!projectData.name || !projectData.project_number) {
+    if (!projectName || !projectData.project_number) {
       return NextResponse.json({ error: '프로젝트명과 프로젝트번호는 필수입니다' }, { status: 400 })
     }
 
@@ -148,7 +146,7 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           project_number: projectData.project_number,
-          project_name: projectData.name, // FIXED: project_name
+          project_name: projectName, // name 또는 project_name 모두 허용
           category: projectData.category || 'project', // DB: category
           description: projectData.description || null,
           ProjectStatus: projectData.status || 'Manufacturing', // FIXED: ProjectStatus

@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
+import { verifyToken } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
     console.log('=== 재고 트랜잭션 API 호출됨 ===')
+
+    // 인증 토큰 확인
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json(
+        { error: '인증 토큰이 필요합니다' },
+        { status: 401 }
+      )
+    }
+
+    // JWT 토큰 검증
+    const decoded = verifyToken(token)
+    
+    if (!decoded) {
+      return NextResponse.json(
+        { error: '유효하지 않은 토큰입니다' },
+        { status: 401 }
+      )
+    }
     
     // 요청 데이터 파싱
     const body = await request.json()

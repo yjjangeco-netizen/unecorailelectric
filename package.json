@@ -29,6 +29,7 @@
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.0",
         "date-fns": "^4.1.0",
+        "dotenv": "^17.2.3",
         "googleapis": "^166.0.0",
         "jsonwebtoken": "^9.0.2",
         "lucide-react": "^0.294.0",

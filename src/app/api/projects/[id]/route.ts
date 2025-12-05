@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,11 +13,7 @@ export async function GET(
 
     console.log('개별 프로젝트 조회 요청:', { projectId })
 
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     const { data, error } = await supabase
       .from('projects')
@@ -135,11 +131,7 @@ export async function PUT(
 
     console.log('프로젝트 업데이트 요청:', { projectId, projectData })
 
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     // 업데이트할 데이터 준비
     const updateData: any = {
@@ -255,11 +247,7 @@ export async function DELETE(
       }, { status: 403 })
     }
 
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-    
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     // 프로젝트 존재 확인
     const { data: project, error: fetchError } = await supabase

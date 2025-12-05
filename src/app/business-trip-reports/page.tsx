@@ -25,7 +25,9 @@ import {
   Briefcase,
   CheckCircle,
   XCircle,
-  Trash2
+  Trash2,
+  Edit,
+  RotateCcw
 } from "lucide-react"
 
 interface BusinessTripReport {
@@ -34,6 +36,7 @@ interface BusinessTripReport {
   content: string
   submitted_at: string
   status: string
+  user_id: string
   business_trips: {
     id: string
     title: string
@@ -42,6 +45,7 @@ interface BusinessTripReport {
     start_date: string
     end_date: string
     user_name: string
+    user_id: string
   }
 }
 
@@ -52,7 +56,8 @@ export default function BusinessTripReportsPage() {
   // State for filtering and searching
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [dateFilter, setDateFilter] = useState('')
+  const [startDateFilter, setStartDateFilter] = useState('')
+  const [endDateFilter, setEndDateFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [unreportedTrips, setUnreportedTrips] = useState<any[]>([]) // To store trips without reports
@@ -63,8 +68,11 @@ export default function BusinessTripReportsPage() {
       if (!isAuthenticated) {
         router.push('/login')
       } else {
-        // Check if user is admin
-        setIsAdmin(user?.level === '5' || user?.level === 'administrator')
+        // Check if user is admin (Level 5 또는 Administrator)
+        const level = String(user?.level || '').toLowerCase()
+        const isAdminUser = level === '5' || level === 'administrator' || level === 'admin' || user?.id === 'admin'
+        console.log('User level check:', { level: user?.level, userId: user?.id, isAdmin: isAdminUser })
+        setIsAdmin(isAdminUser)
         fetchReportsAndUnreportedTrips()
       }
     }
@@ -74,14 +82,20 @@ export default function BusinessTripReportsPage() {
     setLoading(true)
     setError(null)
     try {
-      const reportsResponse = await fetch('/api/business-trip-reports')
+      const headers = {
+        'x-user-id': user?.id || '',
+        'x-user-level': String(user?.level || '1')
+      }
+
+      const reportsResponse = await fetch('/api/business-trip-reports', { headers })
       if (!reportsResponse.ok) {
         throw new Error('Failed to fetch business trip reports')
       }
       const reportsData = await reportsResponse.json()
-      setReports(reportsData)
+      // API가 { reports: [...] } 또는 배열 직접 반환
+      setReports(reportsData.reports || reportsData || [])
 
-      const unreportedResponse = await fetch('/api/business-trips/unreported')
+      const unreportedResponse = await fetch('/api/business-trips/unreported', { headers })
       if (!unreportedResponse.ok) {
         throw new Error('Failed to fetch unreported business trips')
       }
@@ -113,6 +127,99 @@ export default function BusinessTripReportsPage() {
     }
   }
 
+  // 보고서 삭제
+  const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('정말로 이 보고서를 삭제하시겠습니까?')) {
+      return
+    }
+    try {
+      const response = await fetch(`/api/business-trip-reports/${reportId}`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) {
+        throw new Error('보고서 삭제 실패')
+      }
+      alert('보고서가 삭제되었습니다.')
+      fetchReportsAndUnreportedTrips()
+    } catch (err: any) {
+      alert(`삭제 실패: ${err.message}`)
+    }
+  }
+
+  // 보고서 승인
+  const handleApprove = async (reportId: string, currentStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newStatus = currentStatus === 'approved' ? 'submitted' : 'approved'
+    const message = currentStatus === 'approved' ? '승인을 취소하시겠습니까?' : '보고서를 승인하시겠습니까?'
+    
+    if (!confirm(message)) return
+
+    try {
+      const response = await fetch('/api/business-trip-reports', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: reportId,
+          status: newStatus,
+          approvedBy: newStatus === 'approved' ? user?.id : null
+        })
+      })
+      if (!response.ok) throw new Error('상태 변경 실패')
+      alert(newStatus === 'approved' ? '승인되었습니다.' : '승인이 취소되었습니다.')
+      fetchReportsAndUnreportedTrips()
+    } catch (err: any) {
+      alert(`오류: ${err.message}`)
+    }
+  }
+
+  // 보고서 반려
+  const handleReject = async (reportId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const reason = prompt('반려 사유를 입력하세요:')
+    if (!reason) return
+
+    try {
+      const response = await fetch('/api/business-trip-reports', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: reportId,
+          status: 'rejected',
+          rejectReason: reason
+        })
+      })
+      if (!response.ok) throw new Error('반려 실패')
+      alert('반려되었습니다.')
+      fetchReportsAndUnreportedTrips()
+    } catch (err: any) {
+      alert(`오류: ${err.message}`)
+    }
+  }
+
+  // 편집 가능 여부 확인
+  const canEdit = (report: BusinessTripReport) => {
+    // Level 5 이상은 승인 전까지 언제든 편집 가능
+    if (isAdmin) {
+      return report.status !== 'approved'
+    }
+    // 작성자는 반려된 경우에만 편집 가능
+    const isAuthor = report.user_id === user?.id || report.business_trips?.user_id === user?.id
+    if (isAuthor && report.status === 'rejected') {
+      return true
+    }
+    // 작성자가 제출 상태일 때도 편집 가능
+    if (isAuthor && report.status === 'submitted') {
+      return true
+    }
+    return false
+  }
+
+  // 삭제 가능 여부 확인
+  const canDelete = () => {
+    return isAdmin
+  }
+
   const filteredReports = Array.isArray(reports) ? reports.filter(report => {
     const matchesSearch =
       (report.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -123,11 +230,31 @@ export default function BusinessTripReportsPage() {
     const matchesStatus =
       statusFilter === 'all' || report.status === statusFilter
 
-    const matchesDate =
-      !dateFilter || (report.submitted_at && report.submitted_at.startsWith(dateFilter))
+    // 날짜 범위 필터
+    let matchesDate = true
+    if (startDateFilter || endDateFilter) {
+      const reportDate = report.submitted_at ? new Date(report.submitted_at) : null
+      if (reportDate) {
+        if (startDateFilter) {
+          matchesDate = matchesDate && reportDate >= new Date(startDateFilter)
+        }
+        if (endDateFilter) {
+          const endDate = new Date(endDateFilter)
+          endDate.setHours(23, 59, 59, 999)
+          matchesDate = matchesDate && reportDate <= endDate
+        }
+      }
+    }
 
     return matchesSearch && matchesStatus && matchesDate
   }) : []
+
+  const handleReset = () => {
+    setSearchTerm('')
+    setStatusFilter('all')
+    setStartDateFilter('')
+    setEndDateFilter('')
+  }
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
@@ -217,14 +344,21 @@ export default function BusinessTripReportsPage() {
                     </div>
                     
                     <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
-                      <Button 
-                        size="sm" 
-                        className="bg-red-600 hover:bg-red-700 text-white border-none shadow-sm"
-                        onClick={() => router.push(`/business-trip-reports/write?tripId=${trip.id}`)}
-                      >
-                        <FileText className="h-3.5 w-3.5 mr-1.5" />
-                        보고서 작성
-                      </Button>
+                      {/* 보고서 작성 버튼 - 본인 신청건만 표시 */}
+                      {trip.user_id === user?.id && (
+                        <Button 
+                          size="sm" 
+                          className="bg-red-600 hover:bg-red-700 text-white border-none shadow-sm"
+                          onClick={() => router.push(`/business-trip-reports/write?tripId=${trip.id}`)}
+                        >
+                          <FileText className="h-3.5 w-3.5 mr-1.5" />
+                          보고서 작성
+                        </Button>
+                      )}
+                      {/* 본인 것이 아닌 경우 안내 메시지 */}
+                      {trip.user_id !== user?.id && (
+                        <span className="text-xs text-gray-500">신청자만 작성 가능</span>
+                      )}
                       {isAdmin && (
                         <Button 
                           variant="ghost" 
@@ -256,9 +390,9 @@ export default function BusinessTripReportsPage() {
         {/* 필터 섹션 */}
         <Card className="mb-6 border border-gray-200 shadow-sm">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* 검색 */}
-              <div className="space-y-2">
+              <div className="space-y-2 lg:col-span-2">
                 <Label className="text-sm font-medium text-gray-700">검색</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -290,16 +424,38 @@ export default function BusinessTripReportsPage() {
                 </Select>
               </div>
 
-              {/* 날짜 필터 */}
+              {/* 시작일 */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">제출일</Label>
+                <Label className="text-sm font-medium text-gray-700">시작일</Label>
                 <Input
                   type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
+                  value={startDateFilter}
+                  onChange={(e) => setStartDateFilter(e.target.value)}
                   className="bg-white"
                 />
               </div>
+
+              {/* 종료일 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">종료일</Label>
+                <Input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+
+            {/* 버튼 영역 */}
+            <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                className="px-4"
+              >
+                초기화
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -328,10 +484,10 @@ export default function BusinessTripReportsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {filteredReports.map((report) => (
-                <Card key={report.id} className="hover:shadow-md transition-shadow cursor-pointer border-gray-200" onClick={() => router.push(`/business-trip-reports/${report.id}`)}>
+                <Card key={report.id} className={`hover:shadow-md transition-shadow border-gray-200 ${report.status === 'approved' ? 'border-l-4 border-l-green-500' : report.status === 'rejected' ? 'border-l-4 border-l-red-500' : ''}`}>
                   <CardContent className="p-5">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => router.push(`/business-trip-reports/${report.id}`)}>
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(report.status)} flex items-center gap-1`}>
                             {getStatusIcon(report.status)}
@@ -345,20 +501,91 @@ export default function BusinessTripReportsPage() {
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                           <div className="flex items-center">
                             <User className="h-4 w-4 mr-1.5 text-gray-400" />
-                            {report.business_trips.user_name}
+                            {report.business_trips?.user_name || '알 수 없음'}
                           </div>
                           <div className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1.5 text-gray-400" />
-                            {report.business_trips.location}
+                            {report.business_trips?.location || '미지정'}
                           </div>
                           <div className="flex items-center">
                             <Briefcase className="h-4 w-4 mr-1.5 text-gray-400" />
-                            {report.business_trips.purpose}
+                            {report.business_trips?.purpose || ''}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="text-gray-600">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* 승인/승인취소 버튼 - Level 5 이상만 */}
+                        {isAdmin && (
+                          <Button 
+                            variant={report.status === 'approved' ? 'outline' : 'default'}
+                            size="sm" 
+                            className={report.status === 'approved' ? 'text-orange-600 border-orange-300 hover:bg-orange-50' : 'bg-green-600 hover:bg-green-700 text-white'}
+                            onClick={(e) => handleApprove(report.id, report.status, e)}
+                          >
+                            {report.status === 'approved' ? (
+                              <>
+                                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                                승인취소
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                승인
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        
+                        {/* 반려 버튼 - Level 5 이상, 승인되지 않은 경우만 */}
+                        {isAdmin && report.status !== 'approved' && report.status !== 'rejected' && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-600 border-red-300 hover:bg-red-50"
+                            onClick={(e) => handleReject(report.id, e)}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1" />
+                            반려
+                          </Button>
+                        )}
+
+                        {/* 편집 버튼 - 편집 가능한 경우만 */}
+                        {canEdit(report) && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              router.push(`/business-trip-reports/edit/${report.id}`)
+                            }}
+                          >
+                            <Edit className="h-3.5 w-3.5 mr-1" />
+                            편집
+                          </Button>
+                        )}
+
+                        {/* 삭제 버튼 - Level 5 이상만 */}
+                        {canDelete() && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => handleDeleteReport(report.id, e)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-gray-600"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/business-trip-reports/${report.id}`)
+                          }}
+                        >
                           상세 보기
                         </Button>
                       </div>

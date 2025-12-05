@@ -1,37 +1,37 @@
 'use client'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// 환경변수 검증 및 안전한 클라이언트 생성
-const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'] || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-const supabaseKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
+// 싱글톤 패턴으로 Supabase 클라이언트 생성 (Lazy 초기화)
+let supabaseInstance: SupabaseClient | null = null
 
-console.log('Supabase 클라이언트 설정:', { 
-  url: supabaseUrl, 
-  keyLength: supabaseKey.length 
-})
-
-// 싱글톤 패턴으로 Supabase 클라이언트 생성
-let supabaseInstance: ReturnType<typeof createClient> | null = null
-
-export const supabase = (() => {
+const getSupabase = () => {
   if (!supabaseInstance) {
-    try {
-      supabaseInstance = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        },
-        realtime: {
-          params: {
-            eventsPerSecond: 10
-          }
-        }
-      })
-    } catch (error) {
-      console.error('Supabase 클라이언트 생성 실패:', error)
-      throw error
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const supabaseKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase 환경변수가 설정되지 않았습니다. NEXT_PUBLIC_SUPABASE_URL 및 NEXT_PUBLIC_SUPABASE_ANON_KEY를 확인하세요.')
     }
+
+    supabaseInstance = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
+      }
+    })
   }
   return supabaseInstance
-})()
+}
+
+// Proxy를 사용한 lazy 초기화
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return (getSupabase() as any)[prop]
+  }
+})

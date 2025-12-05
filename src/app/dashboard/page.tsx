@@ -66,6 +66,7 @@ interface LocalEvent {
   }
   createdAt: string
   reported?: boolean // 보고 완료 여부
+  rejected?: boolean // 반려 여부
 }
 
 export const dynamic = 'force-dynamic'
@@ -90,6 +91,14 @@ export default function DashboardPage() {
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [selectedTrip, setSelectedTrip] = useState<LocalEvent | null>(null)
   const [submittingReport, setSubmittingReport] = useState(false)
+
+  // 업무일지 대기/반려 항목
+  const [pendingWorkDiaries, setPendingWorkDiaries] = useState<any[]>([])
+  const [loadingWorkDiaries, setLoadingWorkDiaries] = useState(false)
+
+  // 출장 보고서 대기/반려 항목
+  const [pendingTripReports, setPendingTripReports] = useState<any[]>([])
+  const [loadingTripReports, setLoadingTripReports] = useState(false)
 
 
   // 로그인하지 않은 경우 홈으로 리다이렉트
@@ -125,38 +134,46 @@ export default function DashboardPage() {
           ? trips
           : trips.filter((trip: any) => trip.user_id === user.id)
 
-        // LocalEvent 형식으로 변환 (미보고만 필터링)
+        // LocalEvent 형식으로 변환 (미보고 또는 반려된 것만 필터링)
         const formattedTrips: LocalEvent[] = filteredTrips
-          .filter((trip: any) => trip.report_status !== 'submitted') // 미보고만
-          .map((trip: any) => ({
-            id: trip.id,
-            category: '출장/외근',
-            subCategory: trip.trip_type === 'business' ? '출장' : '외근',
-            subSubCategory: trip.purpose || '기타',
-            summary: `[${trip.trip_type === 'business' ? '출장' : '외근'}] ${trip.title}`,
-            description: trip.purpose,
-            location: trip.location || '미지정',
-            start: {
-              dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
-              date: trip.start_date
-            },
-            end: {
-              dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
-              date: trip.end_date
-            },
-            participant: {
-              id: trip.user_id,
-              name: trip.user_name,
-              level: trip.user_level || '1'
-            },
-            createdBy: {
-              id: trip.created_by || trip.user_id,
-              name: trip.created_by_name || trip.user_name,
-              level: trip.created_by_level || trip.user_level || '1'
-            },
-            createdAt: trip.created_at,
-            reported: trip.report_status === 'submitted'
-          }))
+          .filter((trip: any) => 
+            trip.report_status === 'pending' || 
+            trip.report_status === 'rejected' ||
+            !trip.report_status // report_status가 없는 경우도 포함
+          )
+          .map((trip: any) => {
+            const isBusinessTrip = trip.trip_type === 'business' || trip.trip_type === 'business_trip'
+            return {
+              id: trip.id,
+              category: '출장/외근',
+              subCategory: isBusinessTrip ? '출장' : '외근',
+              subSubCategory: trip.purpose || '기타',
+              summary: `[${isBusinessTrip ? '출장' : '외근'}] ${trip.title}`,
+              description: trip.purpose,
+              location: trip.location || '미지정',
+              start: {
+                dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
+                date: trip.start_date
+              },
+              end: {
+                dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
+                date: trip.end_date
+              },
+              participant: {
+                id: trip.user_id,
+                name: trip.user_name,
+                level: trip.user_level || '1'
+              },
+              createdBy: {
+                id: trip.created_by || trip.user_id,
+                name: trip.created_by_name || trip.user_name,
+                level: trip.created_by_level || trip.user_level || '1'
+              },
+              createdAt: trip.created_at,
+              reported: trip.report_status === 'submitted' || trip.report_status === 'approved',
+              rejected: trip.report_status === 'rejected' // 반려 여부 추가
+            }
+          })
 
         // localStorage의 businessTrips도 함께 조회
         const storedBusinessTrips = localStorage.getItem('businessTrips')
@@ -165,35 +182,38 @@ export default function DashboardPage() {
         if (storedBusinessTrips) {
           const businessTripsData = JSON.parse(storedBusinessTrips)
 
-          localStorageTrips = businessTripsData.map((trip: any) => ({
-            id: trip.id,
-            category: '출장/외근',
-            subCategory: trip.trip_type === 'business' ? '출장' : '외근',
-            subSubCategory: trip.purpose || '기타',
-            summary: `[${trip.trip_type === 'business' ? '출장' : '외근'}] ${trip.title}`,
-            description: trip.purpose,
-            location: trip.location || '미지정',
-            start: {
-              dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
-              date: trip.start_date
-            },
-            end: {
-              dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
-              date: trip.end_date
-            },
-            participant: {
-              id: trip.user_id,
-              name: trip.user_name,
-              level: trip.user_level || '1'
-            },
-            createdBy: {
-              id: trip.created_by || trip.user_id,
-              name: trip.created_by_name || trip.user_name,
-              level: trip.created_by_level || trip.user_level || '1'
-            },
-            createdAt: trip.created_at,
-            reported: trip.report_status === 'submitted'
-          }))
+          localStorageTrips = businessTripsData.map((trip: any) => {
+            const isBusinessTrip = trip.trip_type === 'business' || trip.trip_type === 'business_trip'
+            return {
+              id: trip.id,
+              category: '출장/외근',
+              subCategory: isBusinessTrip ? '출장' : '외근',
+              subSubCategory: trip.purpose || '기타',
+              summary: `[${isBusinessTrip ? '출장' : '외근'}] ${trip.title}`,
+              description: trip.purpose,
+              location: trip.location || '미지정',
+              start: {
+                dateTime: trip.start_date + (trip.start_time ? 'T' + trip.start_time : ''),
+                date: trip.start_date
+              },
+              end: {
+                dateTime: trip.end_date + (trip.end_time ? 'T' + trip.end_time : ''),
+                date: trip.end_date
+              },
+              participant: {
+                id: trip.user_id,
+                name: trip.user_name,
+                level: trip.user_level || '1'
+              },
+              createdBy: {
+                id: trip.created_by || trip.user_id,
+                name: trip.created_by_name || trip.user_name,
+                level: trip.created_by_level || trip.user_level || '1'
+              },
+              createdAt: trip.created_at,
+              reported: trip.report_status === 'submitted'
+            }
+          })
         }
 
         // API 데이터와 localStorage 데이터 합치기
@@ -384,15 +404,22 @@ export default function DashboardPage() {
 
         if (data.projectEvents) {
           data.projectEvents.forEach((event: any) => {
-            projectEvents.push({
-              id: `project-${event.id}`,
-              projectId: event.projectId,
-              projectName: event.project?.projectName || '',
-              projectNumber: event.project?.projectNumber || '',
-              type: event.eventType,
-              date: event.eventDate,
-              description: event.description || ''
-            })
+            // 날짜 범위 필터링
+            if (event.eventDate) {
+              const [year, month, day] = event.eventDate.split('-').map(Number)
+              const eventDate = new Date(year, month - 1, day)
+              if (eventDate >= oneMonthBefore && eventDate <= oneMonthLater) {
+                projectEvents.push({
+                  id: `project-${event.id}`,
+                  projectId: event.projectId,
+                  projectName: event.project?.projectName || '',
+                  projectNumber: event.project?.projectNumber || '',
+                  type: event.eventType,
+                  date: event.eventDate,
+                  description: event.description || ''
+                })
+              }
+            }
           })
         }
 
@@ -455,19 +482,31 @@ export default function DashboardPage() {
           })
         }
 
-        // 중복 제거 (같은 프로젝트의 같은 타입)
+        // 중복 제거 (같은 프로젝트명 + 같은 타입 + 같은 날짜)
         const uniqueEvents = projectEvents.filter((event, index, self) =>
-          index === self.findIndex(e => e.projectId === event.projectId && e.type === event.type)
+          index === self.findIndex(e => 
+            e.projectName === event.projectName && 
+            e.type === event.type && 
+            e.date === event.date
+          )
         )
 
+        // 최종 날짜 범위 필터링 (확실하게)
+        const filteredEvents = uniqueEvents.filter(event => {
+          if (!event.date) return false
+          const [year, month, day] = event.date.split('-').map(Number)
+          const eventDate = new Date(year, month - 1, day)
+          return eventDate >= oneMonthBefore && eventDate <= oneMonthLater
+        })
+
         // 날짜순으로 정렬
-        uniqueEvents.sort((a, b) => {
+        filteredEvents.sort((a, b) => {
           const dateA = new Date(a.date)
           const dateB = new Date(b.date)
           return dateA.getTime() - dateB.getTime()
         })
 
-        setProjectEvents(uniqueEvents)
+        setProjectEvents(filteredEvents)
       }
     } catch (error) {
       console.error('프로젝트 일정 로드 오류:', error)
@@ -479,6 +518,123 @@ export default function DashboardPage() {
   useEffect(() => {
     loadProjectEvents()
   }, [loadProjectEvents])
+
+  // 업무일지 대기/반려 항목 로드
+  // - Level 5/Admin: 모든 사용자의 대기/반려 항목 전체
+  // - 일반 사용자: 본인의 대기/반려 항목
+  const loadPendingWorkDiaries = useCallback(async () => {
+    if (!user?.id) return
+
+    setLoadingWorkDiaries(true)
+    try {
+      const level = String(user.level || '').toLowerCase()
+      const isAdminUser = level === '5' || level === 'administrator' || level === 'admin' || user.id === 'admin'
+      
+      // 관리자는 전체 조회, 일반 사용자는 본인 것만
+      const queryParams = new URLSearchParams()
+      queryParams.append('userLevel', String(user.level))
+      if (!isAdminUser) {
+        queryParams.append('userId', user.id)
+      }
+      
+      const response = await fetch(`/api/work-diary?${queryParams.toString()}`, {
+        headers: {
+          'x-user-id': user.id,
+          'x-user-level': String(user.level)
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const allDiaries = data.data || []
+        
+        // 필터링: 대기(pending, null) 또는 반려(rejected) 상태
+        // 관리자는 전체, 일반 사용자는 본인 것만
+        const filtered = allDiaries.filter((diary: any) => {
+          const isPendingOrRejected = diary.approvalStatus === 'rejected' || 
+                                       diary.approvalStatus === 'pending' || 
+                                       !diary.approvalStatus
+          
+          if (isAdminUser) {
+            return isPendingOrRejected
+          }
+          // 일반 사용자: 본인의 대기/반려 항목
+          return diary.userId === user.id && isPendingOrRejected
+        })
+        
+        // 같은 날짜 + 같은 사용자로 그룹화
+        const grouped = filtered.reduce((acc: any[], diary: any) => {
+          const key = `${diary.workDate}_${diary.userId}`
+          const existing = acc.find(g => g.key === key)
+          if (existing) {
+            existing.count++
+            existing.items.push(diary)
+          } else {
+            acc.push({
+              key,
+              ...diary,
+              count: 1,
+              items: [diary]
+            })
+          }
+          return acc
+        }, [])
+        
+        setPendingWorkDiaries(grouped.slice(0, 20)) // 최대 20개
+      }
+    } catch (error) {
+      console.error('업무일지 로드 오류:', error)
+    } finally {
+      setLoadingWorkDiaries(false)
+    }
+  }, [user?.id, user?.level])
+
+  // 출장 보고서 대기 항목 로드
+  // - Level 5/Admin: 모든 사용자의 승인 대기 항목
+  // - 일반 사용자: 본인의 승인 대기 항목
+  const loadPendingTripReports = useCallback(async () => {
+    if (!user?.id) return
+
+    setLoadingTripReports(true)
+    try {
+      const level = String(user.level || '').toLowerCase()
+      const isAdminUser = level === '5' || level === 'administrator' || level === 'admin' || user.id === 'admin'
+      
+      const response = await fetch('/api/business-trip-reports', {
+        headers: {
+          'x-user-id': user.id,
+          'x-user-level': String(user.level)
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const reports = data.reports || data || []
+        
+        // 제출됨(submitted) 상태 필터링 (승인 대기)
+        // 관리자는 전체, 일반 사용자는 본인 것만
+        const pending = reports.filter((report: any) => {
+          const isPending = report.status === 'submitted'
+          if (isAdminUser) {
+            return isPending
+          }
+          // 일반 사용자: 본인이 제출한 것만
+          return isPending && (report.user_id === user.id || report.business_trips?.user_id === user.id)
+        })
+        
+        setPendingTripReports(pending.slice(0, 10)) // 최대 10개만
+      }
+    } catch (error) {
+      console.error('출장 보고서 로드 오류:', error)
+    } finally {
+      setLoadingTripReports(false)
+    }
+  }, [user?.id, user?.level])
+
+  useEffect(() => {
+    loadPendingWorkDiaries()
+    loadPendingTripReports()
+  }, [loadPendingWorkDiaries, loadPendingTripReports])
 
 
   // 보고서 작성 모달 열기
@@ -497,31 +653,48 @@ export default function DashboardPage() {
 
     setSubmittingReport(true)
     try {
-      // 1. 외근/출장 등록 (API 호출)
-      const tripResponse = await fetch('/api/business-trips', {
-        method: 'POST',
+      let tripId = selectedTrip.id
+
+      // 1. 기존 출장/외근의 report_status 업데이트
+      const updateResponse = await fetch(`/api/business-trips/${tripId}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
-          userName: user.name,
-          title: selectedTrip.summary,
-          purpose: selectedTrip.description || selectedTrip.summary,
-          location: selectedTrip.location || '미지정',
-          startDate: selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date,
-          endDate: selectedTrip.end.dateTime?.split('T')[0] || selectedTrip.end.date || selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date,
-          startTime: selectedTrip.start.dateTime?.split('T')[1] || null,
-          endTime: selectedTrip.end.dateTime?.split('T')[1] || null
+          report_status: 'submitted'
         })
       })
 
-      if (!tripResponse.ok) {
-        throw new Error('외근/출장 등록에 실패했습니다.')
-      }
+      if (!updateResponse.ok) {
+        // 기존 출장이 없으면 새로 생성
+        const tripResponse = await fetch('/api/business-trips', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            user_name: user.name,
+            title: selectedTrip.summary,
+            purpose: selectedTrip.description || selectedTrip.summary,
+            location: selectedTrip.location || '미지정',
+            start_date: selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date,
+            end_date: selectedTrip.end.dateTime?.split('T')[0] || selectedTrip.end.date || selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date,
+            start_time: selectedTrip.start.dateTime?.split('T')[1] || null,
+            end_time: selectedTrip.end.dateTime?.split('T')[1] || null,
+            trip_type: selectedTrip.subCategory === '출장' ? 'business_trip' : 'field_work',
+            report_status: 'submitted'
+          })
+        })
 
-      const tripResult = await tripResponse.json()
-      const tripId = tripResult.trip.id
+        if (!tripResponse.ok) {
+          throw new Error('외근/출장 등록에 실패했습니다.')
+        }
+
+        const tripResult = await tripResponse.json()
+        tripId = tripResult.trip?.id || tripResult.id
+      }
 
       // 2. 보고서 작성
       const reportResponse = await fetch('/api/business-trip-reports', {
@@ -543,48 +716,21 @@ export default function DashboardPage() {
         throw new Error('보고서 작성에 실패했습니다.')
       }
 
-      // 3. 업무일지에 보고 추가
-      const workContent = `${selectedTrip.subCategory}${selectedTrip.subSubCategory ? ` - ${selectedTrip.subSubCategory}` : ''}: ${selectedTrip.summary}`
+      // 3. 로컬 상태에서 해당 항목 제거 (보고 완료)
+      const updatedTrips = businessTrips.filter(trip => trip.id !== selectedTrip.id)
+      setBusinessTrips(updatedTrips)
 
-      const workDiaryResponse = await fetch('/api/work-diary', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          workDate: selectedTrip.start.dateTime?.split('T')[0] || selectedTrip.start.date,
-          projectId: 'other',
-          workContent: workContent,
-          workType: selectedTrip.subCategory === '출장' ? '출장' : '외근',
-          workSubType: selectedTrip.subSubCategory || null,
-          customProjectName: `${selectedTrip.subCategory} 업무`
-        })
-      })
-
-      if (workDiaryResponse.ok) {
-        // 4. 로컬 상태 업데이트
-        const updatedTrips = businessTrips.map(trip =>
-          trip.id === selectedTrip.id ? { ...trip, reported: true } : trip
-        )
-        setBusinessTrips(updatedTrips)
-
-        // localStorage 업데이트
-        const storedEvents = localStorage.getItem('localEvents')
-        if (storedEvents) {
-          const allEvents: LocalEvent[] = JSON.parse(storedEvents)
-          const updatedEvents = allEvents.map(e =>
-            e.id === selectedTrip.id ? { ...e, reported: true } : e
-          )
-          localStorage.setItem('localEvents', JSON.stringify(updatedEvents))
-        }
-
-        setReportModalOpen(false)
-        setSelectedTrip(null)
-        alert('보고서가 성공적으로 제출되었습니다.')
-      } else {
-        throw new Error('업무일지 등록에 실패했습니다.')
+      // localStorage 업데이트
+      const storedEvents = localStorage.getItem('localEvents')
+      if (storedEvents) {
+        const allEvents: LocalEvent[] = JSON.parse(storedEvents)
+        const updatedEvents = allEvents.filter(e => e.id !== selectedTrip.id)
+        localStorage.setItem('localEvents', JSON.stringify(updatedEvents))
       }
+
+      setReportModalOpen(false)
+      setSelectedTrip(null)
+      alert('보고서가 성공적으로 제출되었습니다.')
     } catch (error) {
       console.error('보고서 제출 오류:', error)
       alert(`보고서 제출 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
@@ -625,7 +771,9 @@ export default function DashboardPage() {
   const isLevel3 = userLevel === '3'
   const isLevel4 = userLevel === '4'
   const isLevel5 = userLevel === '5'
-  const isAdmin = String(userLevel).toLowerCase() === 'administrator'
+  const levelLower = String(userLevel).toLowerCase()
+  const isAdmin = levelLower === 'administrator' || levelLower === 'admin' || user.id === 'admin'
+  const isLevel5OrAdmin = isLevel5 || isAdmin
 
   return (
     <AuthGuard requiredLevel={3}>
@@ -635,6 +783,119 @@ export default function DashboardPage() {
             <div className="max-w-[1600px] mx-auto space-y-6">
           {/* Gradient Banner Header */}
 
+          {/* 승인 대기/반려 섹션 (관리자: 모든 항목, 일반사용자: 본인 대기/반려 항목) */}
+          {(pendingWorkDiaries.length > 0 || pendingTripReports.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* 업무일지 승인 대기 */}
+              {pendingWorkDiaries.length > 0 && (
+                <Card className="bg-white rounded-2xl border border-orange-200 shadow-lg overflow-hidden border-t-4 border-t-orange-500">
+                  <CardHeader className="px-6 py-4 border-b border-orange-100 bg-orange-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-100 rounded-xl">
+                          <FileText className="h-5 w-5 text-orange-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {isLevel5OrAdmin ? '업무일지 승인 대기' : '내 업무일지 승인 현황'}
+                          </h3>
+                          <p className="text-orange-600 text-sm">{pendingWorkDiaries.length}건 처리 필요</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                        onClick={() => router.push('/work-diary/history')}
+                      >
+                        전체보기
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 max-h-[300px] overflow-y-auto">
+                    {loadingWorkDiaries ? (
+                      <div className="p-6 text-center text-gray-500">로딩 중...</div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {pendingWorkDiaries.map((diary) => (
+                          <div key={diary.key || diary.id} className="p-4 hover:bg-gray-50 cursor-pointer" onClick={() => router.push('/work-diary/history')}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-gray-900">{diary.user?.name || '알 수 없음'}</span>
+                                  <Badge className={diary.approvalStatus === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}>
+                                    {diary.approvalStatus === 'rejected' ? '반려됨' : '대기'}
+                                  </Badge>
+                                  {diary.count > 1 && (
+                                    <span className="text-xs text-gray-500">외 {diary.count - 1}건</span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 truncate max-w-[300px]">{diary.workContent}</p>
+                                <p className="text-xs text-gray-400 mt-1">{diary.workDate}</p>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* 출장 보고서 승인 대기 */}
+              {pendingTripReports.length > 0 && (
+                <Card className="bg-white rounded-2xl border border-purple-200 shadow-lg overflow-hidden border-t-4 border-t-purple-500">
+                  <CardHeader className="px-6 py-4 border-b border-purple-100 bg-purple-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-xl">
+                          <MapPin className="h-5 w-5 text-purple-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {isLevel5OrAdmin ? '출장 보고서 승인 대기' : '내 출장 보고서 승인 현황'}
+                          </h3>
+                          <p className="text-purple-600 text-sm">{pendingTripReports.length}건 처리 필요</p>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                        onClick={() => router.push('/business-trip-reports')}
+                      >
+                        전체보기
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0 max-h-[300px] overflow-y-auto">
+                    {loadingTripReports ? (
+                      <div className="p-6 text-center text-gray-500">로딩 중...</div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {pendingTripReports.map((report) => (
+                          <div key={report.id} className="p-4 hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/business-trip-reports/${report.id}`)}>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-gray-900">{report.business_trips?.user_name || '알 수 없음'}</span>
+                                  <Badge className="bg-blue-100 text-blue-700">제출됨</Badge>
+                                </div>
+                                <p className="text-sm text-gray-800 font-medium">{report.title}</p>
+                                <p className="text-xs text-gray-400 mt-1">{report.business_trips?.location} | {new Date(report.submitted_at).toLocaleDateString()}</p>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-gray-400" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* 출장/외근 내역과 연월차 예정 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -648,8 +909,8 @@ export default function DashboardPage() {
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">
                       {user && (String(user.level) === '5' || String(user.level).toLowerCase() === 'administrator')
-                        ? '전체 출장/외근 (미보고)'
-                        : '내 출장/외근 (미보고)'}
+                        ? '전체 출장/외근 (미보고/반려)'
+                        : '내 출장/외근 (미보고/반려)'}
                     </h2>
                     <p className="text-gray-500 text-sm mt-1">출장/외근을 관리하고 보고서를 작성하세요</p>
                   </div>
@@ -719,17 +980,41 @@ export default function DashboardPage() {
                                   <CheckCircle className="h-3 w-3 mr-1" />
                                   완료
                                 </span>
+                              ) : trip.rejected ? (
+                                <div className="flex items-center gap-2 justify-end">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    반려됨
+                                  </span>
+                                  {/* 재작성 버튼 - 본인 신청건만 */}
+                                  {trip.participant?.id === user?.id && (
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.preventDefault()
+                                        handleOpenReportModal(trip)
+                                      }}
+                                      className="h-8 bg-orange-600 hover:bg-orange-700 text-white text-xs px-3 rounded-lg"
+                                    >
+                                      재작성
+                                    </Button>
+                                  )}
+                                </div>
                               ) : (
-                                <Button
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.preventDefault()
-                                    handleOpenReportModal(trip)
-                                  }}
-                                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 rounded-lg"
-                                >
-                                  보고서 작성
-                                </Button>
+                                /* 보고서 작성 버튼 - 본인 신청건만 */
+                                trip.participant?.id === user?.id ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      handleOpenReportModal(trip)
+                                    }}
+                                    className="h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 rounded-lg"
+                                  >
+                                    보고서 작성
+                                  </Button>
+                                ) : (
+                                  <span className="text-xs text-gray-400">신청자만 가능</span>
+                                )
                               )}
                             </TableCell>
                           </TableRow>

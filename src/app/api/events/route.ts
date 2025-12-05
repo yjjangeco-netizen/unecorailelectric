@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// RLS 우회를 위한 anon 키 사용
-const supabaseUrl = 'https://esvpnrqavaeikzhbmydz.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-
-const createApiClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey)
-}
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +9,7 @@ export async function GET(request: NextRequest) {
     
     console.log('헤더 정보:', { userLevel, userId })
     
-    const supabase = createApiClient()
+    const supabase = supabaseServer
     
     // RLS 우회를 위해 모든 데이터 조회
     const { data, error } = await supabase
@@ -51,7 +43,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const supabase = createApiClient()
+    const supabase = supabaseServer
 
     const { data, error } = await supabase
       .from('events')
@@ -89,7 +81,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: '이벤트 ID가 필요합니다' }, { status: 400 })
     }
 
-    const supabase = createApiClient()
+    const supabase = supabaseServer
 
     const { error } = await supabase
       .from('events')
@@ -144,7 +136,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '필수 필드가 누락되었습니다' }, { status: 400 })
     }
     
-    const supabase = createApiClient()
+    const supabase = supabaseServer
     
     const { data, error } = await supabase
       .from('events')

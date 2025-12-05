@@ -7,46 +7,40 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const supabase = createApiClient()
-    const cookieStore = cookies()
-    const authToken = cookieStore.get('auth-token')?.value
-
-    if (!authToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // 토큰 디코딩
-    let userId: string
+    
+    // 헤더에서 사용자 정보 가져오기
+    const userLevel = request.headers.get('x-user-level') || '1'
+    const userId = request.headers.get('x-user-id') || ''
+    
+    // 쿠키에서도 시도
+    let cookieUserId = ''
+    let cookieUserLevel = '1'
     try {
-      const decoded = JSON.parse(atob(authToken))
-      userId = decoded.id
+      const cookieStore = cookies()
+      const authToken = cookieStore.get('auth-token')?.value
+      if (authToken) {
+        const decoded = JSON.parse(atob(authToken))
+        cookieUserId = decoded.id || ''
+        cookieUserLevel = decoded.level || '1'
+      }
     } catch (e) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+      console.log('쿠키 파싱 실패, 헤더 사용')
     }
 
-    // 사용자 레벨 조회
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('level')
-      .eq('id', userId)
-      .single()
-
-    if (userError || !userData) {
-      console.error('사용자 정보 조회 실패:', userError)
-      return NextResponse.json({ error: 'User not found' }, { status: 401 })
-    }
-
-    const userLevel = String(userData.level).toLowerCase()
-    const isAdmin = userLevel === '5' || userLevel === 'administrator' || userLevel === 'admin'
+    const finalUserId = userId || cookieUserId
+    const finalUserLevel = userLevel || cookieUserLevel
+    const isAdmin = finalUserLevel === '5' || finalUserLevel.toLowerCase() === 'administrator' || finalUserLevel.toLowerCase() === 'admin'
 
     let query = supabase
       .from('business_trips')
       .select('*')
       .neq('report_status', 'submitted') // 보고서가 제출되지 않은 내역 조회
+      .neq('report_status', 'approved') // 승인된 내역도 제외
       .order('start_date', { ascending: false })
 
     // 관리자가 아니면 본인의 내역만 조회
-    if (!isAdmin) {
-      query = query.eq('user_id', userId)
+    if (!isAdmin && finalUserId) {
+      query = query.eq('user_id', finalUserId)
     }
 
     const { data: trips, error } = await query

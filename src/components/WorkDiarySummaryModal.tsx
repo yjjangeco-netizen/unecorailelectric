@@ -128,11 +128,12 @@ export default function WorkDiarySummaryModal({ isOpen, onClose }: WorkDiarySumm
         const data = await response.json()
         setSummary(data)
       } else {
-        throw new Error('AI 분석 실패')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.details || errorData.error || 'AI 분석 실패')
       }
     } catch (error) {
       console.error('AI 분석 실패:', error)
-      alert('AI 분석 중 오류가 발생했습니다')
+      alert(`AI 분석 중 오류가 발생했습니다: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setIsAnalyzing(false)
     }

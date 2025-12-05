@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,11 +27,7 @@ export async function GET(request: NextRequest) {
       limit
     })
 
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     // Step 1: work_diary 기본 조회 (조인 없이)
     let query = supabase
@@ -181,6 +177,8 @@ export async function GET(request: NextRequest) {
         updatedAt: diary.updated_at,
         isConfirmed: diary.is_confirmed || false,
         adminComment: diary.admin_comment || '',
+        approvalStatus: diary.approval_status || 'pending', // 승인 상태
+        work_hours: diary.work_hours || 0, // 작업시간
         
         // 프로젝트 정보 (통계용)
         project: project ? {
@@ -255,11 +253,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Supabase 직접 연결
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://esvpnrqavaeikzhbmydz.supabase.co'
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzdnBucnFhdmFlaWt6aGJteWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzgwNDUsImV4cCI6MjA3MTYxNDA0NX0.BKl749c73NGFD4VZsvFjskq3WSYyo7NPN0GY3STTZz8'
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = supabaseServer
 
     // 프로젝트 ID 처리
     let finalProjectId = null

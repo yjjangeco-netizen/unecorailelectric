@@ -20,6 +20,20 @@ export default function ClientLayout({
   const router = useRouter()
   const { user, isAuthenticated, loading } = useUser()
   
+  // 서비스 워커 등록 (PWA)
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker 등록 성공:', registration.scope)
+        })
+        .catch((error) => {
+          console.log('Service Worker 등록 실패:', error)
+        })
+    }
+  }, [])
+
   // 클라이언트 사이드 마이그레이션 실행 (한 번만)
   useEffect(() => {
     try {

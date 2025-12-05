@@ -68,7 +68,27 @@ export async function GET(request: NextRequest) {
     })) || []
 
     // Google Gemini AI로 분석
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) {
+      console.error('GEMINI_API_KEY가 설정되지 않았습니다.')
+      return NextResponse.json({ 
+        error: 'AI 서비스 설정 오류', 
+        details: 'API 키가 설정되지 않았습니다. 관리자에게 문의하세요.' 
+      }, { status: 500 })
+    }
+
+    if (analysisData.length === 0) {
+      return NextResponse.json({
+        success: true,
+        period: { startDate, endDate },
+        totalEntries: 0,
+        users: Array.from(userMap.values()),
+        analysis: '<p>선택한 기간에 해당 사용자의 업무일지 데이터가 없습니다.</p>',
+        rawData: []
+      })
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
     const prompt = `

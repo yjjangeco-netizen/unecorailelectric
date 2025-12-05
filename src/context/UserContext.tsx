@@ -108,21 +108,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // 로그아웃 함수
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     try {
+      // 1. 상태 초기화
       setUser(null)
       setError(null)
       setLoading(false)
       
-      databaseAuth.cleanupSession().catch(console.error)
+      // 2. 로컬 스토리지 및 쿠키 정리
       localStorage.removeItem('user')
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      
+      // 3. 서버 세션 정리 (비동기 시도하되 기다리지 않음 또는 에러 무시)
+      try {
+        await databaseAuth.cleanupSession()
+      } catch (e) {
+        console.warn('세션 정리 중 오류 (무시됨):', e)
+      }
+
+      // 4. 로그인 페이지로 강제 이동 (replace를 사용하여 뒤로가기 방지)
+      window.location.replace('/login')
     } catch (error) {
-      console.error('UserContext: 로그아웃 처리 중 오류:', error)
-      setUser(null)
-      setError(null)
-      setLoading(false)
-      localStorage.removeItem('user')
+      console.error('UserContext: 로그아웃 처리 중 치명적 오류:', error)
+      // 오류 발생 시에도 강제 이동 시도
+      window.location.replace('/login')
     }
   }, [])
 

@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "9fcdf88d-7606-4c86-9d07-9eb0fd424ef5"
+      }
+    },
+    "android": {
+      "package": "com.yalo123.unecorailelectric"
+    }
+  }
+}

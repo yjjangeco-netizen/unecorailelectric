@@ -26,7 +26,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatDate } from '@/lib/utils'
-import { Search, Edit, Trash2, ChevronLeft, ChevronRight, CheckCircle, MessageSquare, Lock, Eye, Unlock, RefreshCw } from 'lucide-react'
+import { Search, Edit, Trash2, ChevronLeft, ChevronRight, CheckCircle, MessageSquare, Lock, Eye, Unlock, RefreshCw, XCircle, RotateCcw, Clock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 interface WorkDiary {
@@ -39,6 +39,8 @@ interface WorkDiary {
   projectId: number | null
   isConfirmed: boolean
   adminComment: string
+  approvalStatus?: 'pending' | 'approved' | 'rejected' // 승인 상태 추가
+  work_hours?: number
   project: {
     project_name: string
     project_number: string
@@ -48,6 +50,12 @@ interface WorkDiary {
     level: string
     department: string
   }
+}
+
+interface Project {
+  id: number
+  project_name: string
+  project_number: string
 }
 
 export default function WorkDiaryHistoryPage() {
@@ -66,6 +74,7 @@ export default function WorkDiaryHistoryPage() {
   // Admin Filter
   const [filterUserId, setFilterUserId] = useState('all')
   const [users, setUsers] = useState<{ id: string, name: string }[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
 
   // Edit Modal State
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -83,7 +92,7 @@ export default function WorkDiaryHistoryPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<WorkDiary[]>([])
 
-  const isLevel5OrAdmin = user?.level === '5' || user?.level?.toLowerCase() === 'administrator'
+  const isLevel5OrAdmin = user?.level === '5' || user?.level?.toLowerCase() === 'administrator' || user?.level?.toLowerCase() === 'admin'
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -109,6 +118,19 @@ export default function WorkDiaryHistoryPage() {
       console.error('Failed to fetch users:', error)
     }
   }, [user?.id, user?.level])
+
+  // 프로젝트 목록 로드
+  const fetchProjects = useCallback(async () => {
+    try {
+      const response = await fetch('/api/projects')
+      if (response.ok) {
+        const data = await response.json()
+        setProjects(data || [])
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error)
+    }
+  }, [])
 
   const fetchDiaries = useCallback(async () => {
     try {
@@ -154,11 +176,12 @@ export default function WorkDiaryHistoryPage() {
   useEffect(() => {
     if (user) {
       fetchDiaries()
+      fetchProjects() // 프로젝트 목록 로드
       if (isLevel5OrAdmin) {
         fetchUsers()
       }
     }
-  }, [user, isLevel5OrAdmin, fetchDiaries, fetchUsers])
+  }, [user, isLevel5OrAdmin, fetchDiaries, fetchUsers, fetchProjects])
 
   // Group diaries by date and user
   const groupedDiaries = diaries.reduce((acc, diary) => {
@@ -241,6 +264,10 @@ export default function WorkDiaryHistoryPage() {
           workContent: editContent,
           workType: editWorkType,
           workSubType: editWorkSubType,
+          workDate: editingDiary.workDate,
+          projectId: editingDiary.projectId,
+          customProjectName: editingDiary.customProjectName,
+          workHours: (editingDiary as any).work_hours || 0,
         }),
       })
 
@@ -255,7 +282,10 @@ export default function WorkDiaryHistoryPage() {
                     ...d,
                     workContent: editContent,
                     workType: editWorkType,
-                    workSubType: editWorkSubType
+                    workSubType: editWorkSubType,
+                    workDate: editingDiary.workDate,
+                    projectId: editingDiary.projectId,
+                    customProjectName: editingDiary.customProjectName,
                 } : d
             )
             setSelectedGroup(updatedGroup)
@@ -339,6 +369,199 @@ export default function WorkDiaryHistoryPage() {
     } catch (error) {
       alert('오류가 발생했습니다.')
       fetchDiaries() // Revert on error
+    }
+  }
+
+  // 승인 처리 (Level 5 이상)
+  const handleApprove = async (diary: WorkDiary) => {
+    const newStatus = diary.approvalStatus === 'approved' ? 'pending' : 'approved'
+    const message = diary.approvalStatus === 'approved' ? '승인을 취소하시겠습니까?' : '이 업무일지를 승인하시겠습니까?'
+    
+    if (!confirm(message)) return
+
+    try {
+      const response = await fetch(`/api/work-diary/${diary.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
+          'x-user-level': user?.level || ''
+        },
+        body: JSON.stringify({
+          approvalStatus: newStatus,
+          isConfirmed: newStatus === 'approved'
+        }),
+      })
+
+      if (response.ok) {
+        fetchDiaries()
+        if (isDetailOpen) {
+          const updatedGroup = selectedGroup.map(d => 
+            d.id === diary.id ? { ...d, approvalStatus: newStatus as 'pending' | 'approved' | 'rejected', isConfirmed: newStatus === 'approved' } : d
+          )
+          setSelectedGroup(updatedGroup)
+        }
+        alert(newStatus === 'approved' ? '승인되었습니다.' : '승인이 취소되었습니다.')
+      } else {
+        const errorData = await response.json()
+        alert(`오류: ${errorData.error}`)
+      }
+    } catch (error) {
+      alert('오류가 발생했습니다.')
+    }
+  }
+
+  // 반려 처리 (Level 5 이상)
+  const handleReject = async (diary: WorkDiary) => {
+    const reason = prompt('반려 사유를 입력하세요:')
+    if (!reason) return
+
+    try {
+      const response = await fetch(`/api/work-diary/${diary.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user?.id || '',
+          'x-user-level': user?.level || ''
+        },
+        body: JSON.stringify({
+          approvalStatus: 'rejected',
+          adminComment: reason,
+          isConfirmed: false
+        }),
+      })
+
+      if (response.ok) {
+        fetchDiaries()
+        if (isDetailOpen) {
+          const updatedGroup = selectedGroup.map(d => 
+            d.id === diary.id ? { ...d, approvalStatus: 'rejected' as const, adminComment: reason, isConfirmed: false } : d
+          )
+          setSelectedGroup(updatedGroup)
+        }
+        alert('반려되었습니다.')
+      } else {
+        const errorData = await response.json()
+        alert(`오류: ${errorData.error}`)
+      }
+    } catch (error) {
+      alert('오류가 발생했습니다.')
+    }
+  }
+
+  // 그룹 전체 승인
+  const handleApproveGroup = async (group: WorkDiary[]) => {
+    const allApproved = group.every(d => d.approvalStatus === 'approved')
+    const newStatus = allApproved ? 'pending' : 'approved'
+    const message = allApproved ? '전체 승인을 취소하시겠습니까?' : '전체를 승인하시겠습니까?'
+    
+    if (!confirm(message)) return
+
+    try {
+      const results = await Promise.all(
+        group.map(async (diary) => {
+          const response = await fetch(`/api/work-diary/${diary.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-user-id': user?.id || '',
+              'x-user-level': user?.level || ''
+            },
+            body: JSON.stringify({
+              approvalStatus: newStatus,
+              isConfirmed: newStatus === 'approved'
+            }),
+          })
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            console.error(`승인 실패 (ID: ${diary.id}):`, errorData)
+            return { success: false, id: diary.id, error: errorData }
+          }
+          return { success: true, id: diary.id }
+        })
+      )
+
+      const failures = results.filter(r => !r.success)
+      if (failures.length > 0) {
+        console.error('일부 항목 승인 실패:', failures)
+        alert(`일부 항목 처리 실패: ${failures.map(f => f.error?.error || f.error?.details).join(', ')}`)
+      } else {
+        alert(newStatus === 'approved' ? '전체 승인되었습니다.' : '전체 승인이 취소되었습니다.')
+      }
+      
+      fetchDiaries()
+      
+      if (isDetailOpen) {
+        const updatedGroup = selectedGroup.map(d => 
+          group.some(g => g.id === d.id) ? { ...d, approvalStatus: newStatus as any, isConfirmed: newStatus === 'approved' } : d
+        )
+        setSelectedGroup(updatedGroup)
+      }
+    } catch (error) {
+      console.error('승인 처리 오류:', error)
+      alert('오류가 발생했습니다.')
+    }
+  }
+
+  // 그룹 전체 반려
+  const handleRejectGroup = async (group: WorkDiary[]) => {
+    const reason = prompt('반려 사유를 입력하세요:')
+    if (!reason) return
+
+    try {
+      const promises = group.map(diary => 
+        fetch(`/api/work-diary/${diary.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': user?.id || '',
+            'x-user-level': user?.level || ''
+          },
+          body: JSON.stringify({
+            approvalStatus: 'rejected',
+            adminComment: reason,
+            isConfirmed: false
+          }),
+        })
+      )
+
+      await Promise.all(promises)
+      fetchDiaries()
+      
+      if (isDetailOpen) {
+        const updatedGroup = selectedGroup.map(d => 
+          group.some(g => g.id === d.id) ? { ...d, approvalStatus: 'rejected' as const, adminComment: reason, isConfirmed: false } : d
+        )
+        setSelectedGroup(updatedGroup)
+      }
+      alert('전체 반려되었습니다.')
+    } catch (error) {
+      alert('오류가 발생했습니다.')
+    }
+  }
+
+  // 승인 상태 아이콘 렌더링
+  const getApprovalIcon = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return (
+          <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">
+            승인
+          </Badge>
+        )
+      case 'rejected':
+        return (
+          <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200">
+            반려
+          </Badge>
+        )
+      default:
+        return (
+          <Badge variant="outline" className="text-gray-500 border-gray-300">
+            대기
+          </Badge>
+        )
     }
   }
 
@@ -488,7 +711,7 @@ export default function WorkDiaryHistoryPage() {
                   <TableHead className="w-[200px]">프로젝트</TableHead>
                   <TableHead className="w-[100px]">유형</TableHead>
                   <TableHead>내용 (요약)</TableHead>
-                  <TableHead className="w-[140px] text-right">관리</TableHead>
+                  <TableHead className="w-[280px] text-right">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -518,15 +741,28 @@ export default function WorkDiaryHistoryPage() {
                           onClick={() => openDetailModal(group)}
                       >
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          {isAllConfirmed ? (
-                            <div className="flex items-center text-green-600" title="모두 확정됨">
-                              <Lock className="w-4 h-4" />
-                            </div>
-                          ) : (
-                            <div className="flex items-center text-gray-400" title="작성중 (일부 미확정)">
-                              <Unlock className="w-4 h-4" />
-                            </div>
-                          )}
+                          {(() => {
+                            const allApproved = group.every(d => d.approvalStatus === 'approved')
+                            const anyRejected = group.some(d => d.approvalStatus === 'rejected')
+                            if (allApproved) {
+                              return (
+                                <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200">
+                                  승인
+                                </Badge>
+                              )
+                            } else if (anyRejected) {
+                              return (
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-red-200">
+                                  반려
+                                </Badge>
+                              )
+                            }
+                            return (
+                              <Badge variant="outline" className="text-gray-500 border-gray-300">
+                                대기
+                              </Badge>
+                            )
+                          })()}
                         </TableCell>
                         <TableCell>{formatDate(mainEntry.workDate)}</TableCell>
                         {isLevel5OrAdmin && (
@@ -569,42 +805,69 @@ export default function WorkDiaryHistoryPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex justify-end space-x-1">
+                          <div className="flex justify-end gap-1 flex-wrap">
                             {isLevel5OrAdmin && (
                               <>
+                                {/* 승인/승인취소 버튼 */}
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => { e.stopPropagation(); handleToggleConfirmGroup(group); }}
-                                  className={`h-8 w-8 ${isAllConfirmed ? 'text-green-600 hover:text-green-700' : 'text-gray-400 hover:text-green-600'}`}
-                                  title={isAllConfirmed ? "전체 확정 취소" : "전체 확정"}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleApproveGroup(group)
+                                  }}
+                                  className={`h-7 px-2 text-xs ${group.every(d => d.approvalStatus === 'approved') 
+                                    ? 'border-orange-300 text-orange-600 hover:bg-orange-50' 
+                                    : 'border-green-300 text-green-600 hover:bg-green-50'}`}
                                 >
-                                  <CheckCircle className="h-4 w-4" />
+                                  {group.every(d => d.approvalStatus === 'approved') ? (
+                                    <><RotateCcw className="h-3 w-3 mr-1" />취소</>
+                                  ) : (
+                                    <><CheckCircle className="h-3 w-3 mr-1" />승인</>
+                                  )}
                                 </Button>
+                                {/* 반려 버튼 - 승인되지 않은 경우만 */}
+                                {!group.every(d => d.approvalStatus === 'approved') && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.preventDefault()
+                                      e.stopPropagation()
+                                      handleRejectGroup(group)
+                                    }}
+                                    className="h-7 px-2 text-xs border-red-300 text-red-600 hover:bg-red-50"
+                                  >
+                                    <XCircle className="h-3 w-3 mr-1" />반려
+                                  </Button>
+                                )}
+                                {/* 코멘트 버튼 */}
                                 <Button
-                                  variant="ghost"
-                                  size="icon"
+                                  variant="outline"
+                                  size="sm"
                                   onClick={(e) => { e.stopPropagation(); openCommentModalForGroup(group); }}
-                                  className={`h-8 w-8 relative ${commentCount > 0 ? 'text-blue-600 hover:text-blue-700' : 'text-gray-400 hover:text-blue-600'}`}
-                                  title="전체 코멘트 작성"
+                                  className={`h-7 px-2 text-xs relative ${commentCount > 0 
+                                    ? 'border-blue-300 text-blue-600 hover:bg-blue-50' 
+                                    : 'border-gray-300 text-gray-500 hover:bg-gray-50'}`}
                                 >
-                                  <MessageSquare className="h-4 w-4" />
+                                  <MessageSquare className="h-3 w-3 mr-1" />메모
                                   {commentCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1 rounded-full min-w-[14px] h-[14px] flex items-center justify-center">
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1 rounded-full min-w-[14px] h-[14px] flex items-center justify-center">
                                       {commentCount}
                                     </span>
                                   )}
                                 </Button>
                               </>
                             )}
+                            {/* 상세보기 버튼 */}
                             <Button
-                              variant="ghost"
-                              size="icon"
+                              variant="outline"
+                              size="sm"
                               onClick={(e) => { e.stopPropagation(); openDetailModal(group); }}
-                              className="h-8 w-8 text-gray-600 hover:text-blue-600"
-                              title="상세보기 및 수정"
+                              className="h-7 px-2 text-xs border-gray-300 text-gray-600 hover:bg-gray-50"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Eye className="h-3 w-3 mr-1" />보기
                             </Button>
                           </div>
                         </TableCell>
@@ -663,19 +926,41 @@ export default function WorkDiaryHistoryPage() {
           
           <div className="space-y-6 py-4">
             {selectedGroup.map((diary, index) => (
-                <div key={diary.id} className="border rounded-lg p-4 bg-gray-50 relative">
+                <div key={diary.id} className={`border rounded-lg p-4 relative ${diary.approvalStatus === 'approved' ? 'bg-green-50 border-green-200' : diary.approvalStatus === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}>
+                    {/* 승인 상태 배지 */}
+                    <div className="absolute top-4 left-4">
+                        {getApprovalIcon(diary.approvalStatus)}
+                    </div>
+
                     <div className="absolute top-4 right-4 flex gap-2">
                         {isLevel5OrAdmin && (
                             <>
+                                {/* 승인/승인취소 버튼 */}
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleToggleConfirm(diary)}
-                                    className={`h-6 w-6 ${diary.isConfirmed ? 'text-green-600' : 'text-gray-400'}`}
-                                    title={diary.isConfirmed ? "확정 취소" : "확정"}
+                                    onClick={(e) => { e.stopPropagation(); handleApprove(diary); }}
+                                    className={`h-6 w-6 ${diary.approvalStatus === 'approved' ? 'text-orange-600' : 'text-green-600'}`}
+                                    title={diary.approvalStatus === 'approved' ? "승인취소" : "승인"}
                                 >
-                                    <CheckCircle className="h-4 w-4" />
+                                    {diary.approvalStatus === 'approved' ? (
+                                        <RotateCcw className="h-4 w-4" />
+                                    ) : (
+                                        <CheckCircle className="h-4 w-4" />
+                                    )}
                                 </Button>
+                                {/* 반려 버튼 - 승인되지 않은 경우만 */}
+                                {diary.approvalStatus !== 'approved' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={(e) => { e.stopPropagation(); handleReject(diary); }}
+                                        className="h-6 w-6 text-red-600"
+                                        title="반려"
+                                    >
+                                        <XCircle className="h-4 w-4" />
+                                    </Button>
+                                )}
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -687,7 +972,8 @@ export default function WorkDiaryHistoryPage() {
                                 </Button>
                             </>
                         )}
-                        {!diary.isConfirmed && (
+                        {/* 수정 버튼 - 승인되지 않은 경우에만 (반려된 경우 수정 가능) */}
+                        {(diary.approvalStatus !== 'approved' || isLevel5OrAdmin) && (
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -698,7 +984,8 @@ export default function WorkDiaryHistoryPage() {
                                 <Edit className="h-4 w-4" />
                             </Button>
                         )}
-                        {(!diary.isConfirmed || isLevel5OrAdmin) && (
+                        {/* 삭제 버튼 - 승인되지 않은 경우 또는 관리자 */}
+                        {(diary.approvalStatus !== 'approved' || isLevel5OrAdmin) && (
                             <Button
                                 variant="ghost"
                                 size="icon"
@@ -711,8 +998,8 @@ export default function WorkDiaryHistoryPage() {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pr-20">
-                        <div>
+                    <div className="grid grid-cols-3 gap-4 pr-20 pt-6">
+                        <div className="col-span-1">
                             <Label className="text-xs text-gray-500">프로젝트</Label>
                             <div className="font-medium mt-1">
                                 {diary.project ? (
@@ -725,11 +1012,17 @@ export default function WorkDiaryHistoryPage() {
                                 )}
                             </div>
                         </div>
-                        <div>
+                        <div className="col-span-1">
                             <Label className="text-xs text-gray-500">작업 유형</Label>
                             <div className="font-medium mt-1">
                                 {diary.workType} 
                                 {diary.workSubType && <span className="text-gray-500"> / {diary.workSubType}</span>}
+                            </div>
+                        </div>
+                        <div className="col-span-1">
+                            <Label className="text-xs text-gray-500">작업 시간</Label>
+                            <div className="font-medium mt-1 text-gray-900">
+                                {diary.work_hours ? `${diary.work_hours}시간` : '-'}
                             </div>
                         </div>
                     </div>
@@ -761,16 +1054,69 @@ export default function WorkDiaryHistoryPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Modal */}
+      {/* Edit Modal - 모든 항목 편집 가능 */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-white">
+        <DialogContent className="sm:max-w-[700px] bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>업무일지 수정</DialogTitle>
+            <DialogDescription>작성된 업무일지를 수정합니다</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
+            {/* 작업일 */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>작업 유형</Label>
+                <Label className="font-semibold">작업일 <span className="text-red-500">*</span></Label>
+                <Input
+                  type="date"
+                  value={editingDiary?.workDate || ''}
+                  onChange={(e) => setEditingDiary(prev => prev ? { ...prev, workDate: e.target.value } : prev)}
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-semibold">작성자</Label>
+                <Input
+                  type="text"
+                  value={editingDiary?.user?.name || '알 수 없음'}
+                  disabled
+                  className="bg-gray-50 text-gray-500"
+                />
+              </div>
+            </div>
+
+            {/* 프로젝트 */}
+            <div className="space-y-2">
+              <Label className="font-semibold">프로젝트 <span className="text-red-500">*</span></Label>
+              <Select 
+                value={editingDiary?.projectId?.toString() || ''} 
+                onValueChange={(value) => setEditingDiary(prev => prev ? { ...prev, projectId: parseInt(value) } : prev)}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="프로젝트 선택" />
+                </SelectTrigger>
+                <SelectContent className="bg-white max-h-[300px]">
+                  {/* 전체 프로젝트 목록 표시 */}
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id.toString()}>
+                      {project.project_name} ({project.project_number})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {/* 기타 프로젝트명 */}
+              <Input
+                type="text"
+                value={editingDiary?.customProjectName || ''}
+                onChange={(e) => setEditingDiary(prev => prev ? { ...prev, customProjectName: e.target.value } : prev)}
+                placeholder="기타 프로젝트명 (프로젝트 목록에 없는 경우)"
+                className="bg-white mt-2"
+              />
+            </div>
+
+            {/* 작업유형 & 세부유형 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-semibold">작업 유형</Label>
                 <Select value={editWorkType} onValueChange={setEditWorkType}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="선택" />
@@ -783,7 +1129,7 @@ export default function WorkDiaryHistoryPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>세부 유형</Label>
+                <Label className="font-semibold">세부 유형</Label>
                 <Select value={editWorkSubType} onValueChange={setEditWorkSubType}>
                   <SelectTrigger className="bg-white">
                     <SelectValue placeholder="선택" />
@@ -796,12 +1142,38 @@ export default function WorkDiaryHistoryPage() {
                 </Select>
               </div>
             </div>
+
+            {/* 작업시간 */}
             <div className="space-y-2">
-              <Label>업무 내용</Label>
+              <Label className="font-semibold">작업시간</Label>
+              <Select 
+                value={(editingDiary as any)?.work_hours?.toString() || '0'} 
+                onValueChange={(value) => setEditingDiary(prev => prev ? { ...prev, work_hours: parseFloat(value) } as any : prev)}
+              >
+                <SelectTrigger className="bg-white w-40">
+                  <SelectValue placeholder="작업시간 선택" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {Array.from({ length: 24 }, (_, i) => ({
+                    value: (i + 1) * 0.5,
+                    label: `${(i + 1) * 0.5}시간`
+                  })).map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 업무 내용 */}
+            <div className="space-y-2">
+              <Label className="font-semibold">업무 내용 <span className="text-red-500">*</span></Label>
               <Textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 className="min-h-[150px] bg-white"
+                placeholder="작업 내용을 상세히 입력하세요"
               />
             </div>
           </div>

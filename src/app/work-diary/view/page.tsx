@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Search,
   ArrowLeft,
@@ -638,19 +639,37 @@ export default function WorkDiaryViewPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {workDiaries.map((diary) => (
+                {workDiaries.map((diary: any) => (
                   <div key={diary.id} className="border-2 border-slate-200 rounded-lg p-4 bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-200 hover:border-emerald-300">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-4 mb-3">
+                        <div className="flex items-center flex-wrap gap-2 mb-3">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 border border-emerald-200">
-                            {diary.project?.project_name || '프로젝트 없음'} ({diary.project?.project_number || 'N/A'})
+                            {diary.project?.project_name || diary.custom_project_name || '프로젝트 없음'} ({diary.project?.project_number || 'N/A'})
                           </span>
                           <span className="text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
-                            {formatDate(diary.workDate)}
+                            {formatDate(diary.workDate || diary.work_date)}
                           </span>
+                          {/* 작업유형 표시 */}
+                          {(diary.workType || diary.work_type) && (
+                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-medium">
+                              {diary.workType || diary.work_type}
+                            </span>
+                          )}
+                          {/* 세부유형 표시 */}
+                          {(diary.workSubType || diary.work_sub_type) && (
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-md font-medium">
+                              {diary.workSubType || diary.work_sub_type}
+                            </span>
+                          )}
+                          {/* 작업시간 표시 */}
+                          {(diary.work_hours || diary.workHours) && (
+                            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-md font-medium">
+                              ⏱️ {diary.work_hours || diary.workHours}시간
+                            </span>
+                          )}
                           <span className="text-sm text-slate-600">
-                            작성자: {diary.user?.name || diary.userId || '알 수 없음'}
+                            작성자: {diary.user?.name || diary.userId || diary.user_id || '알 수 없음'}
                             {diary.user?.level && (
                               <span className="ml-1 text-xs bg-slate-200 text-slate-600 px-1 py-0.5 rounded">
                                 L{diary.user.level === 'administrator' ? 'Admin' : diary.user.level}
@@ -658,9 +677,9 @@ export default function WorkDiaryViewPage() {
                             )}
                           </span>
                         </div>
-                        <p className="text-slate-800 mb-3 text-base leading-relaxed">{diary.workContent}</p>
+                        <p className="text-slate-800 mb-3 text-base leading-relaxed">{diary.workContent || diary.work_content}</p>
                         <p className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md inline-block">
-                          작성일: {formatDateTime(diary.createdAt)}
+                          작성일: {formatDateTime(diary.createdAt || diary.created_at)}
                         </p>
                       </div>
                       <div className="flex items-center space-x-2 ml-4">
@@ -725,7 +744,7 @@ export default function WorkDiaryViewPage() {
 
       {/* 상세보기 모달 */}
       {showDetailModal && selectedDiary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">업무일지 상세보기</h3>
@@ -799,55 +818,184 @@ export default function WorkDiaryViewPage() {
 
       {/* 수정 모달 */}
       {showEditModal && selectedDiary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">업무일지 수정</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+          <div className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">업무일지 수정</h3>
+                <p className="text-sm text-gray-500 mt-1">작성된 업무일지를 수정합니다</p>
+              </div>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setShowEditModal(false)}
+                className="hover:bg-gray-100 rounded-full h-8 w-8 p-0"
               >
                 ✕
               </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
+              {/* 작업일 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    작업일 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="date"
+                    value={selectedDiary.workDate || selectedDiary.work_date || ''}
+                    onChange={(e) => setSelectedDiary({ ...selectedDiary, workDate: e.target.value, work_date: e.target.value })}
+                    className="bg-white border-gray-200 focus:border-blue-400"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    작성자
+                  </Label>
+                  <Input
+                    type="text"
+                    value={selectedDiary.user?.name || selectedDiary.userId || selectedDiary.user_id || '알 수 없음'}
+                    disabled
+                    className="bg-gray-50 border-gray-200 text-gray-500"
+                  />
+                </div>
+              </div>
+
+              {/* 프로젝트 */}
               <div>
-                <label className="text-sm font-medium text-gray-700">작업내용</label>
-                <textarea
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  rows={4}
-                  defaultValue={selectedDiary.workContent}
-                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workContent: e.target.value })}
+                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  프로젝트 <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={(selectedDiary.projectId || selectedDiary.project_id)?.toString() || ''}
+                  onValueChange={(value) => setSelectedDiary({ ...selectedDiary, projectId: parseInt(value), project_id: parseInt(value) })}
+                >
+                  <SelectTrigger className="bg-white border-gray-200 focus:border-blue-400">
+                    <SelectValue placeholder="프로젝트 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id.toString()}>
+                        {project.project_name} ({project.project_number})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 작업유형 & 세부유형 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    작업유형
+                  </Label>
+                  <Select
+                    value={selectedDiary.workType || selectedDiary.work_type || ''}
+                    onValueChange={(value) => setSelectedDiary({ ...selectedDiary, workType: value, work_type: value })}
+                  >
+                    <SelectTrigger className="bg-white border-gray-200 focus:border-blue-400">
+                      <SelectValue placeholder="작업유형 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="신규">신규</SelectItem>
+                      <SelectItem value="보완">보완</SelectItem>
+                      <SelectItem value="AS">AS</SelectItem>
+                      <SelectItem value="SS">SS</SelectItem>
+                      <SelectItem value="OV">OV</SelectItem>
+                      <SelectItem value="기타">기타</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    세부유형
+                  </Label>
+                  <Select
+                    value={selectedDiary.workSubType || selectedDiary.work_sub_type || ''}
+                    onValueChange={(value) => setSelectedDiary({ ...selectedDiary, workSubType: value, work_sub_type: value })}
+                  >
+                    <SelectTrigger className="bg-white border-gray-200 focus:border-blue-400">
+                      <SelectValue placeholder="세부유형 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="내근">내근</SelectItem>
+                      <SelectItem value="출장">출장</SelectItem>
+                      <SelectItem value="외근">외근</SelectItem>
+                      <SelectItem value="전화">전화</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* 작업시간 */}
+              <div>
+                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  작업시간
+                </Label>
+                <Select
+                  value={(selectedDiary.work_hours || selectedDiary.workHours || 0).toString()}
+                  onValueChange={(value) => setSelectedDiary({ ...selectedDiary, work_hours: parseFloat(value), workHours: parseFloat(value) })}
+                >
+                  <SelectTrigger className="bg-white border-gray-200 focus:border-blue-400 w-40">
+                    <SelectValue placeholder="작업시간 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 24 }, (_, i) => ({
+                      value: (i + 1) * 0.5,
+                      label: `${(i + 1) * 0.5}시간`
+                    })).map((option) => (
+                      <SelectItem key={option.value} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 기타 프로젝트명 */}
+              <div>
+                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  기타 프로젝트명 (선택)
+                </Label>
+                <Input
+                  type="text"
+                  value={selectedDiary.customProjectName || selectedDiary.custom_project_name || ''}
+                  onChange={(e) => setSelectedDiary({ 
+                    ...selectedDiary, 
+                    customProjectName: e.target.value,
+                    custom_project_name: e.target.value 
+                  })}
+                  placeholder="프로젝트 목록에 없는 경우 직접 입력"
+                  className="bg-white border-gray-200 focus:border-blue-400"
                 />
               </div>
 
+              {/* 작업내용 */}
               <div>
-                <label className="text-sm font-medium text-gray-700">작업유형</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedDiary.workType || ''}
-                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workType: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700">세부유형</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                  defaultValue={selectedDiary.workSubType || ''}
-                  onChange={(e) => setSelectedDiary({ ...selectedDiary, workSubType: e.target.value })}
+                <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                  <FileText className="h-4 w-4 inline mr-1" />
+                  작업내용 <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  className="w-full p-3 border border-gray-200 rounded-lg focus:border-blue-400 focus:ring-1 focus:ring-blue-400 min-h-[150px]"
+                  placeholder="작업 내용을 상세히 입력하세요"
+                  value={selectedDiary.workContent || selectedDiary.work_content || ''}
+                  onChange={(e) => setSelectedDiary({ 
+                    ...selectedDiary, 
+                    workContent: e.target.value,
+                    work_content: e.target.value 
+                  })}
                 />
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 mt-6">
+            <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
               <Button
                 variant="outline"
                 onClick={() => setShowEditModal(false)}
+                className="px-6"
               >
                 취소
               </Button>
@@ -860,12 +1008,13 @@ export default function WorkDiaryViewPage() {
                         'Content-Type': 'application/json',
                       },
                       body: JSON.stringify({
-                        workContent: selectedDiary.workContent,
-                        workType: selectedDiary.workType,
-                        workSubType: selectedDiary.workSubType,
-                        workDate: selectedDiary.workDate,
-                        projectId: selectedDiary.projectId,
-                        customProjectName: selectedDiary.customProjectName
+                        workContent: selectedDiary.workContent || selectedDiary.work_content,
+                        workType: selectedDiary.workType || selectedDiary.work_type,
+                        workSubType: selectedDiary.workSubType || selectedDiary.work_sub_type,
+                        workDate: selectedDiary.workDate || selectedDiary.work_date,
+                        projectId: selectedDiary.projectId || selectedDiary.project_id,
+                        customProjectName: selectedDiary.customProjectName || selectedDiary.custom_project_name,
+                        workHours: selectedDiary.work_hours || selectedDiary.workHours || 0
                       })
                     })
 
@@ -881,6 +1030,7 @@ export default function WorkDiaryViewPage() {
                     alert('수정 중 오류가 발생했습니다.')
                   }
                 }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
               >
                 저장
               </Button>
