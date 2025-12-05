@@ -188,6 +188,14 @@ export default function Sidebar() {
             <div key={item.key}>
               <Button
                 variant="ghost"
+                onMouseEnter={() => {
+                  // 마우스 오버 시 서브메뉴가 있으면 자동으로 펼치기
+                  if (item.subItems && !isCollapsed) {
+                    if (!expandedItems.includes(item.key)) {
+                      toggleExpand(item.key)
+                    }
+                  }
+                }}
                 onClick={() => {
                   // 서브메뉴가 있고 사이드바가 펼쳐져 있으면 -> 확장/축소 토글만 (이동 X)
                   if (item.subItems && !isCollapsed) {
