@@ -41,7 +41,7 @@ const WORK_HOURS_OPTIONS = Array.from({ length: 24 }, (_, i) => ({
 
 interface Project {
   id: number
-  name: string
+  project_name: string
   project_number: string
   description?: string
 }
@@ -399,7 +399,7 @@ export default function WorkDiaryWritePage() {
                         <Label className="text-xs font-medium text-gray-500">작업 유형</Label>
                         {(() => {
                           const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                          const workTypeOptions = getWorkTypeOptions(selectedProject?.name || '')
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_name || '')
                           
                           if (workTypeOptions.workTypes.length > 0) {
                             return (
@@ -441,7 +441,7 @@ export default function WorkDiaryWritePage() {
                         <Label className="text-xs font-medium text-gray-500">세부 유형</Label>
                         {(() => {
                           const selectedProject = projects.find(p => p.id.toString() === entry.projectId)
-                          const workTypeOptions = getWorkTypeOptions(selectedProject?.name || '')
+                          const workTypeOptions = getWorkTypeOptions(selectedProject?.project_name || '')
                           
                           if (workTypeOptions.workSubTypes.length > 0) {
                             return (

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 
 interface Project {
   id: number
-  name: string
+  project_name: string
   project_number: string
   description?: string
 }
@@ -40,7 +40,7 @@ export function ProjectCombobox({ projects, value, onChange, onSelectProject }: 
     if (value === "other") {
       setInputValue("기타")
     } else if (selectedProject) {
-      setInputValue(`[${selectedProject.project_number}] ${selectedProject.name}`)
+      setInputValue(`[${selectedProject.project_number}] ${selectedProject.project_name}`)
     } else if (!value) {
       setInputValue("")
     }
@@ -56,9 +56,9 @@ export function ProjectCombobox({ projects, value, onChange, onSelectProject }: 
     // Simple logic: filter by input value
     const lowerQuery = inputValue.toLowerCase()
     return projects.filter((project) => {
-      const displayString = `[${project.project_number}] ${project.name}`
+      const displayString = `[${project.project_number}] ${project.project_name}`
       return (
-        project.name.toLowerCase().includes(lowerQuery) ||
+        project.project_name.toLowerCase().includes(lowerQuery) ||
         project.project_number.toLowerCase().includes(lowerQuery) ||
         displayString.toLowerCase().includes(lowerQuery)
       )
@@ -75,7 +75,7 @@ export function ProjectCombobox({ projects, value, onChange, onSelectProject }: 
   }
 
   const handleSelect = (project: Project) => {
-    setInputValue(`[${project.project_number}] ${project.name}`)
+    setInputValue(`[${project.project_number}] ${project.project_name}`)
     onChange(project.id.toString())
     onSelectProject(project)
     setOpen(false)
@@ -84,7 +84,7 @@ export function ProjectCombobox({ projects, value, onChange, onSelectProject }: 
   const handleSelectOther = () => {
     setInputValue("기타")
     onChange("other")
-    onSelectProject({ id: 0, name: "기타", project_number: "0000" } as Project)
+    onSelectProject({ id: 0, project_name: "기타", project_number: "0000" } as Project)
     setOpen(false)
   }
 
@@ -125,7 +125,7 @@ export function ProjectCombobox({ projects, value, onChange, onSelectProject }: 
                   )}
                 />
                 <div className="flex flex-col">
-                    <span className="font-medium">[{project.project_number}] {project.name}</span>
+                    <span className="font-medium">[{project.project_number}] {project.project_name}</span>
                     {project.description && <span className="text-xs text-gray-500 truncate max-w-[300px]">{project.description}</span>}
                 </div>
               </div>

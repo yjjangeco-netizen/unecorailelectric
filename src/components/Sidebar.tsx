@@ -30,7 +30,6 @@ import { useState, useEffect } from 'react'
       icon: FileText, 
       key: 'daily_log',
       subItems: [
-        { name: '대시보드', href: '/work-diary' },
         { name: '업무일지 작성', href: '/work-diary/write' },
         { name: '업무일지 작성 내역', href: '/work-diary/history' },
         { name: '외근/출장 보고', href: '/business-trip-reports' },
@@ -47,7 +46,6 @@ import { useState, useEffect } from 'react'
       icon: Users, 
       key: 'settings',
       subItems: [
-        { name: '설정 홈', href: '/settings' },
         { name: '회원관리', href: '/user-management' },
         { name: '프로젝트 관리', href: '/project-management' },
         { name: '입찰모니터링 관리', href: '/nara-settings' }
