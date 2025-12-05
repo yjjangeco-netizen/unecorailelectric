@@ -205,13 +205,7 @@ export default function Sidebar() {
                   }
                 }}
                 onClick={() => {
-                  // 서브메뉴가 있고 사이드바가 펼쳐져 있으면 -> 확장/축소 토글만 (이동 X)
-                  if (item.subItems && !isCollapsed) {
-                    toggleExpand(item.key)
-                    return // 페이지 이동 방지
-                  }
-                  
-                  // 그 외 (서브메뉴 없음 OR 사이드바 접힘) -> 해당 페이지로 이동
+                  // 클릭 시 항상 해당 페이지로 이동 (서브메뉴가 있어도)
                   router.push(item.href)
                 }}
                 className={cn(
