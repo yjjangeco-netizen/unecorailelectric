@@ -1,15 +1,4 @@
 {
-  "/project-management/page": "app/project-management/page.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/user-management/page": "app/user-management/page.js",
-  "/api/access-logs/route": "app/api/access-logs/route.js",
-  "/api/leave-requests/route": "app/api/leave-requests/route.js",
-  "/api/business-trips/route": "app/api/business-trips/route.js",
-  "/api/schedule/route": "app/api/schedule/route.js",
-  "/api/business-trip-reports/route": "app/api/business-trip-reports/route.js",
-  "/api/work-diary/route": "app/api/work-diary/route.js",
-  "/api/users/route": "app/api/users/route.js",
-  "/api/projects/route": "app/api/projects/route.js",
-  "/api/events/route": "app/api/events/route.js",
-  "/api/todos/route": "app/api/todos/route.js"
+  "/login/page": "app/login/page.js",
+  "/project-management/page": "app/project-management/page.js"
 }

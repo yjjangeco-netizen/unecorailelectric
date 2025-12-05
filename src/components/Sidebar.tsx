@@ -185,7 +185,15 @@ export default function Sidebar() {
           const isExpanded = expandedItems.includes(item.key)
           
           return (
-            <div key={item.key}>
+            <div 
+              key={item.key}
+              onMouseLeave={() => {
+                // 마우스가 떨어지면 서브메뉴 접기
+                if (item.subItems && !isCollapsed && expandedItems.includes(item.key)) {
+                  toggleExpand(item.key)
+                }
+              }}
+            >
               <Button
                 variant="ghost"
                 onMouseEnter={() => {
