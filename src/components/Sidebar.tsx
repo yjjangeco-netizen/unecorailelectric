@@ -20,12 +20,7 @@ import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/useUser'
 import { useState, useEffect } from 'react'
 
-export default function Sidebar() {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { user, logout } = useUser()
-  const [isPinned, setIsPinned] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+  // Navigation items defined outside component to prevent re-creation on every render
   const navigationItems = [
     { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
     { name: '재고관리', href: '/stock-management', icon: Package2, key: 'stock_view' },
@@ -35,6 +30,7 @@ export default function Sidebar() {
       icon: FileText, 
       key: 'daily_log',
       subItems: [
+        { name: '대시보드', href: '/work-diary' },
         { name: '업무일지 작성', href: '/work-diary/write' },
         { name: '업무일지 작성 내역', href: '/work-diary/history' },
         { name: '외근/출장 보고', href: '/business-trip-reports' },
@@ -51,12 +47,21 @@ export default function Sidebar() {
       icon: Users, 
       key: 'settings',
       subItems: [
+        { name: '설정 홈', href: '/settings' },
         { name: '회원관리', href: '/user-management' },
         { name: '프로젝트 관리', href: '/project-management' },
         { name: '입찰모니터링 관리', href: '/nara-settings' }
       ]
     },
   ]
+
+export default function Sidebar() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { user, logout } = useUser()
+  const [isPinned, setIsPinned] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+
 
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     const activeItem = navigationItems.find(item => 
@@ -65,35 +70,20 @@ export default function Sidebar() {
     return activeItem ? [activeItem.key] : []
   })
 
-  // Update expanded items when pathname changes (but don't collapse manually opened ones)
+  // Update expanded items when pathname changes
   useEffect(() => {
+    // Find the item that contains the current path in its subItems
     const activeItem = navigationItems.find(item => 
-      item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href))
+      item.subItems?.some(sub => pathname.startsWith(sub.href))
     )
+    
+    // If found, expand it if not already expanded
     if (activeItem) {
-      setExpandedItems(prev => {
-        if (!prev.includes(activeItem.key)) {
-          return [...prev, activeItem.key]
-        }
-        return prev
-      })
+      setExpandedItems(prev => prev.includes(activeItem.key) ? prev : [...prev, activeItem.key])
     }
   }, [pathname])
 
-  // Automatically expand active items
-  useEffect(() => {
-    const activeItem = navigationItems.find(item => 
-      item.subItems && item.subItems.some(sub => pathname.startsWith(sub.href))
-    )
-    if (activeItem) {
-      setExpandedItems(prev => {
-        if (!prev.includes(activeItem.key)) {
-          return [...prev, activeItem.key]
-        }
-        return prev
-      })
-    }
-  }, [pathname])
+
 
 
   const isCollapsed = !isPinned && !isHovered
@@ -106,7 +96,7 @@ export default function Sidebar() {
 
   // Filter items based on user permissions (individual permissions take priority over level)
   const filteredItems = navigationItems.filter(item => {
-    const level = user?.level || '1'
+    const level = String(user?.level || '1')
     const isAdmin = level.toLowerCase() === 'administrator'
     if (isAdmin) return true
     
@@ -199,9 +189,13 @@ export default function Sidebar() {
               <Button
                 variant="ghost"
                 onClick={() => {
+                  // 서브메뉴가 있고 사이드바가 펼쳐져 있으면 -> 확장/축소 토글만 (이동 X)
                   if (item.subItems && !isCollapsed) {
                     toggleExpand(item.key)
+                    return // 페이지 이동 방지
                   }
+                  
+                  // 그 외 (서브메뉴 없음 OR 사이드바 접힘) -> 해당 페이지로 이동
                   router.push(item.href)
                 }}
                 className={cn(

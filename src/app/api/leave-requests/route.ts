@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const userLevel = request.headers.get('x-user-level') || '1'
     
     // 레벨 5 이상 또는 administrator만 모든 연차 조회 가능
-    const canViewAll = userLevel === '5' || userLevel === 'administrator'
+    const canViewAll = userLevel === '5' || userLevel === 'admin' || userLevel === 'administrator'
     
     const supabase = createApiClient()
     

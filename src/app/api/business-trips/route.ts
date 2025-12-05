@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     console.log('사용자 레벨:', userLevel)
 
     const supabase = createApiClient()
-
     const { searchParams } = request.nextUrl
     const status = searchParams.get('status')
     const trip_type = searchParams.get('trip_type')
@@ -122,7 +121,17 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = createApiClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // 헤더에서 사용자 정보 확인 (일정 관리에서 사용)
+    const userId = request.headers.get('x-user-id')
+    const userLevel = request.headers.get('x-user-level')
+    
+    let user = null
+    if (userId) {
+      user = { id: userId, user_metadata: { level: userLevel } }
+    } else {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      user = authUser
+    }
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -130,26 +139,38 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const { id, ...updateData } = body
+    
+    // 만약 URL 쿼리 파라미터에 id가 있다면 그것을 사용 (body에 id가 없는 경우 대비)
+    const urlId = request.nextUrl.searchParams.get('id')
+    const targetId = id || urlId
+
+    if (!targetId) {
+      return NextResponse.json({ error: 'Trip ID is required' }, { status: 400 })
+    }
 
     // 권한 확인 (본인의 출장이거나 관리자)
     const { data: existingTrip, error: fetchError } = await supabase
       .from('business_trips')
       .select('user_id, status')
-      .eq('id', id)
+      .eq('id', targetId)
       .single()
 
     if (fetchError) {
       return NextResponse.json({ error: 'Trip not found' }, { status: 404 })
     }
 
-    if (existingTrip.user_id !== user.id && user.user_metadata?.['level'] !== 'admin') {
+    // 관리자 레벨 확인 (5, administrator, admin)
+    const userRole = user.user_metadata?.level ? String(user.user_metadata.level).toLowerCase() : '1'
+    const isAdmin = ['5', 'administrator', 'admin'].includes(userRole)
+
+    if (existingTrip.user_id !== user.id && !isAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // 승인된 출장은 수정 불가
-    if (existingTrip.status === 'approved') {
-      return NextResponse.json({ error: 'Cannot modify approved trip' }, { status: 400 })
-    }
+    // 승인된 출장도 수정 가능하도록 변경 (자동 승인 시스템이므로)
+    // if (existingTrip.status === 'approved') {
+    //   return NextResponse.json({ error: 'Cannot modify approved trip' }, { status: 400 })
+    // }
 
     const { data: trip, error: updateError } = await supabase
       .from('business_trips')
@@ -157,7 +178,7 @@ export async function PUT(request: NextRequest) {
         ...updateData,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
+      .eq('id', targetId)
       .select()
       .single()
 

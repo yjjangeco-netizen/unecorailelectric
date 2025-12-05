@@ -138,13 +138,18 @@ export async function PUT(
       updated_at: new Date().toISOString(),
     }
 
-    // 모든 필드 업데이트 (프론트엔드 필드명과 API 필드명 매핑)
-    if (projectData.project_number) updateData.project_number = projectData.project_number
+    // 빈 문자열도 업데이트 허용하기 위해 undefined 체크로 변경
+    if (projectData.project_number !== undefined) updateData.project_number = projectData.project_number
+    // project_name 필드는 'name' 또는 'project_name' 둘 다 허용 (name을 우선 체크)
     if (projectData.name !== undefined) updateData.project_name = projectData.name
+    else if (projectData.project_name !== undefined) updateData.project_name = projectData.project_name
+    
     if (projectData.category !== undefined) updateData.category = projectData.category
     if (projectData.description !== undefined) updateData.description = projectData.description
     if (projectData.status) {
       updateData.ProjectStatus = projectData.status
+    } else if (projectData.ProjectStatus) {
+      updateData.ProjectStatus = projectData.ProjectStatus
     }
     if (projectData.priority) updateData.priority = projectData.priority
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date || null
@@ -181,7 +186,6 @@ export async function PUT(
     if (projectData.lubrication !== undefined) updateData.lubrication = projectData.lubrication
     if (projectData.grease !== undefined) updateData.grease = projectData.grease
     if (projectData.cctv_spec !== undefined) updateData.cctv_spec = projectData.cctv_spec
-    // automatic_cover 컬럼이 존재하지 않으므로 제거
     if (projectData.ups_spec !== undefined) updateData.ups_spec = projectData.ups_spec
     if (projectData.configuration !== undefined) updateData.configuration = projectData.configuration
     if (projectData.main_color !== undefined) updateData.main_color = projectData.main_color
@@ -190,6 +194,7 @@ export async function PUT(
     if (projectData.buzzer !== undefined) updateData.buzzer = projectData.buzzer
     if (projectData.speaker !== undefined) updateData.speaker = projectData.speaker
     if (projectData.automatic_rail !== undefined) updateData.automatic_rail = projectData.automatic_rail
+
 
     console.log('업데이트할 데이터:', updateData)
 
@@ -207,6 +212,14 @@ export async function PUT(
         projectId,
         updateData
       }, { status: 500 })
+    }
+
+    if (!updatedData || updatedData.length === 0) {
+      console.error('수정된 데이터가 없습니다. ID를 확인하세요:', projectId)
+      return NextResponse.json({ 
+        error: '수정할 프로젝트를 찾을 수 없습니다.',
+        projectId 
+      }, { status: 404 })
     }
 
     console.log('업데이트 성공:', updatedData)
@@ -238,7 +251,7 @@ export async function DELETE(
 
     // 권한 확인: Level 5 또는 Admin만 삭제 가능
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
 
     if (!isLevel5 && !isAdmin) {
       console.log('프로젝트 삭제 권한 없음:', { userId, userLevel })
@@ -261,10 +274,10 @@ export async function DELETE(
       return NextResponse.json({ error: '프로젝트를 찾을 수 없습니다.' }, { status: 404 })
     }
 
-    // 삭제 실행
+    // Soft Delete: is_active를 false로 설정
     const { error } = await supabase
       .from('projects')
-      .delete()
+      .update({ is_active: false })
       .eq('id', projectId)
 
     if (error) {

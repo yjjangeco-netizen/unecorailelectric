@@ -156,6 +156,12 @@ const getUpdatedProjectName = (project: Project) => {
     }
     // 기타 프로젝트
     else {
+      // 교육, 개별업무, 업무표준화는 프로젝트 번호만 표시
+      const category = project.category || 'project'
+      if (category === 'education' || category === 'individual' || category === 'standardization') {
+        return projectNumber
+      }
+      // 프로젝트와 차륜관리프로그램 변환만 '현장' 접두사 추가
       return `현장 ${projectNumber}`
     }
   }
@@ -457,13 +463,20 @@ export default function ProjectManagementPage() {
   const handleDelete = async (projectId: number) => {
     try {
       const response = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'x-user-id': user?.id || '',
+          'x-user-level': user?.level || ''
+        }
       })
 
       if (!response.ok) {
         throw new Error('프로젝트 삭제 실패')
       }
 
+      // 성공 메시지
+      alert('프로젝트가 성공적으로 삭제되었습니다.')
+      
       // 성공 시 목록 다시 로드
       await loadProjects()
       handleCloseDetailModal()
@@ -506,21 +519,24 @@ export default function ProjectManagementPage() {
       const url = isNewProject ? '/api/projects' : `/api/projects/${project.id}`
       const method = isNewProject ? 'POST' : 'PUT'
       
-      console.log('프로젝트 저장:', { isNewProject, url, method, project })
+      // project 객체를 먼저 펼치고, 명시적으로 필드를 덮어씀
+      const { name, ...projectWithoutName } = project as any;
+      
+      const requestBody = {
+        ...projectWithoutName,
+        project_name: project.project_name || name || '',  // project_name 우선, 없으면 name 사용
+        project_number: project.project_number || '',
+        category: project.category || 'project',
+        ProjectStatus: project.ProjectStatus || 'Manufacturing',
+        is_active: project.is_active !== false
+      }
       
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...project,
-          project_name: project.project_name || '',
-          project_number: project.project_number || '',
-          category: project.category || 'project',
-          ProjectStatus: project.ProjectStatus || 'Manufacturing',
-          is_active: project.is_active !== false
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
@@ -529,12 +545,14 @@ export default function ProjectManagementPage() {
       }
 
       // 성공 시 목록 다시 로드
-      await loadProjects()
       handleCloseDetailModal()
-      // alert는 UI 블로킹을 유발할 수 있으므로 제거하거나 비간섭적 알림으로 대체 권장
-      console.log(isNewProject ? '프로젝트 추가 완료' : '프로젝트 수정 완료')
       
-      // router.refresh를 호출하지 않아도 상태 업데이트로 리렌더링됨
+      // DB 커밋을 기다린 후 목록 새로고침
+      setTimeout(async () => {
+        await loadProjects()
+        alert(isNewProject ? '프로젝트가 추가되었습니다.' : '프로젝트가 수정되었습니다.')
+      }, 300)
+      
     } catch (error) {
       console.error('프로젝트 저장 실패:', error)
       alert(`프로젝트 저장에 실패했습니다: ${error}`)
@@ -644,6 +662,7 @@ export default function ProjectManagementPage() {
                     <option value="individual">개별업무</option>
                     <option value="standardization">업무 표준화</option>
                     <option value="wheel_conversion">차륜관리프로그램 변환</option>
+                    <option value="education">교육</option>
                   </select>
                 </div>
                 <div>
@@ -794,6 +813,7 @@ export default function ProjectManagementPage() {
                       <option value="individual">개별업무</option>
                       <option value="standardization">업무 표준화</option>
                       <option value="wheel_conversion">차륜관리프로그램 변환</option>
+                      <option value="education">교육</option>
                     </select>
                   </div>
 
@@ -1007,6 +1027,7 @@ export default function ProjectManagementPage() {
                                 case 'individual': return '개별업무';
                                 case 'standardization': return '업무 표준화';
                                 case 'wheel_conversion': return '차륜관리프로그램 변환';
+                                case 'education': return '교육';
                                 case 'project': 
                                 default: return '프로젝트';
                               }

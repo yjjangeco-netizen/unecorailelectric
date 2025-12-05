@@ -13,19 +13,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: 인증이 필요합니다.' }, { status: 401 })
     }
 
-    // 권한 확인: Level 5 또는 Admin만 조회 가능
+    // [SIMULATION END] Revert mock data
+    
+    // 권한 확인: 기본적으로 모든 로그인 사용자에게 조회 허용 (일정표 색상 표시 등을 위해)
+    
+    // 권한 확인: 기본적으로 모든 로그인 사용자에게 조회 허용 (일정표 색상 표시 등을 위해)
+    
+    // 권한 확인: 기본적으로 모든 로그인 사용자에게 조회 허용 (일정표 색상 표시 등을 위해)
+    
+    // 권한 확인: 기본적으로 모든 로그인 사용자에게 조회 허용 (일정표 색상 표시 등을 위해)
+    // 단, Level 5 또는 Admin이 아닌 경우 민감한 정보는 제외하거나 제한된 목록만 반환할 수 있음
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
-
-    if (!isLevel5 && !isAdmin) {
-      console.log('사용자 목록 조회 권한 없음:', { userId, userLevel })
-      return NextResponse.json({ 
-        error: 'Forbidden: Level 5 또는 관리자만 사용자 목록을 조회할 수 있습니다.' 
-      }, { status: 403 })
-    }
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isPrivileged = isLevel5 || isAdmin
 
     // 모든 사용자 정보 조회 (RLS 적용)
-    const { data: users, error } = await supabaseServer
+    const query = supabaseServer
       .from('users')
       .select(`
         id,
@@ -35,6 +38,7 @@ export async function GET(request: NextRequest) {
         position,
         level,
         is_active,
+        color,
         stock_view,
         stock_in,
         stock_out,
@@ -49,6 +53,8 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false })
 
+    const { data: users, error } = await query
+
     if (error) {
       console.error('사용자 목록 조회 오류:', error)
       return NextResponse.json(
@@ -57,26 +63,40 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const formattedUsers = users.map((user: any) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      department: user.department,
-      position: user.position,
-      level: user.level,
-      is_active: user.is_active,
-      stock_view: user.stock_view,
-      stock_in: user.stock_in,
-      stock_out: user.stock_out,
-      stock_disposal: user.stock_disposal,
-      work_tools: user.work_tools,
-      daily_log: user.daily_log,
-      work_manual: user.work_manual,
-      sop: user.sop,
-      user_management: user.user_management,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at
-    }))
+    // 권한에 따른 데이터 필터링
+    const formattedUsers = users.map((user: any) => {
+      // 기본 정보 (모든 사용자에게 공개)
+      const basicInfo = {
+        id: user.id,
+        name: user.name,
+        department: user.department,
+        position: user.position,
+        color: user.color, // Include color in response
+      }
+
+      // 관리자급에게만 전체 정보 공개
+      if (isPrivileged) {
+        return {
+          ...basicInfo,
+          email: user.email,
+          level: user.level,
+          is_active: user.is_active,
+          stock_view: user.stock_view,
+          stock_in: user.stock_in,
+          stock_out: user.stock_out,
+          stock_disposal: user.stock_disposal,
+          work_tools: user.work_tools,
+          daily_log: user.daily_log,
+          work_manual: user.work_manual,
+          sop: user.sop,
+          user_management: user.user_management,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        }
+      }
+
+      return basicInfo
+    })
 
     return NextResponse.json({ users: formattedUsers })
   } catch (error) {
@@ -90,7 +110,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, username, password, name, department, position, email, level } = await request.json()
+    const { id, username, password, name, department, position, email, level, color } = await request.json()
 
     // 사용자 생성
     const { data, error } = await supabaseServer
@@ -104,6 +124,7 @@ export async function POST(request: NextRequest) {
         position,
         email,
         level,
+        color, // Re-enable color persistence
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -134,12 +155,12 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const { 
-      id, name, department, position, level, is_active,
+      id, name, department, position, level, is_active, color,
       stock_view, stock_in, stock_out, stock_disposal, 
       work_tools, daily_log, work_manual, sop, user_management 
     } = await request.json()
 
-    console.log('사용자 업데이트 요청:', { id, name, department, position, level, is_active })
+    console.log('사용자 업데이트 요청:', { id, name, department, position, level, is_active, color })
 
     // 사용자 정보 업데이트
     const { data, error } = await supabaseServer
@@ -150,6 +171,7 @@ export async function PUT(request: NextRequest) {
         position,
         level,
         is_active,
+        color, // Re-enable color persistence
         stock_view,
         stock_in,
         stock_out,

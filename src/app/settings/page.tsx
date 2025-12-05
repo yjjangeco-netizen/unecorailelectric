@@ -20,11 +20,11 @@ export default function SettingsPage() {
   const router = useRouter()
 
   useEffect(() => {
-    console.log('설정 - 사용자 상태:', { user, isAuthenticated, authLoading })
+    // console.log('설정 - 사용자 상태:', { user, isAuthenticated, authLoading })
 
     // localStorage에서 직접 사용자 정보 확인
     const storedUser = localStorage.getItem('user')
-    console.log('설정 - localStorage 직접 확인:', storedUser)
+    // console.log('설정 - localStorage 직접 확인:', storedUser)
 
     if (storedUser) {
       try {
@@ -32,7 +32,7 @@ export default function SettingsPage() {
         console.log('설정 - localStorage 사용자 데이터:', userData)
         // localStorage에 사용자 정보가 있으면 페이지 표시
         if (userData && userData.id && userData.username) {
-          console.log('설정 - localStorage 기반 인증 확인, 페이지 표시')
+          // console.log('설정 - localStorage 기반 인증 확인, 페이지 표시')
           return
         }
       } catch (err) {
@@ -45,7 +45,7 @@ export default function SettingsPage() {
       console.log('설정 - 로그인 페이지로 리다이렉트')
       router.push('/login')
     } else if (isAuthenticated) {
-      console.log('설정 - 인증된 사용자, 페이지 표시')
+      // console.log('설정 - 인증된 사용자, 페이지 표시')
     }
   }, [authLoading, isAuthenticated, router, user])
 

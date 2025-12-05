@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest) {
 
     // 권한 확인: Level 5 또는 Admin만 삭제 가능
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
 
     if (!isLevel5 && !isAdmin) {
       console.log('재고 삭제 권한 없음:', { userId, userLevel })

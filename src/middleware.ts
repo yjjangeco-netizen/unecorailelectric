@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
     // console.log(`[Middleware] Path: ${pathname}, Token: ${authToken ? 'Present' : 'Missing'}`)
     
     if (!authToken) {
-      console.log(`[Middleware] Redirecting to login: ${pathname}`)
+      // console.log(`[Middleware] Redirecting to login: ${pathname}`)
       // 인증되지 않은 경우 로그인 페이지로 리다이렉트
       return NextResponse.redirect(new URL('/login?error=middleware_redirect', request.url))
     }
@@ -44,6 +44,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|icons/).*)',
   ],
 }

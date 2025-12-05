@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Project } from '@/lib/types'
-import { X, Save, Settings, Zap, Cpu, Palette, Plus, Trash2, Edit2, FileText, Briefcase, Wrench, LayoutGrid, Cog } from 'lucide-react'
+import { X, Save, Settings, Zap, Cpu, Palette, Plus, Trash2, Edit2, FileText, Briefcase, Wrench, LayoutGrid, Cog, GraduationCap } from 'lucide-react'
 import MotorSpecModal from './MotorSpecModal'
 import BulkMotorAddModal from './BulkMotorAddModal'
 import SpecificationGenerator from './SpecificationGenerator'
@@ -57,6 +57,7 @@ const CATEGORY_TABS: Record<string, string[]> = {
   individual: ['basic'],
   standardization: ['basic'],
   wheel_conversion: ['basic', 'hardware'],
+  education: ['basic'],
 }
 
 // 업무 구분 정보
@@ -84,6 +85,12 @@ const CATEGORY_INFO: Record<string, { label: string; icon: React.ReactNode; colo
     icon: <Cog className="h-5 w-5" />, 
     color: 'from-orange-500 to-red-600',
     description: '차륜관리프로그램 버전 업그레이드'
+  },
+  education: { 
+    label: '교육', 
+    icon: <GraduationCap className="h-5 w-5" />, 
+    color: 'from-pink-500 to-rose-600',
+    description: '직무 교육 및 세미나'
   },
 }
 
@@ -228,11 +235,22 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
     if (!currentProject.project_number) return
 
     // 프로젝트명이 비어있거나 '현장'으로 시작하는 자동 생성된 이름인 경우에만 업데이트
-    const shouldUpdate = !currentProject.project_name || 
-                        currentProject.project_name.trim() === '' ||
-                        currentProject.project_name.startsWith('현장 ') ||
-                        currentProject.project_name.includes('선반') ||
-                        currentProject.project_name.includes('전삭기')
+    // 단, 프로젝트 카테고리가 'project' 또는 'wheel_conversion'인 경우에만 자동 생성 적용
+    const isProjectOrConversion = currentProject.category === 'project' || currentProject.category === 'wheel_conversion'
+    
+    // 교육, 개별업무, 업무표준화는 자동 생성 안 함
+    if (!isProjectOrConversion) return
+
+    // 사용자가 직접 입력한 이름이 있으면 덮어쓰지 않음
+    const hasUserEnteredName = currentProject.project_name && 
+                               currentProject.project_name.trim() !== '' &&
+                               !currentProject.project_name.startsWith('현장 ') &&
+                               !currentProject.project_name.includes('선반') &&
+                               !currentProject.project_name.includes('전삭기')
+    
+    if (hasUserEnteredName) return
+
+    const shouldUpdate = !currentProject.project_name || currentProject.project_name.trim() === ''
 
     if (shouldUpdate) {
       const projectNumber = currentProject.project_number
@@ -496,7 +514,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
         {/* 업무 구분 선택 (항상 표시) */}
         <div className="px-8 py-5 bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100 shrink-0">
           <Label className="text-sm font-semibold text-gray-700 mb-3 block">업무 구분</Label>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-5 gap-3">
             {Object.entries(CATEGORY_INFO).map(([key, info]) => (
               <button
                 key={key}

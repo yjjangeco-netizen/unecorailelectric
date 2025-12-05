@@ -40,15 +40,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const storedUser = localStorage.getItem('user')
         if (storedUser) {
           const userData: User = JSON.parse(storedUser)
-          console.log('UserContext: localStorage에서 사용자 정보 복원:', userData)
+          // console.log('UserContext: localStorage에서 사용자 정보 복원:', userData)
           setUser(userData)
         } else {
-          console.log('UserContext: localStorage에 사용자 정보 없음, 쿠키 세션 확인 시도...')
+          // console.log('UserContext: localStorage에 사용자 정보 없음, 쿠키 세션 확인 시도...')
           try {
             const response = await fetch('/api/auth/me')
             if (response.ok) {
               const data = await response.json()
-              console.log('UserContext: 쿠키 세션에서 사용자 정보 복원 성공:', data.user)
+              // console.log('UserContext: 쿠키 세션에서 사용자 정보 복원 성공:', data.user)
               setUser(data.user)
               localStorage.setItem('user', JSON.stringify(data.user))
             } else {
@@ -75,11 +75,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setLoading(true)
       setError(null)
       
-      console.log('UserContext: 로그인 시도:', username)
+      // console.log('UserContext: 로그인 시도:', username)
       
       const user = await UserService.login(username, password)
       if (user) {
-        console.log('UserContext: 로그인 성공:', user.username)
+        // console.log('UserContext: 로그인 성공:', user.username)
         setUser(user)
         
         // 데이터베이스 권한 관리에 세션 설정
@@ -214,7 +214,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return await databaseAuth.executeWithDepartmentAccess(operation, requiredDepartment, fallbackValue)
   }, [user])
 
-  const value = {
+  const value = React.useMemo(() => ({
     user,
     loading,
     error,
@@ -232,7 +232,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     executeWithDbPermission,
     executeWithDbDepartmentAccess,
     isAuthenticated: !!(user && user.id && user.username),
-  }
+  }), [
+    user, loading, error, login, logout, 
+    hasPermission, isAdmin, hasLevel, canAccessFeature, 
+    canEdit, canEditWithDbPermission, checkDbPermission, 
+    checkDbDepartmentAccess, checkDbSelfAccess, 
+    executeWithDbPermission, executeWithDbDepartmentAccess
+  ])
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>
 }

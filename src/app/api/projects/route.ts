@@ -6,13 +6,14 @@ export const dynamic = 'force-dynamic'
 // 프로젝트 목록 조회
 export async function GET(_request: NextRequest) {
   try {
-    console.log('프로젝트 조회 시작...')
+
     
     const supabase = supabaseServer
     
     const { data, error } = await supabase
       .from('projects')
       .select('*')
+      .eq('is_active', true)  // 활성화된 프로젝트만 조회
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -23,12 +24,12 @@ export async function GET(_request: NextRequest) {
       )
     }
 
-    console.log('조회된 데이터:', data)
+
 
     const projects = data?.map(item => ({
         id: item.id.toString(), // INTEGER to STRING
         project_number: item.project_number || '',
-        name: item.project_name || '', // FIXED: project_name
+        project_name: item.project_name || '', // FIXED: project_name을 project_name으로 반환
         category: item.category || 'project', // DB: category
         description: item.description || '',
         status: item.ProjectStatus || 'Manufacturing',
@@ -97,7 +98,7 @@ export async function GET(_request: NextRequest) {
       automatic_rail: item.automatic_rail || false,
     })) || []
 
-    console.log('변환된 프로젝트:', projects)
+
 
     return NextResponse.json(projects, { status: 200 })
   } catch (error) {
@@ -116,8 +117,7 @@ export async function POST(request: NextRequest) {
     // name 또는 project_name 모두 허용
     const projectName = projectData.name || projectData.project_name
     
-    console.log('프로젝트 생성 요청 데이터:', projectData)
-    console.log('프로젝트명:', projectName, '프로젝트번호:', projectData.project_number)
+
 
     if (!projectName || !projectData.project_number) {
       return NextResponse.json({ error: '프로젝트명과 프로젝트번호는 필수입니다' }, { status: 400 })

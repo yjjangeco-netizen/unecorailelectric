@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const requestUserId = request.headers.get('x-user-id')
     
     // Level 5 이상, administrator, 또는 admin 사용자만 접근 허용
-    const isLevel5OrHigher = userLevel && (userLevel === '5' || userLevel === 'administrator' || userLevel === 'Administrator')
+    const isLevel5OrHigher = userLevel && (userLevel === '5' || userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator')
     const isAdminUser = requestUserId === 'admin'
     
     if (!isLevel5OrHigher && !isAdminUser) {

@@ -190,6 +190,7 @@ export default function UserManagementPage() {
           position: updatedUser.position,
           level: updatedUser.level,
           is_active: updatedUser.is_active,
+          color: updatedUser.color,
           stock_view: updatedUser.stock_view,
           stock_in: updatedUser.stock_in,
           stock_out: updatedUser.stock_out,

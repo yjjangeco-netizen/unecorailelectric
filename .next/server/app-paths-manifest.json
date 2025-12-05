@@ -1,17 +1,9 @@
 {
-  "/page": "app/page.js",
-  "/signup/page": "app/signup/page.js",
-  "/login/page": "app/login/page.js",
-  "/work-diary/history/page": "app/work-diary/history/page.js",
-  "/work-diary/page": "app/work-diary/page.js",
-  "/api/work-diary/route": "app/api/work-diary/route.js",
+  "/project-management/page": "app/project-management/page.js",
+  "/user-management/page": "app/user-management/page.js",
   "/api/projects/route": "app/api/projects/route.js",
-  "/api/users/route": "app/api/users/route.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/api/access-logs/route": "app/api/access-logs/route.js",
-  "/api/business-trips/route": "app/api/business-trips/route.js",
-  "/api/schedule/route": "app/api/schedule/route.js",
-  "/api/leave-requests/route": "app/api/leave-requests/route.js",
-  "/api/business-trip-reports/route": "app/api/business-trip-reports/route.js",
-  "/not-found": "app/not-found.js"
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/api/projects/[id]/motors/route": "app/api/projects/[id]/motors/route.js",
+  "/not-found": "app/not-found.js",
+  "/api/projects/[id]/route": "app/api/projects/[id]/route.js"
 }

@@ -16,16 +16,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    console.log('🔍 업무일지 조회 요청:', {
-      startDate,
-      endDate,
-      projectId,
-      userId,
-      userLevel,
-      allowedUserIds,
-      page,
-      limit
-    })
+
 
     const supabase = supabaseServer
 
@@ -68,7 +59,7 @@ export async function GET(request: NextRequest) {
       const userIds = allowedUserIds.split(',').filter(id => id.trim() !== '')
       if (userIds.length > 0) {
         query = query.in('user_id', userIds)
-        console.log('✅ 레벨별 필터링 적용:', userIds)
+
       }
     }
 
@@ -88,7 +79,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!workDiaries || workDiaries.length === 0) {
-      console.log('⚠️  조회된 업무일지 없음')
+
       return NextResponse.json({
         data: [],
         total: 0,
@@ -98,7 +89,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log(`📋 ${workDiaries.length}개 업무일지 조회됨`)
+
 
     // Step 2: 프로젝트 정보 조회 (중복 제거)
     const projectIds = [...new Set(
@@ -125,7 +116,7 @@ export async function GET(request: NextRequest) {
             description: p.description || ''
           })
         })
-        console.log(`✅ ${projects.length}개 프로젝트 정보 조회됨`)
+
       }
     }
 
@@ -155,7 +146,7 @@ export async function GET(request: NextRequest) {
             position: u.position || ''
           })
         })
-        console.log(`✅ ${users.length}명 사용자 정보 조회됨`)
+
       }
     }
 
@@ -199,7 +190,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log(`✅ ${transformedData.length}개 업무일지 반환 (프로젝트 및 사용자 정보 포함)`)
+
 
     return NextResponse.json({
       data: transformedData,
@@ -225,7 +216,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    console.log('📝 업무일지 생성 요청:', body)
+
 
     // 필수 필드 검증
     if (!body.workContent || !body.workDate || !body.userId) {
@@ -274,7 +265,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 사용자 존재 여부 확인
-    console.log(`🔍 사용자 ID 확인 중: ${body.userId} (타입: ${typeof body.userId})`)
+
     
     const { data: userExists, error: userCheckError } = await supabase
       .from('users')
@@ -286,7 +277,7 @@ export async function POST(request: NextRequest) {
       console.error('❌ 사용자 조회 오류:', userCheckError)
     }
     
-    console.log(`✅ 사용자 확인 결과:`, userExists)
+
     
     if (!userExists) {
       // 사용가능한 사용자 ID 목록 조회 (디버깅용)
@@ -295,7 +286,7 @@ export async function POST(request: NextRequest) {
         .select('id, name')
         .limit(10)
       
-      console.log('📋 사용 가능한 사용자 ID (샘플):', allUsers)
+
       
       return NextResponse.json(
         { 
@@ -356,7 +347,7 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString()
     }
 
-    console.log('📝 삽입할 데이터:', insertData)
+
 
     const { data, error } = await supabase
       .from('work_diary')
@@ -372,7 +363,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('✅ 업무일지 생성 성공:', data)
+
 
     return NextResponse.json({
       message: '업무일지가 성공적으로 생성되었습니다',

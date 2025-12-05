@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/hooks/useUser'
@@ -6,13 +6,11 @@ import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, Plus, ChevronLeft, ChevronRight, Check, X, Clock, Calendar as CalendarIcon } from 'lucide-react'
+import { Loader2, Plus, ChevronLeft, ChevronRight, Check, X, Clock, Calendar as CalendarIcon, Filter } from 'lucide-react'
 import BusinessTripModal from '@/components/BusinessTripModal'
 import LeaveRequestModal from '@/components/LeaveRequestModal'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
-
-// Event Type Definition
 interface CalendarEvent {
   id: string
   title: string
@@ -61,7 +59,7 @@ export default function SchedulePage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [isLoadingEvents, setIsLoadingEvents] = useState(false)
   
-  // 카테고리 필터
+  // 移댄뀒怨좊━ ?꾪꽣
   const [categoryFilters, setCategoryFilters] = useState({
     project: true,
     business_trip: true,
@@ -76,7 +74,7 @@ export default function SchedulePage() {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
   const [selectedLeave, setSelectedLeave] = useState<any>(null)
   
-  // 사이드바 토글 상태
+  // ?ъ씠?쒕컮 ?좉? ?곹깭
   const [showEventList, setShowEventList] = useState(true)
 
   // Redirect if not authenticated
@@ -86,13 +84,15 @@ export default function SchedulePage() {
     }
   }, [loading, isAuthenticated, router])
 
+  const [usersList, setUsersList] = useState<any[]>([])
+
   // Fetch events
   const fetchEvents = useCallback(async () => {
     if (!user) return
     
     setIsLoadingEvents(true)
     try {
-      const [scheduleRes, businessTripRes, leaveRes, eventsRes, todosRes] = await Promise.all([
+      const [scheduleRes, businessTripRes, leaveRes, eventsRes, todosRes, usersRes] = await Promise.all([
         fetch(`/api/schedule?startDate=2024-01-01&endDate=2025-12-31`, { 
           headers: { 'x-user-level': String(user.level || '1') } 
         }),
@@ -113,19 +113,62 @@ export default function SchedulePage() {
         }),
         fetch('/api/todos', {
           headers: { 'x-user-id': user.id }
-        }).catch(() => ({ ok: false, json: async () => ({ data: [] }) }))
+        }).catch(() => ({ ok: false, json: async () => ({ data: [] }) })),
+        fetch('/api/users', {
+          headers: { 
+            'x-user-level': String(user.level || '1'), 
+            'x-user-id': user.id 
+          }
+        }),
+        fetch('/api/business-trips', {
+          headers: {
+            'x-user-level': String(user.level || '1')
+          }
+        })
       ])
+
+      // 1. 사용자 색상 매핑 생성 (색상이 없으면 자동 생성)
+      // 이름 기반 해시 색상 생성 함수
+      const generateColor = (name: string) => {
+        let hash = 0
+        for (let i = 0; i < name.length; i++) {
+          hash = name.charCodeAt(i) + ((hash << 5) - hash)
+        }
+        const c = (hash & 0x00FFFFFF).toString(16).toUpperCase()
+        return '#' + '00000'.substring(0, 6 - c.length) + c
+      }
+
+      const userColorMap: Record<string, string> = {}
+      if (usersRes.ok) {
+        const userData = await usersRes.json()
+        if (userData.users) {
+          const updatedUsers = userData.users.map((u: any) => {
+            // DB에 색상이 없으면 이름 기반으로 자동 생성
+            const color = u.color || generateColor(u.name || u.id)
+            userColorMap[u.id] = color
+            return { ...u, color }
+          })
+          
+          // 장영재(yjjang)를 맨 앞으로, 나머지는 이름순 정렬 (선택 사항)
+          updatedUsers.sort((a: any, b: any) => {
+            if (a.id === 'yjjang' || a.name === '장영재') return -1
+            if (b.id === 'yjjang' || b.name === '장영재') return 1
+            return a.name.localeCompare(b.name, 'ko') // 나머지는 가나다순
+          })
+
+          setUsersList(updatedUsers)
+        }
+      }
 
       const newEvents: CalendarEvent[] = []
 
-      // 1. 프로젝트 일정 (조완, 공시, 현시)
+      // 1. 프로젝트 일정 (전부 녹색)
       if (scheduleRes.ok) {
         const data = await scheduleRes.json()
         if (data.projectEvents) {
           data.projectEvents.forEach((e: any) => {
-            const bgColor = e.eventType === '조완' ? '#10B981' : 
-                           e.eventType === '공시' ? '#3B82F6' : 
-                           e.eventType === '현시' ? '#F59E0B' : '#8B5CF6'
+            // 프로젝트 일정은 무조건 녹색 (#10B981)
+            const bgColor = '#10B981'
             newEvents.push({
               id: e.id,
               title: `[${e.eventType}] ${e.project?.projectName || ''}`,
@@ -142,7 +185,7 @@ export default function SchedulePage() {
         }
       }
 
-      // 2. 외근/출장
+      // 2. 외근/출장 (AS/SS는 보라색, 나머지는 사용자 색상)
       if (businessTripRes.ok) {
         const trips = await businessTripRes.json()
         if (Array.isArray(trips)) {
@@ -155,13 +198,25 @@ export default function SchedulePage() {
             
             // 프로젝트 정보
             const projectInfo = trip.project_name ? ` / ${trip.project_name}` : ''
+
+            // 색상 결정 logic
+            let bgColor = '#8B5CF6' // 기본 보라색
+            const subType = trip.sub_type || ''
+            
+            if (subType.includes('AS') || subType.includes('SS')) {
+              bgColor = '#8B5CF6' // 보라색
+            } else {
+              // 사용자 고유 색상 사용, 없으면 기본값(회색 or 보라색)
+              // "나머지 개별" -> 사용자 색상
+              bgColor = userColorMap[trip.user_id] || '#6B7280'
+            }
             
             newEvents.push({
               id: `trip-${trip.id}`,
-              title: `[${tripTypeLabel}${subTypeLabel}] ${trip.user_name}${projectInfo}`,
+              title: `[${tripTypeLabel} - ${trip.title || trip.sub_type || ''}] ${trip.user_name}`,
               start: trip.start_date + (trip.start_time ? `T${trip.start_time}` : ''),
               end: trip.end_date + (trip.end_time ? `T${trip.end_time}` : ''),
-              backgroundColor: '#8B5CF6', // 보라색 통일
+              backgroundColor: bgColor,
               extendedProps: {
                 type: 'business_trip',
                 tripType: trip.trip_type,
@@ -170,6 +225,7 @@ export default function SchedulePage() {
                 description: trip.purpose,
                 location: trip.location,
                 participant: trip.user_name,
+                participantId: trip.user_id, // 사용자 ID 추가
                 projectName: trip.project_name,
                 projectId: trip.project_id
               }
@@ -178,7 +234,7 @@ export default function SchedulePage() {
         }
       }
 
-      // 3. 연차/반차
+      // 3. 휴가/반차 (전부 주황색)
       if (leaveRes.ok) {
         const data = await leaveRes.json()
         data.forEach((leave: any) => {
@@ -186,10 +242,10 @@ export default function SchedulePage() {
                                  leave.leave_type === 'half_day' ? '반차' :
                                  leave.leave_type === 'sick' ? '병가' :
                                  leave.leave_type === 'personal' ? '개인휴가' : leave.leave_type
-          const leaveColor = leave.leave_type === 'annual' ? '#EF4444' :
-                            leave.leave_type === 'half_day' ? '#F97316' :
-                            leave.leave_type === 'sick' ? '#DC2626' :
-                            '#EC4899'
+          
+          // 모든 휴가는 주황색 (#F97316) 통일
+          const leaveColor = '#F97316'
+
           newEvents.push({
             id: `leave-${leave.id}`,
             title: `[${leaveTypeLabel}] ${leave.user_name}`,
@@ -205,22 +261,26 @@ export default function SchedulePage() {
               reason: leave.reason,
               description: leave.reason,
               participant: leave.user_name,
+              participantId: leave.user_id, // 사용자 ID
               status: leave.status
             }
           })
         })
       }
 
-      // 4. 일반 일정
+      // 4. ?쇰컲 ?쇱젙 (?ъ슜???됱긽)
       if (eventsRes.ok) {
         const data = await eventsRes.json()
         data.forEach((event: any) => {
+          // ?ъ슜???됱긽 ?곸슜, ?놁쑝硫?湲곕낯 ?뚯깋
+          const bgColor = userColorMap[event.participant_id] || '#6B7280'
+
           newEvents.push({
             id: `event-${event.id}`,
             title: `[${event.category}] ${event.summary}`,
             start: event.start_date + (event.start_time ? `T${event.start_time}` : ''),
             end: event.end_date + (event.end_time ? `T${event.end_time}` : ''),
-            backgroundColor: '#6B7280',
+            backgroundColor: bgColor,
             extendedProps: {
               type: 'general',
               category: event.category,
@@ -233,11 +293,10 @@ export default function SchedulePage() {
         })
       }
 
-      console.log('✅ 총 로드된 이벤트:', newEvents.length)
-      console.log('📅 이벤트 샘플:', newEvents.slice(0, 3))
+
       setEvents(newEvents)
 
-      // 5. Todos (에러 무시)
+      // 5. Todos (?먮윭 臾댁떆)
       try {
         if (todosRes.ok) {
           const todosData = await todosRes.json()
@@ -249,23 +308,20 @@ export default function SchedulePage() {
             priority: todo.priority,
             category: todo.category
           }))
-          console.log('✅ 총 로드된 할일:', transformedTodos.length)
           setTodos(transformedTodos)
         } else {
-          console.log('⚠️  할일 로드 실패 (무시)')
           setTodos([])
         }
       } catch (todoError) {
-        console.log('⚠️  할일 테이블 없음 (무시)')
         setTodos([])
       }
 
     } catch (error) {
-      console.error('❌ 이벤트 로드 실패:', error)
+      console.error('이벤트 로드 실패:', error)
     } finally {
       setIsLoadingEvents(false)
     }
-  }, [user])
+  }, [user?.id, user?.level])
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -280,44 +336,38 @@ export default function SchedulePage() {
   }
 
   const handleEventClick = (event: CalendarEvent) => {
-    console.log('일정 클릭:', { 
-      id: event.id, 
-      title: event.title, 
-      type: event.extendedProps?.type,
-      allProps: event.extendedProps 
-    })
+
     
     // 프로젝트 일정은 읽기 전용
     if (event.extendedProps?.type === 'project') {
-      console.log('프로젝트 일정 → 상세 정보만 표시')
       const startDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
       const endDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : startDate
       
-      let details = `📅 ${event.title}\n\n`
-      details += `📆 ${format(startDate, 'yyyy년 M월 d일 (EEE)', { locale: ko })}`
+      let details = `제목: ${event.title}\n\n`
+      details += `일시: ${format(startDate, 'yyyy년 M월 d일(EEE)', { locale: ko })}`
       
       if (!isSameDay(startDate, endDate)) {
-        details += ` ~ ${format(endDate, 'M월 d일 (EEE)', { locale: ko })}`
+        details += ` ~ ${format(endDate, 'M월 d일(EEE)', { locale: ko })}`
       }
       
       if (event.extendedProps?.description) {
-        details += `\n\n📝 ${event.extendedProps.description}`
+        details += `\n\n내용: ${event.extendedProps.description}`
       }
       
-      alert(details + '\n\n※ 프로젝트 일정은 설정-프로젝트관리에서 수정할 수 있습니다.')
+      alert(details + '\n\n※ 프로젝트 일정은 [프로젝트 관리]에서 수정할 수 있습니다.')
+      return
     }
-    // 반차/연차 일정 편집 가능
-    else if (event.extendedProps?.type === 'leave') {
-      console.log('휴가 일정 → 편집 모달 열기')
+
+    // 휴가/반차 일정
+    if (event.extendedProps?.type === 'leave') {
       setSelectedLeave(event)
       setIsLeaveModalOpen(true)
+      return
     }
-    // 출장/외근 일정 및 기타 편집 가능한 일정
-    else {
-      console.log('편집 가능 일정 → 모달 열기')
-      setSelectedBusinessTrip(event)
-      setIsBusinessTripModalOpen(true)
-    }
+    
+    // 외근/출장/일반 일정
+    setSelectedBusinessTrip(event)
+    setIsBusinessTripModalOpen(true)
   }
 
   const handleDateClick = (date: Date) => {
@@ -348,7 +398,7 @@ export default function SchedulePage() {
     return days
   }
 
-  // 날짜에 해당하는 이벤트 가져오기 (기간 이벤트 포함)
+  // 날짜에 해당하는 이벤트 가져오기
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
       // 카테고리 필터 확인
@@ -361,17 +411,15 @@ export default function SchedulePage() {
       const eventStartDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
       const eventEndDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : eventStartDate
       
-      // 날짜를 연/월/일만 비교 (시간 제거)
+      // 날짜를 일자별로만 비교 (시간 제거)
       const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
       const startDate = new Date(eventStartDate.getFullYear(), eventStartDate.getMonth(), eventStartDate.getDate())
       const endDate = new Date(eventEndDate.getFullYear(), eventEndDate.getMonth(), eventEndDate.getDate())
       
-      // 해당 날짜가 이벤트 시작일과 종료일 사이에 있는지 확인
       return targetDate >= startDate && targetDate <= endDate
     })
   }
 
-  // 월별 달력 렌더링
   const renderMonth = (monthOffset: number = 0) => {
     const targetDate = addMonths(currentDate, monthOffset)
     const days = generateMonthDays(targetDate)
@@ -383,7 +431,7 @@ export default function SchedulePage() {
 
     return (
       <div key={monthOffset} className={monthView > 1 ? 'flex-1' : ''}>
-        {/* 월 헤더 */}
+        {/* 달력 헤더 */}
         <div className="text-center mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
             {format(targetDate, 'yyyy년 M월', { locale: ko })}
@@ -435,7 +483,7 @@ export default function SchedulePage() {
                       {format(day, 'd')}
                     </div>
                     
-                    {/* 이벤트 표시 */}
+                    {/* ?대깽???쒖떆 */}
                     <div className="space-y-1 -mx-1">
                       {dayEvents.slice(0, 3).map((event, idx) => {
                         const eventStartDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
@@ -485,7 +533,7 @@ export default function SchedulePage() {
     )
   }
 
-  // 주간 뷰 렌더링
+  // 二쇨컙 酉??뚮뜑留?
   const renderWeek = () => {
     const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 0 })
     const weekDays = Array.from({ length: 7 }, (_, i) => addDays(startOfWeekDate, i))
@@ -567,7 +615,7 @@ export default function SchedulePage() {
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 bg-gray-50">
           <h3 className="text-xl font-bold text-gray-900">
-            {format(currentDate, 'yyyy년 M월 d일 (EEE)', { locale: ko })}
+            {format(currentDate, 'yyyy년 M월 d일(EEE)', { locale: ko })}
           </h3>
         </div>
         
@@ -679,7 +727,7 @@ export default function SchedulePage() {
                         
                         {event.extendedProps?.location && (
                           <div className="text-xs text-gray-400 mt-1">
-                            📍 {event.extendedProps.location}
+                            ?뱧 {event.extendedProps.location}
                           </div>
                         )}
                       </div>
@@ -694,7 +742,7 @@ export default function SchedulePage() {
     )
   }
 
-  // Todo 관련 핸들러
+  // Todo 愿???몃뱾??
   const handleAddTodo = () => {
     setSelectedTodo(null)
     setIsTodoModalOpen(true)
@@ -718,7 +766,7 @@ export default function SchedulePage() {
       fetchEvents()
     } catch (error) {
       console.error('Error toggling todo:', error)
-      alert('할일 상태 변경 중 오류가 발생했습니다.')
+      alert('?좎씪 ?곹깭 蹂寃?以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.')
     }
   }
 
@@ -728,7 +776,7 @@ export default function SchedulePage() {
   }
 
   const handleDeleteTodo = async (todoId: string) => {
-    if (!confirm('정말로 이 할일을 삭제하시겠습니까?')) return
+    if (!confirm('?뺣쭚濡????좎씪????젣?섏떆寃좎뒿?덇퉴?')) return
 
     try {
       const response = await fetch(`/api/todos/${todoId}`, {
@@ -745,18 +793,26 @@ export default function SchedulePage() {
       fetchEvents()
     } catch (error) {
       console.error('Error deleting todo:', error)
-      alert('할일 삭제 중 오류가 발생했습니다.')
+      alert('?좎씪 ??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.')
     }
   }
 
-  // 일정 목록 렌더링 (달력에 표시된 달들의 일정)
+  // ?쇱젙 紐⑸줉 ?뚮뜑留?(?щ젰???쒖떆???щ뱾???쇱젙)
   const renderEventList = () => {
-    // monthView에 따라 표시할 달의 범위 결정
+    // monthView???곕씪 ?쒖떆???ъ쓽 踰붿쐞 寃곗젙
     const startDate = startOfMonth(currentDate)
     const endDate = endOfMonth(addMonths(currentDate, monthView - 1))
     
     const visibleMonthEvents = events
       .filter(event => {
+        // 카테고리 필터 적용
+        const eventType = event.extendedProps?.type || 'other'
+        if (eventType === 'project' && !categoryFilters.project) return false
+        if (eventType === 'business_trip' && !categoryFilters.business_trip) return false
+        if (eventType === 'leave' && !categoryFilters.leave) return false
+        if ((eventType === 'general' || eventType === 'other') && !categoryFilters.other) return false
+
+        // 날짜 필터 적용
         const eventDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
         return eventDate >= startDate && eventDate <= endDate
       })
@@ -766,7 +822,7 @@ export default function SchedulePage() {
         return dateA.getTime() - dateB.getTime()
       })
 
-    // 제목 생성 (1달, 2달, 3달에 따라)
+    // ?쒕ぉ ?앹꽦 (1?? 2?? 3?ъ뿉 ?곕씪)
     let title = ''
     if (monthView === 1) {
       title = `${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월 일정`
@@ -806,29 +862,29 @@ export default function SchedulePage() {
               const eventStartDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
               const eventEndDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : null
               
-              // 날짜 표시 형식 결정 (같은 날이면 단일, 다른 날이면 기간)
+              // ?좎쭨 ?쒖떆 ?뺤떇 寃곗젙 (媛숈? ?좎씠硫??⑥씪, ?ㅻⅨ ?좎씠硫?湲곌컙)
               let dateDisplay = ''
               if (eventEndDate && !isSameDay(eventStartDate, eventEndDate)) {
-                // 기간 표시
+                // 湲곌컙 ?쒖떆
                 const startYear = eventStartDate.getFullYear()
                 const endYear = eventEndDate.getFullYear()
                 
                 if (startYear === endYear) {
                   // 같은 해
                   if (eventStartDate.getMonth() === eventEndDate.getMonth()) {
-                    // 같은 월
-                    dateDisplay = `${format(eventStartDate, 'M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'd일 (EEE)', { locale: ko })}`
+                    // 같은 달
+                    dateDisplay = `${format(eventStartDate, 'M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'd일(EEE)', { locale: ko })}`
                   } else {
-                    // 다른 월
-                    dateDisplay = `${format(eventStartDate, 'M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'M월 d일 (EEE)', { locale: ko })}`
+                    // 다른 달
+                    dateDisplay = `${format(eventStartDate, 'M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'M월 d일(EEE)', { locale: ko })}`
                   }
                 } else {
                   // 다른 해
-                  dateDisplay = `${format(eventStartDate, 'yyyy년 M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'yyyy년 M월 d일 (EEE)', { locale: ko })}`
+                  dateDisplay = `${format(eventStartDate, 'yyyy년 M월 d일', { locale: ko })} ~ ${format(eventEndDate, 'yyyy년 M월 d일(EEE)', { locale: ko })}`
                 }
               } else {
                 // 단일 날짜
-                dateDisplay = format(eventStartDate, 'M월 d일 (EEE)', { locale: ko })
+                dateDisplay = format(eventStartDate, 'M월 d일(EEE)', { locale: ko })
                 if (!event.allDay) {
                   dateDisplay += ` ${format(eventStartDate, 'HH:mm')}`
                   if (eventEndDate) {
@@ -871,13 +927,13 @@ export default function SchedulePage() {
     )
   }
 
-  // Todo 렌더링
+  // Todo ?뚮뜑留?
   const renderTodos = () => {
     return (
       <Card className="border-none shadow-sm bg-white">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">할 일 목록</h3>
+            <h3 className="text-lg font-semibold text-gray-900">할일 목록</h3>
             <Button size="sm" variant="outline" onClick={handleAddTodo}>
               <Plus className="h-4 w-4 mr-1" />
               할일 추가
@@ -972,39 +1028,35 @@ export default function SchedulePage() {
                 size="sm" 
                 className="bg-red-500 hover:bg-red-600 text-white"
               >
-                연차/반차 신청
+                휴가/반차 신청
               </Button>
               <Button onClick={handleAddEvent} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-                + 일정 등록
+                <Plus className="h-4 w-4 mr-1" />
+                일정 추가
               </Button>
             </div>
           </div>
 
           {/* 카테고리 필터 */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-sm font-semibold text-gray-700">일정 필터:</span>
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+          <div className="flex flex-wrap items-center gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-6">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-500" />
+              <span className="font-semibold text-sm text-gray-700">필터:</span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={categoryFilters.project}
                   onChange={(e) => setCategoryFilters(prev => ({ ...prev, project: e.target.checked }))}
-                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
+                  className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-2 focus:ring-green-500"
                 />
                 <span className="w-3 h-3 rounded-full bg-green-500"></span>
                 <span className="text-sm font-medium text-gray-700">프로젝트</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
-                <input
-                  type="checkbox"
-                  checked={categoryFilters.business_trip}
-                  onChange={(e) => setCategoryFilters(prev => ({ ...prev, business_trip: e.target.checked }))}
-                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-2 focus:ring-purple-500"
-                />
-                <span className="w-3 h-3 rounded-full bg-purple-600"></span>
-                <span className="text-sm font-medium text-gray-700">AS/SS</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={categoryFilters.leave}
@@ -1012,9 +1064,21 @@ export default function SchedulePage() {
                   className="w-4 h-4 text-orange-600 rounded border-gray-300 focus:ring-2 focus:ring-orange-500"
                 />
                 <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                <span className="text-sm font-medium text-gray-700">연차/반차</span>
+                <span className="text-sm font-medium text-gray-700">휴가/반차</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
+
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={categoryFilters.business_trip}
+                  onChange={(e) => setCategoryFilters(prev => ({ ...prev, business_trip: e.target.checked }))}
+                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-2 focus:ring-purple-500"
+                />
+                <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                <span className="text-sm font-medium text-gray-700">출장/외근</span>
+              </label>
+              
+              <label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={categoryFilters.other}
@@ -1025,8 +1089,25 @@ export default function SchedulePage() {
                 <span className="text-sm font-medium text-gray-700">기타</span>
               </label>
             </div>
-          </div>
 
+            {/* 구분선 */}
+            <div className="flex items-center mx-3 text-gray-400 font-medium text-sm hidden md:flex">
+              범례 <span className="mx-2">|</span>
+            </div>
+
+            {/* 범례: 사용자 목록 */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              {usersList.map((u) => (
+                <div key={u.id} className="flex items-center gap-1.5">
+                  <span 
+                    className="w-2.5 h-2.5 rounded-full" 
+                    style={{ backgroundColor: u.color || '#6B7280' }}
+                  ></span>
+                  <span className="text-xs text-gray-600">{u.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
           {/* 달력 컨트롤 */}
           <div className="bg-white rounded-lg border border-gray-200 mb-6">
             {/* 상단 네비게이션 */}
@@ -1062,7 +1143,7 @@ export default function SchedulePage() {
                 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
               </h2>
 
-              {/* 뷰 탭 (2달, 3달, 월, 주, 일, 일정목록, 할일) */}
+              {/* 뷰 선택 (2달, 3달, 월, 주, 일, 일정목록, 할일) */}
               <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200">
                 <button
                   onClick={() => { setMonthView(2); setViewType('month'); }}
@@ -1123,7 +1204,7 @@ export default function SchedulePage() {
                       : 'bg-gray-100 text-gray-500 border border-gray-200'
                   }`}
                 >
-                  일정목록 {showEventList ? '✓' : ''}
+                  일정목록 {showEventList ? '닫기' : ''}
                 </button>
               </div>
             </div>

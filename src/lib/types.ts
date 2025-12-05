@@ -23,6 +23,7 @@ export interface User {
   work_manual?: boolean;
   sop?: boolean;
   user_management?: boolean;
+  color?: string; // DB: color
   created_at: string;
   updated_at: string;
 }

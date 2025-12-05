@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -193,60 +193,63 @@ const getBreakerSetting = (current: number): string => {
 export default function BulkMotorAddModal({ isOpen, onClose, onSave, projectId }: BulkMotorAddModalProps) {
   const [motors, setMotors] = useState<MotorSpec[]>([])
 
+  // Helper to calculate derived fields
+  const updateMotorDerivedFields = useCallback((motor: MotorSpec): MotorSpec => {
+    if (motor.power_kw > 0 && motor.voltage && motor.phase) {
+      const current = calculateCurrent(motor.power_kw, motor.voltage, motor.phase)
+      return {
+        ...motor,
+        current_amp: current,
+        breaker_size: getBreakerSize(current),
+        cable_size: getCableSize(current),
+        eocr_setting: getEOCRSetting(current),
+        breaker_setting: getBreakerSetting(current)
+      }
+    }
+    return motor
+  }, [])
+
   useEffect(() => {
     if (isOpen) {
       // 모든 모터 타입에 대해 초기 데이터 생성
-      const initialMotors: MotorSpec[] = Object.entries(MOTOR_SPECS).map(([type, spec]) => ({
-        motor_type: type,
-        motor_name: spec.name,
-        power_kw: spec.powerOptions[0]?.value || 0,
-        voltage: spec.voltageOptions[0] || '220V',
-        phase: '3상',
-        pole: '4P',
-        quantity: spec.defaultQuantity,
-        current_amp: 0,
-        breaker_size: '',
-        cable_size: '',
-        eocr_setting: '',
-        breaker_setting: '',
-        selected: false
-      }))
+      const initialMotors: MotorSpec[] = Object.entries(MOTOR_SPECS).map(([type, spec]) => {
+        const baseMotor = {
+          motor_type: type,
+          motor_name: spec.name,
+          power_kw: spec.powerOptions[0]?.value || 0,
+          voltage: spec.voltageOptions[0] || '220V',
+          phase: '3상',
+          pole: '4P',
+          quantity: spec.defaultQuantity,
+          current_amp: 0,
+          breaker_size: '',
+          cable_size: '',
+          eocr_setting: '',
+          breaker_setting: '',
+          selected: false
+        }
+        return updateMotorDerivedFields(baseMotor)
+      })
       setMotors(initialMotors)
     }
-  }, [isOpen])
+  }, [isOpen, updateMotorDerivedFields])
 
-  // 전류 및 기타 값 계산
-  useEffect(() => {
+  const handleMotorChange = useCallback((index: number, field: keyof MotorSpec, value: any) => {
     setMotors(prevMotors => 
-      prevMotors.map(motor => {
-        if (motor.power_kw > 0 && motor.voltage && motor.phase) {
-          const current = calculateCurrent(motor.power_kw, motor.voltage, motor.phase)
-          const breakerSize = getBreakerSize(current)
-          const cableSize = getCableSize(current)
-          const eocrSetting = getEOCRSetting(current)
-          const breakerSetting = getBreakerSetting(current)
-          
-          return {
-            ...motor,
-            current_amp: current,
-            breaker_size: breakerSize,
-            cable_size: cableSize,
-            eocr_setting: eocrSetting,
-            breaker_setting: breakerSetting
-          }
+      prevMotors.map((motor, i) => {
+        if (i !== index) return motor
+        
+        const updatedMotor = { ...motor, [field]: value }
+        
+        // Recalculate derived fields if relevant inputs change
+        if (field === 'power_kw' || field === 'voltage' || field === 'phase') {
+          return updateMotorDerivedFields(updatedMotor)
         }
-        return motor
+        
+        return updatedMotor
       })
     )
-  }, [motors])
-
-  const handleMotorChange = (index: number, field: keyof MotorSpec, value: any) => {
-    setMotors(prevMotors => 
-      prevMotors.map((motor, i) => 
-        i === index ? { ...motor, [field]: value } : motor
-      )
-    )
-  }
+  }, [updateMotorDerivedFields])
 
   const handleSelectAll = (selected: boolean) => {
     setMotors(prevMotors => 
@@ -256,12 +259,10 @@ export default function BulkMotorAddModal({ isOpen, onClose, onSave, projectId }
 
   const handleSave = () => {
     const selectedMotors = motors.filter(motor => motor.selected)
-    if (selectedMotors.length === 0) {
-      alert('추가할 모터를 선택해주세요.')
-      return
+    if (selectedMotors.length > 0) {
+      onSave(selectedMotors)
+      onClose()
     }
-    onSave(selectedMotors)
-    onClose()
   }
 
   const selectedCount = motors.filter(motor => motor.selected).length

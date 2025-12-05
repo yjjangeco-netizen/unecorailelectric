@@ -108,6 +108,7 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
         position: user.position || '',
         level: level,
         is_active: user.is_active || false,
+        color: user.color || '#3788d8',
         // 기존 권한이 있으면 유지, 없으면 레벨별 기본값 사용
         stock_view: user.stock_view ?? defaultPermissions['stock_view'],
         stock_in: user.stock_in ?? defaultPermissions['stock_in'],
@@ -220,6 +221,26 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
               <option value="차장">차장</option>
               <option value="부장">부장</option>
             </select>
+          </div>
+          
+          {/* 색상 선택 */}
+          <div>
+            <label className="block text-sm mb-1">사용자 고유 색상(일정표)</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={formData.color || '#3788d8'} // 기본값 파란색
+                onChange={(e) => handleChange('color', e.target.value)}
+                className="h-9 w-16 p-1 border border-gray-300 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={formData.color || '#3788d8'}
+                onChange={(e) => handleChange('color', e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                placeholder="#000000"
+              />
+            </div>
           </div>
 
           {/* 권한 레벨 */}

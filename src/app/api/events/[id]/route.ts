@@ -76,7 +76,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const isCreator = event.created_by_id === userId
     const isParticipant = event.participant_id === userId
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
     
     if (!isCreator && !isParticipant && !isLevel5 && !isAdmin) {
       console.log('일정 삭제 권한 없음:', { userId, creatorId: event.created_by_id, participantId: event.participant_id, userLevel })

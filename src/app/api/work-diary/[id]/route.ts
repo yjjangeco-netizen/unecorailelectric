@@ -66,7 +66,7 @@ export async function DELETE(
     // 권한 확인: 본인, Level 5, Admin만 삭제 가능
     const isOwner = diary.user_id === userId
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
 
     if (!isOwner && !isLevel5 && !isAdmin) {
       return NextResponse.json({ 
@@ -116,7 +116,7 @@ export async function PUT(
     const userId = request.headers.get('x-user-id')
     const userLevel = request.headers.get('x-user-level')
     const isLevel5 = userLevel === '5'
-    const isAdmin = userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
+    const isAdmin = userLevel === 'admin' || userLevel === 'administrator' || userLevel === 'Administrator' || userId === 'admin'
     const canManage = isLevel5 || isAdmin
 
     // 현재 상태 조회
