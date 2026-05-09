@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // 기본 조회 (프로젝트 조인 제거 - 별도로 처리)
     let query = supabase
       .from('business_trips')
-      .select('*')
+      .select('*, projects(project_name, project_number)') // 프로젝트 정보 조인
       .order('created_at', { ascending: false })
 
     // 필터 적용
@@ -47,9 +47,10 @@ export async function GET(request: NextRequest) {
     // 프로젝트 이름을 추가하여 반환
     const tripsWithProjects = data?.map(trip => ({
       ...trip,
-      project_name: trip.projects?.project_name || null
+      project_name: trip.projects?.project_name || null,
+      project_number: trip.projects?.project_number || null
     })) || []
-    
+
     console.log('출장/외근 API 응답 데이터:', tripsWithProjects)
     return NextResponse.json(tripsWithProjects)
   } catch (error) {
@@ -62,10 +63,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createApiClient()
-    
+
     const body = await request.json()
     console.log('출장/외근 신청 요청 데이터:', body)
-    
+
     // snake_case와 camelCase 모두 지원
     const userId = body.user_id || body.userId
     const userName = body.user_name || body.userName
@@ -90,22 +91,32 @@ export async function POST(request: NextRequest) {
       end_date: body.end_date,
       start_time: body.start_time || null,
       end_time: body.end_time || null,
-      status: body.status || 'approved'
+      status: body.status || 'approved',
+      companions: body.companions || []
     }
-    
+
     console.log('DB에 삽입할 데이터:', insertData)
-    
-    const { data: trip, error: tripError } = await supabase
+
+    let { data: trip, error: tripError } = await supabase
       .from('business_trips')
       .insert(insertData)
       .select()
       .single()
 
+    // 컬럼 누락 에러시 재시도
+    if (tripError && (tripError.code === '42703' || tripError.message?.includes('companions'))) {
+      console.warn('companions column missing, retrying without it')
+      delete insertData.companions
+      const retry = await supabase.from('business_trips').insert(insertData).select().single()
+      trip = retry.data
+      tripError = retry.error
+    }
+
     if (tripError) {
       console.error('출장/외근 생성 오류:', tripError)
       return NextResponse.json({ error: tripError.message }, { status: 500 })
     }
-    
+
     console.log('출장/외근 생성 성공:', trip)
 
     // 동행자 추가는 일단 생략 (필요시 나중에 추가)
@@ -124,7 +135,7 @@ export async function PUT(request: NextRequest) {
     // 헤더에서 사용자 정보 확인 (일정 관리에서 사용)
     const userId = request.headers.get('x-user-id')
     const userLevel = request.headers.get('x-user-level')
-    
+
     let user = null
     if (userId) {
       user = { id: userId, user_metadata: { level: userLevel } }
@@ -139,7 +150,7 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     const { id, ...updateData } = body
-    
+
     // 만약 URL 쿼리 파라미터에 id가 있다면 그것을 사용 (body에 id가 없는 경우 대비)
     const urlId = request.nextUrl.searchParams.get('id')
     const targetId = id || urlId
@@ -167,12 +178,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // 승인된 출장도 수정 가능하도록 변경 (자동 승인 시스템이므로)
-    // if (existingTrip.status === 'approved') {
-    //   return NextResponse.json({ error: 'Cannot modify approved trip' }, { status: 400 })
-    // }
-
-    const { data: trip, error: updateError } = await supabase
+    let { data: trip, error: updateError } = await supabase
       .from('business_trips')
       .update({
         ...updateData,
@@ -181,6 +187,24 @@ export async function PUT(request: NextRequest) {
       .eq('id', targetId)
       .select()
       .single()
+
+    // 컬럼 누락 에러시 재시도
+    if (updateError && (updateError.code === '42703' || updateError.message?.includes('companions'))) {
+      console.warn('companions column missing, retrying without it')
+      // @ts-ignore
+      delete updateData.companions
+      const retry = await supabase
+        .from('business_trips')
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetId)
+        .select()
+        .single()
+      trip = retry.data
+      updateError = retry.error
+    }
 
     if (updateError) {
       console.error('Error updating business trip:', updateError)
@@ -198,11 +222,11 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = createApiClient()
-    
+
     // 헤더에서 사용자 정보 확인 (일정 관리에서 사용)
     const userId = request.headers.get('x-user-id')
     const userLevel = request.headers.get('x-user-level')
-    
+
     let user = null
     if (userId) {
       user = { id: userId, user_metadata: { level: userLevel } }
@@ -236,11 +260,11 @@ export async function DELETE(request: NextRequest) {
     // 권한 확인: 본인 또는 admin만 삭제 가능
     const isAdmin = user.user_metadata?.level === 'admin' || user.user_metadata?.level === 'administrator' || user.user_metadata?.level === '5'
     const isOwner = existingTrip.user_id === user.id
-    
+
     if (!isOwner && !isAdmin) {
       console.log('삭제 권한 없음:', { userId: user.id, tripUserId: existingTrip.user_id, userLevel: user.user_metadata?.level })
-      return NextResponse.json({ 
-        error: 'Forbidden: 본인의 출장/외근이거나 관리자만 삭제할 수 있습니다' 
+      return NextResponse.json({
+        error: 'Forbidden: 본인의 출장/외근이거나 관리자만 삭제할 수 있습니다'
       }, { status: 403 })
     }
 

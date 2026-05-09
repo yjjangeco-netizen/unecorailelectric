@@ -26,7 +26,11 @@ import {
   XCircle,
   Search,
   X,
-  Settings
+  Settings,
+  Trash2,
+  PlayCircle,
+  Clock,
+  FolderOpen
 } from 'lucide-react'
 
 // 프로젝트명 업데이트 함수 (현장명 생성)
@@ -191,6 +195,9 @@ export default function ProjectManagementPage() {
   const [sortBy, setSortBy] = useState('project_number') // 정렬 기준
   const [sortOrder, setSortOrder] = useState('asc') // 정렬 순서
 
+  // 폴더 네비게이션 상태
+  const [activeFolder, setActiveFolder] = useState('ongoing')
+
   // 폼 상태
   const [formData, setFormData] = useState({
     projectName: '',
@@ -251,42 +258,53 @@ export default function ProjectManagementPage() {
   useEffect(() => {
     let filtered = projects
 
-    // 철거 프로젝트 필터링
-    if (!showDemolishedProjects) {
-      filtered = filtered.filter(project => {
-        // status가 'Demolished' 또는 'cancelled'이거나 프로젝트명에 '철거'가 포함된 경우 철거 프로젝트로 간주
-        const isDemolished = project.ProjectStatus === 'Demolished' || (project.ProjectStatus as string) === 'cancelled'
-        const projectName = getUpdatedProjectName(project)
-        const hasDemolishedInName = projectName.includes('철거')
+    // 1. 폴더별 필터링
+    filtered = filtered.filter(project => {
+      const status = (project.ProjectStatus as string) || 'Manufacturing'
+      const projectName = getUpdatedProjectName(project)
+      const category = project.category || 'project'
+      const isDemolished = status === 'Demolished' || status === 'cancelled' || projectName.includes('철거')
 
-        return !isDemolished && !hasDemolishedInName
-      })
-    }
+      if (activeFolder === 'ongoing') {
+        // 진행중: 철거 아님, 완료 아님, 임시 아님, 카테고리는 프로젝트
+        return !isDemolished && status !== 'Completed' && status !== 'Temporary' && category === 'project'
+      }
+      if (activeFolder === 'completed') {
+        // 완료: 상태가 Completed
+        return status === 'Completed'
+      }
+      if (activeFolder === 'demolition') {
+        // 철거: 상태가 Demolished/cancelled 또는 이름에 철거 포함
+        return isDemolished
+      }
+      if (activeFolder === 'temporary') {
+        // 임시: 상태가 Temporary
+        return status === 'Temporary'
+      }
+      if (activeFolder === 'other') {
+        // 기타: 카테고리가 프로젝트가 아님
+        return category !== 'project'
+      }
+      return false
+    })
 
-    // 선반/전삭기 프로젝트 필터링
+    // 2. 선반/전삭기 프로젝트 필터링 (기타 업무 아닐 때만 적용하거나, 항상 적용? 사용자 의도는 하위 필터로 보임)
+    // 기타 업무 폴더는 보통 번호 체계가 다를 수 있으므로 유지해도 무방하나, 보통 'project' 카테고리 내에서 의미가 큼.
+    // 일단 모든 폴더에서 적용하되, 사용자가 체크 해제하면 다 보임.
     filtered = filtered.filter(project => {
       const projectNumber = project.project_number || ''
       const isLathe = projectNumber.startsWith('CNCWL')
       const isGrinding = projectNumber.startsWith('CNCUWL')
 
+      // 선반/전삭기 필터가 켜져 있으면 해당하지 않는 것은 숨김? 
+      // 기존 로직: isLathe && !showLatheProjects -> 숨김
       if (isLathe && !showLatheProjects) return false
       if (isGrinding && !showGrindingProjects) return false
 
       return true
     })
 
-    // 상태 필터링 (체크박스)
-    if (statusFilters.length > 0) {
-      filtered = filtered.filter(project => {
-        if (statusFilters.includes('Demolished')) {
-          const projectName = getUpdatedProjectName(project)
-          return statusFilters.includes(project.ProjectStatus) || projectName.includes('철거')
-        }
-        return statusFilters.includes(project.ProjectStatus)
-      })
-    }
-
-    // 검색 필터링
+    // 3. 검색 필터링
     if (searchTerm.trim()) {
       filtered = filtered.filter(project =>
         (project.project_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -295,16 +313,7 @@ export default function ProjectManagementPage() {
       )
     }
 
-    // 카테고리 필터링
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(project => {
-        // 기존 데이터 호환성을 위해 category가 없는 경우 'project'로 간주
-        const projectCategory = project.category || 'project'
-        return projectCategory === categoryFilter
-      })
-    }
-
-    // 정렬
+    // 4. 정렬
     const sortedFiltered = filtered.sort((a: Project, b: Project) => {
       let aValue, bValue
 
@@ -350,7 +359,7 @@ export default function ProjectManagementPage() {
     })
 
     setFilteredProjects(sortedFiltered)
-  }, [projects, searchTerm, showDemolishedProjects, showLatheProjects, showGrindingProjects, statusFilters, sortBy, sortOrder, categoryFilter])
+  }, [projects, searchTerm, activeFolder, showLatheProjects, showGrindingProjects, sortBy, sortOrder])
 
   // 상태 필터 체크박스 핸들러
   const handleStatusFilterChange = (status: string) => {
@@ -476,7 +485,7 @@ export default function ProjectManagementPage() {
 
       // 성공 메시지
       alert('프로젝트가 성공적으로 삭제되었습니다.')
-      
+
       // 성공 시 목록 다시 로드
       await loadProjects()
       handleCloseDetailModal()
@@ -491,8 +500,8 @@ export default function ProjectManagementPage() {
     // 프로젝트명이 없으면 생성된 이름 사용
     const projectWithComputedName = {
       ...project,
-      project_name: (project.project_name && project.project_name.trim() !== '') 
-        ? project.project_name 
+      project_name: (project.project_name && project.project_name.trim() !== '')
+        ? project.project_name
         : getUpdatedProjectName(project)
     }
     setSelectedProject(projectWithComputedName)
@@ -515,13 +524,13 @@ export default function ProjectManagementPage() {
     try {
       // 새 프로젝트인 경우 POST, 기존 프로젝트는 PUT
       const isNewProject = !project.id || project.id === 0
-      
+
       const url = isNewProject ? '/api/projects' : `/api/projects/${project.id}`
       const method = isNewProject ? 'POST' : 'PUT'
-      
+
       // project 객체를 먼저 펼치고, 명시적으로 필드를 덮어씀
       const { name, ...projectWithoutName } = project as any;
-      
+
       const requestBody = {
         ...projectWithoutName,
         project_name: project.project_name || name || '',  // project_name 우선, 없으면 name 사용
@@ -530,7 +539,7 @@ export default function ProjectManagementPage() {
         ProjectStatus: project.ProjectStatus || 'Manufacturing',
         is_active: project.is_active !== false
       }
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -546,13 +555,13 @@ export default function ProjectManagementPage() {
 
       // 성공 시 목록 다시 로드
       handleCloseDetailModal()
-      
+
       // DB 커밋을 기다린 후 목록 새로고침
       setTimeout(async () => {
         await loadProjects()
         alert(isNewProject ? '프로젝트가 추가되었습니다.' : '프로젝트가 수정되었습니다.')
       }, 300)
-      
+
     } catch (error) {
       console.error('프로젝트 저장 실패:', error)
       alert(`프로젝트 저장에 실패했습니다: ${error}`)
@@ -750,8 +759,55 @@ export default function ProjectManagementPage() {
                 </div>
               </CardTitle>
 
+              {/* 폴더 네비게이션 */}
+              <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
+                {[
+                  { id: 'ongoing', label: '진행중 프로젝트', icon: PlayCircle, color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' },
+                  { id: 'completed', label: '완료 프로젝트', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' },
+                  { id: 'demolition', label: '철거 프로젝트', icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' },
+                  { id: 'temporary', label: '임시 프로젝트', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100', border: 'border-orange-200' },
+                  { id: 'other', label: '기타 업무', icon: FolderOpen, color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-200' },
+                ].map((folder) => (
+                  <button
+                    key={folder.id}
+                    onClick={() => setActiveFolder(folder.id)}
+                    className={`flex items-center gap-3 px-5 py-4 rounded-xl border-2 transition-all shadow-sm min-w-[200px] ${activeFolder === folder.id
+                      ? `${folder.bg} ${folder.border} ring-2 ring-offset-2 ring-${folder.color.split('-')[1]}-400`
+                      : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                  >
+                    <div className={`p-2 rounded-lg bg-white ${activeFolder === folder.id ? 'shadow-sm' : 'bg-slate-100'}`}>
+                      <folder.icon className={`h-6 w-6 ${folder.color}`} />
+                    </div>
+                    <div className="text-left">
+                      <div className={`font-bold ${activeFolder === folder.id ? 'text-slate-900' : 'text-slate-600'}`}>
+                        {folder.label}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {
+                          // 폴더별 개수 계산 (단순화된 로직)
+                          projects.filter(p => {
+                            const status = (p.ProjectStatus as string) || 'Manufacturing'
+                            const name = getUpdatedProjectName(p)
+                            const isDemolished = status === 'Demolished' || status === 'cancelled' || name.includes('철거')
+                            const category = p.category || 'project'
+
+                            if (folder.id === 'ongoing') return !isDemolished && status !== 'Completed' && status !== 'Temporary' && category === 'project'
+                            if (folder.id === 'completed') return status === 'Completed'
+                            if (folder.id === 'demolition') return isDemolished
+                            if (folder.id === 'temporary') return status === 'Temporary'
+                            if (folder.id === 'other') return category !== 'project'
+                            return false
+                          }).length
+                        }개 항목
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
               {/* 검색 및 필터 */}
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
@@ -759,104 +815,46 @@ export default function ProjectManagementPage() {
                     placeholder="프로젝트명 또는 프로젝트번호로 검색..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-300 focus:border-blue-400 focus:ring-blue-400"
+                    className="pl-10 pr-10 bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-400 focus:ring-blue-400"
                   />
                   {searchTerm && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-slate-100"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-slate-200 rounded-full"
                     >
                       <X className="h-4 w-4 text-slate-400" />
                     </Button>
                   )}
                 </div>
 
-                {/* 프로젝트 필터 및 정렬 컨트롤 */}
-                <div className="flex items-center space-x-4 flex-wrap">
-
-                  {/* 정렬 기준 */}
+                {/* 프로젝트 타입 필터 */}
+                <div className="flex items-center space-x-6 border-l border-slate-200 pl-6 h-full">
                   <div className="flex items-center space-x-2">
-                    <Label className="text-sm text-slate-700 font-medium">정렬:</Label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="project_number">프로젝트번호</option>
-                      <option value="name">프로젝트명</option>
-                      <option value="assembly_date">조립완료일</option>
-                      <option value="factory_test_date">공장시운전일</option>
-                      <option value="site_test_date">현장시운전일</option>
-                      <option value="completion_date">준공완료일</option>
-                    </select>
-                    <button
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                      className="px-2 py-1 border border-slate-300 rounded-md text-sm hover:bg-slate-50 focus:ring-2 focus:ring-blue-500"
-                      title={sortOrder === 'asc' ? '오름차순' : '내림차순'}
-                    >
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </button>
+                    <input
+                      type="checkbox"
+                      id="showLathe"
+                      checked={showLatheProjects}
+                      onChange={(e) => setShowLatheProjects(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    />
+                    <Label htmlFor="showLathe" className="text-sm text-slate-700 cursor-pointer font-medium">
+                      선반 현장
+                    </Label>
                   </div>
 
-                  {/* 카테고리 필터 */}
                   <div className="flex items-center space-x-2">
-                    <Label className="text-sm text-slate-700 font-medium">구분:</Label>
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="px-3 py-1 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="all">전체</option>
-                      <option value="project">프로젝트</option>
-                      <option value="individual">개별업무</option>
-                      <option value="standardization">업무 표준화</option>
-                      <option value="wheel_conversion">차륜관리프로그램 변환</option>
-                      <option value="education">교육</option>
-                    </select>
-                  </div>
-
-                  {/* 프로젝트 타입 필터 */}
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="showLathe"
-                        checked={showLatheProjects}
-                        onChange={(e) => setShowLatheProjects(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                      />
-                      <Label htmlFor="showLathe" className="text-sm text-slate-700 cursor-pointer">
-                        선반
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="showGrinding"
-                        checked={showGrindingProjects}
-                        onChange={(e) => setShowGrindingProjects(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                      />
-                      <Label htmlFor="showGrinding" className="text-sm text-slate-700 cursor-pointer">
-                        전삭기
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="showDemolished"
-                        checked={showDemolishedProjects}
-                        onChange={(e) => setShowDemolishedProjects(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                      />
-                      <Label htmlFor="showDemolished" className="text-sm text-slate-700 cursor-pointer">
-                        철거 프로젝트 보기
-                      </Label>
-                    </div>
+                    <input
+                      type="checkbox"
+                      id="showGrinding"
+                      checked={showGrindingProjects}
+                      onChange={(e) => setShowGrindingProjects(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                    />
+                    <Label htmlFor="showGrinding" className="text-sm text-slate-700 cursor-pointer font-medium">
+                      전삭기 현장
+                    </Label>
                   </div>
                 </div>
               </div>
@@ -1023,12 +1021,12 @@ export default function ProjectManagementPage() {
                         <tr key={project.id} className="border-b border-slate-200 hover:bg-slate-50 transition-colors">
                           <td className="p-3 text-slate-600 text-sm">
                             {(() => {
-                              switch(project.category) {
+                              switch (project.category) {
                                 case 'individual': return '개별업무';
                                 case 'standardization': return '업무 표준화';
                                 case 'wheel_conversion': return '차륜관리프로그램 변환';
                                 case 'education': return '교육';
-                                case 'project': 
+                                case 'project':
                                 default: return '프로젝트';
                               }
                             })()}

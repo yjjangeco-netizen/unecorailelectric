@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import CommonHeader from '@/components/CommonHeader'
+
 import {
   Calculator,
   FileText,
@@ -71,21 +71,7 @@ export default function WorkToolPage() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        <CommonHeader
-          currentUser={user ? { ...user, level: String(user.level) } : null}
-          isAdmin={user?.level === 'admin'}
-          title="업무도구"
-          backUrl="/"
-          onLogout={() => router.push('/login')}
-        />
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* 헤더 */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">업무 도구</h1>
-            <p className="text-gray-600 mt-2">
-              업무 효율성을 높이는 다양한 도구들을 제공합니다.
-            </p>
-          </div>
 
           {/* 업무 도구 카드 그리드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

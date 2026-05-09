@@ -72,7 +72,7 @@ export default function AdvancedStatsPage() {
   const [searchWorkSubType, setSearchWorkSubType] = useState('all')
   const [searchProject, setSearchProject] = useState('all')
   const [users, setUsers] = useState<{ id: string, name: string }[]>([])
-  const [projects, setProjects] = useState<{ id: number, name: string, project_number: string }[]>([])
+  const [projects, setProjects] = useState<{ id: number, project_name: string, project_number: string }[]>([])
   const [stats, setStats] = useState<StatResult[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -282,7 +282,7 @@ export default function AdvancedStatsPage() {
                       <SelectItem value="all">전체 프로젝트</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name}
+                          {project.project_name}
                         </SelectItem>
                       ))}
                     </SelectContent>

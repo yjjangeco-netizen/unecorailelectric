@@ -129,14 +129,7 @@ export default function CommonHeader({
 
   return (
     <>
-      {/* 상단 바 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="py-3 text-center">
-            <h1 className="text-2xl font-bold text-gray-800">유네코 레일 전기파트 업무 시스템</h1>
-          </div>
-        </div>
-      </div>
+
       
       {/* 메인 헤더 */}
       <header className="bg-white border-b border-gray-200 shadow-sm">

@@ -51,7 +51,13 @@ export default function WorkDiaryWritePage() {
   const router = useRouter()
 
   // 상태 관리
-  const [workDate, setWorkDate] = useState(new Date().toISOString().split('T')[0])
+  const [workDate, setWorkDate] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('date') || new Date().toISOString().split('T')[0]
+    }
+    return new Date().toISOString().split('T')[0]
+  })
   const [dailyStartTime, setDailyStartTime] = useState('08:00')
   const [dailyEndTime, setDailyEndTime] = useState('17:00')
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([
@@ -83,6 +89,14 @@ export default function WorkDiaryWritePage() {
     const workHours = Math.max(0, diffHours - 1)
 
     return Math.round(workHours * 10) / 10 // 소수점 첫째자리까지
+  }
+
+  // 요일 구하기 헬퍼 함수
+  const getDayOfWeek = (dateString: string) => {
+    if (!dateString) return ''
+    const days = ['일', '월', '화', '수', '목', '금', '토']
+    const date = new Date(dateString)
+    return isNaN(date.getTime()) ? '' : days[date.getDay()]
   }
 
   // 프로젝트명에 따른 작업유형/세부유형 설정 함수
@@ -194,19 +208,11 @@ export default function WorkDiaryWritePage() {
         return
       }
 
-      // 총 작업시간이 허용 시간보다 큰 경우 경고
+      // 총 작업시간이 허용 시간보다 큰 경우 콘솔 경고 (저장은 진행)
       if (totalWorkHours > allowedWorkHours) {
-        const confirmSubmit = window.confirm(
-          `⚠️ 작업시간 초과 경고\n\n` +
-          `총 작업시간: ${totalWorkHours}시간\n` +
-          `허용 시간 (퇴근-출근-점심1시간): ${allowedWorkHours}시간\n` +
-          `초과: ${(totalWorkHours - allowedWorkHours).toFixed(1)}시간\n\n` +
-          `입력한 시간을 다시 확인해주세요.\n그래도 저장하시겠습니까?`
+        console.warn(
+          `[업무일지] 작업시간 초과: ${totalWorkHours}h > 허용 ${allowedWorkHours}h`
         )
-        if (!confirmSubmit) {
-          setLoading(false)
-          return
-        }
       }
 
       // 각 업무 항목을 개별적으로 API에 전송
@@ -284,7 +290,7 @@ export default function WorkDiaryWritePage() {
             {/* 상단: 날짜 및 시간 설정 */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">작업 날짜</Label>
+                <Label className="text-sm font-medium text-gray-700">작업 날짜 {workDate && `(${getDayOfWeek(workDate)})`}</Label>
                 <Input
                   type="date"
                   value={workDate}

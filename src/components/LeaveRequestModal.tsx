@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarIcon, Clock, AlertCircle } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
+import { format } from 'date-fns'
 
 interface LeaveRequestModalProps {
   isOpen: boolean
@@ -82,7 +83,7 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
         })
       } else {
         // 생성 모드
-        const targetDate = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        const targetDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
         setFormData({
           leaveType: 'annual',
           startDate: targetDate,
@@ -102,8 +103,8 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
       
       // 반차인 경우 시간 필수
       if (field === 'leaveType' && value === 'half_day') {
-        updated.startTime = '09:00'
-        updated.endTime = '13:00'
+        updated.startTime = '08:00'
+        updated.endTime = '12:00'
         updated.totalDays = 0.5
       } else if (field === 'leaveType' && value !== 'half_day') {
         updated.startTime = ''
@@ -123,6 +124,30 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
       
       return updated
     })
+  }
+
+  // 날짜 입력 핸들러: 숫자와 하이픈만 허용
+  const handleDateInput = (field: string, rawValue: string) => {
+    let v = rawValue.replace(/[^0-9-]/g, '')
+    if (/^\d{8}$/.test(v)) {
+      v = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`
+    }
+    handleChange(field, v)
+  }
+
+  // blur 시 월/일 0패딩 처리
+  const handleDateBlur = (field: string) => {
+    const val = formData[field as keyof typeof formData] as string
+    if (!val) return
+    const parts = val.split('-')
+    if (parts.length === 3) {
+      const y = parts[0].padStart(4, '0')
+      const m = parts[1].padStart(2, '0')
+      const d = parts[2].padStart(2, '0')
+      handleChange(field, `${y}-${m}-${d}`)
+    } else if (/^\d{8}$/.test(val)) {
+      handleChange(field, `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`)
+    }
   }
 
   const handleSubmit = async () => {
@@ -248,9 +273,13 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  onChange={(e) => handleDateInput('startDate', e.target.value)}
+                  onBlur={() => handleDateBlur('startDate')}
                   className="pl-11 h-12 border-2 border-gray-200 focus:border-blue-500 transition-colors"
                 />
               </div>
@@ -263,9 +292,13 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
               <div className="relative">
                 <CalendarIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  onChange={(e) => handleDateInput('endDate', e.target.value)}
+                  onBlur={() => handleDateBlur('endDate')}
                   className="pl-11 h-12 border-2 border-gray-200 focus:border-blue-500 transition-colors"
                 />
               </div>

@@ -1,12 +1,8 @@
 {
-  "/work-diary/write/page": "app/work-diary/write/page.js",
-  "/work-diary/page": "app/work-diary/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/api/work-diary/route": "app/api/work-diary/route.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/stock-management/page": "app/stock-management/page.js",
-  "/settings/page": "app/settings/page.js",
-  "/api/users/route": "app/api/users/route.js",
-  "/work-diary/history/page": "app/work-diary/history/page.js",
-  "/user-management/page": "app/user-management/page.js"
+  "/work-tool/sop/page": "app/work-tool/sop/page.js",
+  "/work-tool/tools/page": "app/work-tool/tools/page.js",
+  "/login/page": "app/login/page.js",
+  "/api/boards/[id]/route": "app/api/boards/[id]/route.js",
+  "/work-tool/sop/edit/[id]/page": "app/work-tool/sop/edit/[id]/page.js",
+  "/work-tool/sop/[id]/page": "app/work-tool/sop/[id]/page.js"
 }

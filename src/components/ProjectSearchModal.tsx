@@ -8,7 +8,7 @@ import { Search, Check } from 'lucide-react'
 
 interface Project {
   id: number
-  name: string
+  project_name: string
   project_number: string
   description?: string
 }
@@ -38,7 +38,7 @@ export default function ProjectSearchModal({ isOpen, onClose, onSelect }: Projec
       setFilteredProjects(projects)
     } else {
       const filtered = projects.filter(project =>
-        project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.project_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -120,7 +120,7 @@ export default function ProjectSearchModal({ isOpen, onClose, onSelect }: Projec
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <div className="font-semibold text-gray-900 group-hover:text-blue-900">
-                            {project.name}
+                            {project.project_name}
                           </div>
                           <div className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-md">
                             {project.project_number}

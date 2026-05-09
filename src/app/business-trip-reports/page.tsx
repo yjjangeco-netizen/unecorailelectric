@@ -93,14 +93,25 @@ export default function BusinessTripReportsPage() {
       }
       const reportsData = await reportsResponse.json()
       // API가 { reports: [...] } 또는 배열 직접 반환
-      setReports(reportsData.reports || reportsData || [])
+      const fetchedReports = reportsData.reports || reportsData || []
+      setReports(fetchedReports)
 
       const unreportedResponse = await fetch('/api/business-trips/unreported', { headers })
       if (!unreportedResponse.ok) {
         throw new Error('Failed to fetch unreported business trips')
       }
       const unreportedData = await unreportedResponse.json()
-      setUnreportedTrips(unreportedData.trips || [])
+
+      // 클라이언트 필터링: 제출/승인된 보고서가 있는 출장은 미보고 목록에서 제외
+      const rawUnreportedTrips = unreportedData.trips || []
+      const completedTripIds = new Set(fetchedReports
+        .filter((r: any) => r.status === 'submitted' || r.status === 'approved')
+        .map((r: any) => r.trip_id || r.business_trips?.id))
+
+      // ID 기반 필터링: 이미 제출/승인된 보고서가 연결된 출장은 제외
+      const validUnreportedTrips = rawUnreportedTrips.filter((t: any) => !completedTripIds.has(t.id))
+
+      setUnreportedTrips(validUnreportedTrips)
 
     } catch (err: any) {
       setError(err.message || 'An unknown error occurred')
@@ -152,7 +163,7 @@ export default function BusinessTripReportsPage() {
     e.stopPropagation()
     const newStatus = currentStatus === 'approved' ? 'submitted' : 'approved'
     const message = currentStatus === 'approved' ? '승인을 취소하시겠습니까?' : '보고서를 승인하시겠습니까?'
-    
+
     if (!confirm(message)) return
 
     try {
@@ -342,12 +353,12 @@ export default function BusinessTripReportsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
-                      {/* 보고서 작성 버튼 - 본인 신청건만 표시 */}
-                      {trip.user_id === user?.id && (
-                        <Button 
-                          size="sm" 
+                      {/* 보고서 작성 버튼 - 본인 신청건 또는 동행자만 표시 */}
+                      {(trip.user_id === user?.id || (trip.companions && trip.companions.includes(user?.id))) && (
+                        <Button
+                          size="sm"
                           className="bg-red-600 hover:bg-red-700 text-white border-none shadow-sm"
                           onClick={() => router.push(`/business-trip-reports/write?tripId=${trip.id}`)}
                         >
@@ -356,13 +367,13 @@ export default function BusinessTripReportsPage() {
                         </Button>
                       )}
                       {/* 본인 것이 아닌 경우 안내 메시지 */}
-                      {trip.user_id !== user?.id && (
-                        <span className="text-xs text-gray-500">신청자만 작성 가능</span>
+                      {(trip.user_id !== user?.id && (!trip.companions || !trip.companions.includes(user?.id))) && (
+                        <span className="text-xs text-gray-500">신청자/동행자만 작성 가능</span>
                       )}
                       {isAdmin && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-gray-400 hover:text-red-600 hover:bg-red-50"
                           onClick={() => handleDeleteTrip(trip.id)}
                           title="삭제"
@@ -516,9 +527,9 @@ export default function BusinessTripReportsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* 승인/승인취소 버튼 - Level 5 이상만 */}
                         {isAdmin && (
-                          <Button 
+                          <Button
                             variant={report.status === 'approved' ? 'outline' : 'default'}
-                            size="sm" 
+                            size="sm"
                             className={report.status === 'approved' ? 'text-orange-600 border-orange-300 hover:bg-orange-50' : 'bg-green-600 hover:bg-green-700 text-white'}
                             onClick={(e) => handleApprove(report.id, report.status, e)}
                           >
@@ -535,12 +546,12 @@ export default function BusinessTripReportsPage() {
                             )}
                           </Button>
                         )}
-                        
+
                         {/* 반려 버튼 - Level 5 이상, 승인되지 않은 경우만 */}
                         {isAdmin && report.status !== 'approved' && report.status !== 'rejected' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-red-600 border-red-300 hover:bg-red-50"
                             onClick={(e) => handleReject(report.id, e)}
                           >
@@ -551,9 +562,9 @@ export default function BusinessTripReportsPage() {
 
                         {/* 편집 버튼 - 편집 가능한 경우만 */}
                         {canEdit(report) && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="text-blue-600 border-blue-300 hover:bg-blue-50"
                             onClick={(e) => {
                               e.stopPropagation()
@@ -567,9 +578,9 @@ export default function BusinessTripReportsPage() {
 
                         {/* 삭제 버튼 - Level 5 이상만 */}
                         {canDelete() && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-gray-400 hover:text-red-600 hover:bg-red-50"
                             onClick={(e) => handleDeleteReport(report.id, e)}
                           >
@@ -577,9 +588,9 @@ export default function BusinessTripReportsPage() {
                           </Button>
                         )}
 
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="text-gray-600"
                           onClick={(e) => {
                             e.stopPropagation()

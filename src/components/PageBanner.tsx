@@ -12,23 +12,19 @@ export default function PageBanner({ title, subtitle, className }: PageBannerPro
   return (
     <div 
       className={cn(
-        "w-full rounded-[2.5rem] p-10 mb-8 relative overflow-hidden",
-        "bg-gradient-to-r from-[#F48FB1] via-[#FCE38A] to-[#90CAF9]",
-        "shadow-sm",
+        "w-full mb-4 sm:mb-6 flex flex-col justify-end pt-2",
         className
       )}
     >
-      <div className="relative z-10">
-        <h1 className="text-4xl font-bold text-[#1A1A1A] mb-2 tracking-tight">
+      <div className="flex items-center gap-2">
+        <span className="w-1.5 h-5 sm:h-6 bg-blue-600 rounded-full inline-block"></span>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
           {title}
         </h1>
-        <p className="text-[#4A4A4A] text-lg font-medium">
-          {subtitle}
-        </p>
       </div>
-      
-      {/* Optional: Add subtle overlay or pattern if needed to match the exact look */}
-      <div className="absolute inset-0 bg-white/10 mix-blend-overlay" />
+      <p className="text-gray-500 text-xs sm:text-sm mt-1.5 ml-3.5">
+        {subtitle}
+      </p>
     </div>
   )
 }

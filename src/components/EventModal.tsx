@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarIcon, Clock, MapPin, Trash2 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
+import { format } from 'date-fns'
 
 interface EventModalProps {
   isOpen: boolean
@@ -60,14 +61,14 @@ export default function EventModal({ isOpen, onClose, onSave, event, selectedDat
         })
       } else {
         // Create mode: reset form
-        const targetDate = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        const targetDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
         setFormData({
           category: '업무',
           summary: '',
           startDate: targetDate,
-          startTime: '09:00',
+          startTime: '08:00',
           endDate: targetDate,
-          endTime: '18:00',
+          endTime: '17:00',
           location: '',
           description: '',
           participantId: user?.id || '',
@@ -79,6 +80,30 @@ export default function EventModal({ isOpen, onClose, onSave, event, selectedDat
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // 날짜 입력 핸들러: 숫자와 하이픈만 허용
+  const handleDateInput = (field: string, rawValue: string) => {
+    let v = rawValue.replace(/[^0-9-]/g, '')
+    if (/^\d{8}$/.test(v)) {
+      v = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`
+    }
+    handleChange(field, v)
+  }
+
+  // blur 시 월/일 0패딩 처리
+  const handleDateBlur = (field: string) => {
+    const val = formData[field as keyof typeof formData] as string
+    if (!val) return
+    const parts = val.split('-')
+    if (parts.length === 3) {
+      const y = parts[0].padStart(4, '0')
+      const m = parts[1].padStart(2, '0')
+      const d = parts[2].padStart(2, '0')
+      handleChange(field, `${y}-${m}-${d}`)
+    } else if (/^\d{8}$/.test(val)) {
+      handleChange(field, `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`)
+    }
   }
 
   const handleSubmit = async () => {
@@ -199,9 +224,13 @@ export default function EventModal({ isOpen, onClose, onSave, event, selectedDat
               <div className="relative flex-1">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  onChange={(e) => handleDateInput('startDate', e.target.value)}
+                  onBlur={() => handleDateBlur('startDate')}
                   className="pl-9"
                 />
               </div>
@@ -223,9 +252,13 @@ export default function EventModal({ isOpen, onClose, onSave, event, selectedDat
               <div className="relative flex-1">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  onChange={(e) => handleDateInput('endDate', e.target.value)}
+                  onBlur={() => handleDateBlur('endDate')}
                   className="pl-9"
                 />
               </div>

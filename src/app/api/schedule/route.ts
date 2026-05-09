@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     // assembly_date, factory_test_date, site_test_date, completion_date가 있는 프로젝트 조회
     const { data: projects, error } = await supabase
       .from('projects')
-      .select('id, project_name, assembly_date, factory_test_date, site_test_date, completion_date, description')
+      .select('id, project_name, project_number, assembly_date, factory_test_date, site_test_date, completion_date, description')
       .or('assembly_date.not.is.null,factory_test_date.not.is.null,site_test_date.not.is.null,completion_date.not.is.null')
     
     console.log('프로젝트 조회 결과:', { 
@@ -37,7 +37,10 @@ export async function GET(request: NextRequest) {
       if (project.assembly_date) {
         projectEvents.push({
           id: `assembly-${project.id}`,
-          project: { projectName: project.project_name },
+          project: { 
+            projectName: project.project_name,
+            projectNumber: project.project_number 
+          },
           eventType: '조완', // 조립완료
           eventDate: project.assembly_date,
           description: project.description
@@ -47,7 +50,10 @@ export async function GET(request: NextRequest) {
       if (project.factory_test_date) {
         projectEvents.push({
           id: `factory-${project.id}`,
-          project: { projectName: project.project_name },
+          project: { 
+            projectName: project.project_name,
+            projectNumber: project.project_number
+          },
           eventType: '공시', // 공장시운전
           eventDate: project.factory_test_date,
           description: project.description
@@ -57,7 +63,10 @@ export async function GET(request: NextRequest) {
       if (project.site_test_date) {
         projectEvents.push({
           id: `site-${project.id}`,
-          project: { projectName: project.project_name },
+          project: { 
+            projectName: project.project_name,
+            projectNumber: project.project_number
+          },
           eventType: '현시', // 현장시운전
           eventDate: project.site_test_date,
           description: project.description
@@ -67,7 +76,10 @@ export async function GET(request: NextRequest) {
       if (project.completion_date) {
         projectEvents.push({
           id: `complete-${project.id}`,
-          project: { projectName: project.project_name },
+          project: { 
+            projectName: project.project_name,
+            projectNumber: project.project_number
+          },
           eventType: '준공', // 준공완료
           eventDate: project.completion_date,
           description: project.description

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/hooks/useUser'
@@ -77,6 +77,41 @@ export default function SchedulePage() {
   // ?ъ씠?쒕컮 ?좉? ?곹깭
   const [showEventList, setShowEventList] = useState(true)
 
+  // 드래그 선택 상태 (날짜 범위 선택)
+  const [dragStart, setDragStart] = useState<Date | null>(null)
+  const [dragEnd, setDragEnd] = useState<Date | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
+  // 드래그 범위 확인 헬퍼
+  const isInDragRange = useCallback((day: Date) => {
+    if (!isDragging || !dragStart || !dragEnd) return false
+    const start = dragStart < dragEnd ? dragStart : dragEnd
+    const end = dragStart < dragEnd ? dragEnd : dragStart
+    const d = new Date(day.getFullYear(), day.getMonth(), day.getDate())
+    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+    const e = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+    return d >= s && d <= e
+  }, [isDragging, dragStart, dragEnd])
+
+  // 문서 레벨 mouseup 이벤트로 드래그 종료 처리
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging && dragStart) {
+        const start = dragEnd && dragStart > dragEnd ? dragEnd : dragStart
+        setSelectedDate(start)
+        setSelectedBusinessTrip(null)
+        setIsBusinessTripModalOpen(true)
+      }
+      setIsDragging(false)
+      setDragStart(null)
+      setDragEnd(null)
+    }
+    if (isDragging) {
+      document.addEventListener('mouseup', handleGlobalMouseUp)
+      return () => document.removeEventListener('mouseup', handleGlobalMouseUp)
+    }
+  }, [isDragging, dragStart, dragEnd])
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -93,7 +128,7 @@ export default function SchedulePage() {
     setIsLoadingEvents(true)
     try {
       const [scheduleRes, businessTripRes, leaveRes, eventsRes, todosRes, usersRes] = await Promise.all([
-        fetch(`/api/schedule?startDate=2024-01-01&endDate=2025-12-31`, { 
+        fetch(`/api/schedule?startDate=2020-01-01&endDate=2030-12-31`, { 
           headers: { 'x-user-level': String(user.level || '1') } 
         }),
         fetch('/api/business-trips', {
@@ -376,8 +411,17 @@ export default function SchedulePage() {
     setIsBusinessTripModalOpen(true)
   }
 
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1))
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1))
+  const prevMonth = () => setCurrentDate(prev => {
+    if (viewType === 'week') return addDays(prev, -7)
+    if (viewType === 'day') return addDays(prev, -1)
+    return subMonths(prev, 1)
+  })
+
+  const nextMonth = () => setCurrentDate(prev => {
+    if (viewType === 'week') return addDays(prev, 7)
+    if (viewType === 'day') return addDays(prev, 1)
+    return addMonths(prev, 1)
+  })
   const goToToday = () => setCurrentDate(new Date())
 
   // 달력 날짜 생성
@@ -420,6 +464,69 @@ export default function SchedulePage() {
     })
   }
 
+  // 이벤트 슬롯 할당 알고리즘 (주 단위로 가로 바 배치)
+  const allocateEventSlots = (week: Date[]) => {
+    const wStart = new Date(week[0].getFullYear(), week[0].getMonth(), week[0].getDate())
+    const wEnd = new Date(week[6].getFullYear(), week[6].getMonth(), week[6].getDate())
+    const DAY_MS = 86400000
+
+    // 이 주에 겹치는 이벤트 수집 (필터 적용)
+    const weekEvents: { event: CalendarEvent; startDate: Date; endDate: Date }[] = []
+    events.forEach(event => {
+      const eventType = event.extendedProps?.type || 'other'
+      if (eventType === 'project' && !categoryFilters.project) return
+      if (eventType === 'business_trip' && !categoryFilters.business_trip) return
+      if (eventType === 'leave' && !categoryFilters.leave) return
+      if ((eventType === 'general' || eventType === 'other') && !categoryFilters.other) return
+
+      const es = typeof event.start === 'string' ? parseISO(event.start) : event.start
+      const ee = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : es
+      const eStart = new Date(es.getFullYear(), es.getMonth(), es.getDate())
+      const eEnd = new Date(ee.getFullYear(), ee.getMonth(), ee.getDate())
+
+      if (eEnd >= wStart && eStart <= wEnd) {
+        weekEvents.push({ event, startDate: eStart, endDate: eEnd })
+      }
+    })
+
+    // 정렬: 긴 이벤트 우선 → 시작일 빠른 순
+    weekEvents.sort((a, b) => {
+      const durA = a.endDate.getTime() - a.startDate.getTime()
+      const durB = b.endDate.getTime() - b.startDate.getTime()
+      if (durB !== durA) return durB - durA
+      return a.startDate.getTime() - b.startDate.getTime()
+    })
+
+    // 슬롯 할당
+    const occ: boolean[][] = []
+    const result: { event: CalendarEvent; slot: number; startCol: number; endCol: number; isStart: boolean; isEnd: boolean }[] = []
+
+    weekEvents.forEach(({ event, startDate, endDate }) => {
+      const vStart = startDate < wStart ? wStart : startDate
+      const vEnd = endDate > wEnd ? wEnd : endDate
+      const startCol = Math.round((vStart.getTime() - wStart.getTime()) / DAY_MS)
+      const endCol = Math.round((vEnd.getTime() - wStart.getTime()) / DAY_MS)
+
+      let slot = 0
+      while (true) {
+        if (!occ[slot]) occ[slot] = new Array(7).fill(false)
+        let ok = true
+        for (let c = startCol; c <= endCol; c++) { if (occ[slot][c]) { ok = false; break } }
+        if (ok) break
+        slot++
+      }
+      if (!occ[slot]) occ[slot] = new Array(7).fill(false)
+      for (let c = startCol; c <= endCol; c++) occ[slot][c] = true
+
+      result.push({
+        event, slot, startCol, endCol,
+        isStart: startDate.getTime() >= wStart.getTime(),
+        isEnd: endDate.getTime() <= wEnd.getTime()
+      })
+    })
+    return result
+  }
+
   const renderMonth = (monthOffset: number = 0) => {
     const targetDate = addMonths(currentDate, monthOffset)
     const days = generateMonthDays(targetDate)
@@ -429,22 +536,26 @@ export default function SchedulePage() {
       weeks.push(days.slice(i, i + 7))
     }
 
+    const MAX_SLOTS = 3
+    const SLOT_H = 22
+    const HEADER_H = 28
+
     return (
       <div key={monthOffset} className={monthView > 1 ? 'flex-1' : ''}>
         {/* 달력 헤더 */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-3">
           <h3 className="text-lg font-semibold text-gray-900">
             {format(targetDate, 'yyyy년 M월', { locale: ko })}
           </h3>
         </div>
 
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 border-t border-l border-gray-200">
           {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
             <div 
               key={day} 
-              className={`text-center text-sm font-semibold py-2 ${
-                idx === 0 ? 'text-red-600' : idx === 6 ? 'text-blue-600' : 'text-gray-700'
+              className={`text-center text-xs font-semibold py-2 border-b border-r border-gray-200 bg-gray-50 ${
+                idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-gray-600'
               }`}
             >
               {day}
@@ -452,82 +563,93 @@ export default function SchedulePage() {
           ))}
         </div>
 
-        {/* 날짜 그리드 */}
-        <div className="grid grid-cols-7 gap-1">
-          {weeks.map((week, weekIdx) => (
-            <React.Fragment key={weekIdx}>
-              {week.map((day, dayIdx) => {
-                const dayEvents = getEventsForDate(day)
-                const isCurrentMonth = isSameMonth(day, targetDate)
-                const isCurrentDay = isToday(day)
-                
-                return (
-                  <div
-                    key={day.toISOString()}
-                    onClick={() => handleDateClick(day)}
-                    className={`
-                      min-h-[80px] p-2 border rounded-lg cursor-pointer transition-all
-                      ${isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                      ${isCurrentDay ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200'}
-                      hover:bg-blue-50 hover:border-blue-300
-                    `}
-                  >
-                    <div className={`
-                      text-sm font-medium mb-1
-                      ${!isCurrentMonth ? 'text-gray-400' : 
-                        dayIdx === 0 ? 'text-red-600' : 
-                        dayIdx === 6 ? 'text-blue-600' : 
-                        'text-gray-900'}
-                      ${isCurrentDay ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
-                    `}>
-                      {format(day, 'd')}
-                    </div>
-                    
-                    {/* ?대깽???쒖떆 */}
-                    <div className="space-y-1 -mx-1">
-                      {dayEvents.slice(0, 3).map((event, idx) => {
-                        const eventStartDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
-                        const eventEndDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : eventStartDate
-                        const isFirstDay = isSameDay(eventStartDate, day)
-                        const isLastDay = isSameDay(eventEndDate, day)
-                        const isMultiDay = !isSameDay(eventStartDate, eventEndDate)
-                        
-                        return (
-                          <div
-                            key={event.id}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEventClick(event)
-                            }}
-                            className={`text-xs px-2 py-1 cursor-pointer hover:opacity-90 transition-opacity ${
-                              isMultiDay
-                                ? `${isFirstDay ? 'rounded-l-md' : ''} ${isLastDay ? 'rounded-r-md' : ''}`
-                                : 'rounded-md'
-                            }`}
-                            style={{ 
-                              backgroundColor: event.backgroundColor || '#6B7280',
-                              color: 'white',
-                              fontWeight: '500',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis'
-                            }}
-                          >
-                            {isFirstDay ? event.title : '\u00A0'}
-                          </div>
-                        )
-                      })}
-                      {dayEvents.length > 3 && (
-                        <div className="text-xs text-gray-500 pl-2 pt-1">
-                          +{dayEvents.length - 3}개
+        {/* 주별 렌더링 */}
+        <div className="border-l border-gray-200">
+          {weeks.map((week, weekIdx) => {
+            const slots = allocateEventSlots(week)
+            const maxSlot = slots.length > 0 ? Math.max(...slots.map(s => s.slot)) : -1
+            const visibleSlots = Math.min(maxSlot + 1, MAX_SLOTS)
+            const rowH = Math.max(HEADER_H + visibleSlots * SLOT_H + 12, 100)
+
+            return (
+              <div key={weekIdx} className="grid grid-cols-7 relative" style={{ minHeight: `${rowH}px` }}>
+                {/* 날짜 셀 (배경 + 날짜 번호) */}
+                {week.map((day, dayIdx) => {
+                  const isCurrentMonth = isSameMonth(day, targetDate)
+                  const isCurrentDay = isToday(day)
+                  const daySlotsCount = slots.filter(s => dayIdx >= s.startCol && dayIdx <= s.endCol).length
+                  const overflowCount = daySlotsCount - MAX_SLOTS
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      onClick={() => handleDateClick(day)}
+                      onMouseDown={(e) => { e.preventDefault(); setIsDragging(true); setDragStart(day); setDragEnd(day) }}
+                      onMouseEnter={() => { if (isDragging) setDragEnd(day) }}
+                      className={`
+                        border-b border-r border-gray-200 p-1.5 cursor-pointer transition-colors select-none
+                        ${isCurrentMonth ? 'bg-white' : 'bg-gray-50/60'}
+                        ${isCurrentDay ? 'ring-1 ring-inset ring-blue-500' : ''}
+                        ${isDragging && isInDragRange(day) ? '!bg-blue-100' : 'hover:bg-blue-50/60'}
+                      `}
+                      style={{ minHeight: `${rowH}px` }}
+                    >
+                      <div className="flex items-center gap-0.5">
+                        <span className={`
+                          text-sm font-medium leading-none
+                          ${!isCurrentMonth ? 'text-gray-400' :
+                            dayIdx === 0 ? 'text-red-500' :
+                            dayIdx === 6 ? 'text-blue-500' :
+                            'text-gray-900'}
+                          ${isCurrentDay ? 'bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs' : ''}
+                        `}>
+                          {format(day, 'd')}
+                        </span>
+                        {day.getDate() === 1 && !isCurrentDay && (
+                          <span className="text-[10px] text-gray-400 ml-0.5">{format(day, 'M월')}</span>
+                        )}
+                      </div>
+
+                      {overflowCount > 0 && (
+                        <div className="absolute bottom-1 left-1.5 text-[10px] text-gray-400">
+                          +{overflowCount}개
                         </div>
                       )}
                     </div>
-                  </div>
-                )
-              })}
-            </React.Fragment>
-          ))}
+                  )
+                })}
+
+                {/* 이벤트 가로 바 (절대 위치 오버레이) */}
+                {slots.filter(s => s.slot < MAX_SLOTS).map((s) => {
+                  const rounded = s.isStart && s.isEnd ? 'rounded-md'
+                    : s.isStart ? 'rounded-l-md'
+                    : s.isEnd ? 'rounded-r-md'
+                    : ''
+
+                  return (
+                    <div
+                      key={`${s.event.id}-w${weekIdx}`}
+                      onClick={(e) => { e.stopPropagation(); handleEventClick(s.event) }}
+                      className={`absolute cursor-pointer hover:brightness-110 transition-all text-[11px] text-white font-medium truncate leading-5 ${rounded}`}
+                      style={{
+                        top: `${HEADER_H + s.slot * SLOT_H}px`,
+                        left: `calc(${(s.startCol / 7) * 100}% + 3px)`,
+                        width: `calc(${((s.endCol - s.startCol + 1) / 7) * 100}% - 6px)`,
+                        height: `${SLOT_H - 3}px`,
+                        backgroundColor: s.event.backgroundColor || '#6B7280',
+                        paddingLeft: '6px',
+                        paddingRight: '4px',
+                        zIndex: 10,
+                      }}
+                      title={s.event.title}
+                    >
+                      {s.isStart ? s.event.title : ''}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
       </div>
     )
@@ -1007,11 +1129,11 @@ export default function SchedulePage() {
 
   return (
     <AuthGuard requiredLevel={1}>
-      <div className="min-h-screen bg-gray-50/50 p-6">
-        <div className="max-w-[1600px] mx-auto space-y-6">
+      <div className="min-h-screen bg-gray-50/50 p-1 md:p-6">
+        <div className="max-w-[1600px] mx-auto space-y-2 md:space-y-6">
           
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-gray-900">일정 관리</h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -1037,11 +1159,28 @@ export default function SchedulePage() {
             </div>
           </div>
 
+          {/* 모바일 화면용 꽉 차는 버튼 그룹 (PC에서는 숨김) */}
+          <div className="flex md:hidden items-center gap-1 w-full mb-2 mt-2">
+            <Button
+              onClick={() => setIsLeaveModalOpen(true)}
+              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold h-10 text-xs px-2"
+            >
+              휴가/반차 신청
+            </Button>
+            <Button onClick={handleAddEvent} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 text-xs px-2">
+              <Plus className="h-3 w-3 mr-1" />
+              일정 추가
+            </Button>
+            <Button onClick={() => fetchEvents()} variant="outline" className="h-10 px-2 flex-shrink-0" disabled={isLoadingEvents}>
+              {isLoadingEvents ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>↻</span>}
+            </Button>
+          </div>
+
           {/* 카테고리 필터 */}
-          <div className="flex flex-wrap items-center gap-6 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-6">
+          <div className="flex flex-col md:flex-row flex-wrap md:items-center gap-2 md:gap-6 p-2 md:p-4 bg-gray-50 rounded-lg border border-gray-200 mb-2 md:mb-6">
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-500" />
-              <span className="font-semibold text-sm text-gray-700">필터:</span>
+              <Filter className="h-4 w-4 md:h-5 md:w-5 text-gray-500" />
+              <span className="font-semibold text-xs md:text-sm text-gray-700">필터:</span>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -1091,12 +1230,12 @@ export default function SchedulePage() {
             </div>
 
             {/* 구분선 */}
-            <div className="flex items-center mx-3 text-gray-400 font-medium text-sm hidden md:flex">
+            <div className="hidden md:flex items-center mx-3 text-gray-400 font-medium text-sm">
               범례 <span className="mx-2">|</span>
             </div>
 
             {/* 범례: 사용자 목록 */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-2">
               {usersList.map((u) => (
                 <div key={u.id} className="flex items-center gap-1.5">
                   <span 
@@ -1143,11 +1282,11 @@ export default function SchedulePage() {
                 {currentDate.getFullYear()}년 {currentDate.getMonth() + 1}월
               </h2>
 
-              {/* 뷰 선택 (2달, 3달, 월, 주, 일, 일정목록, 할일) */}
-              <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200">
+              {/* 뷰 선택 (2달, 3달, 월, 주, 일, 일정목록) */}
+              <div className="flex flex-wrap items-center justify-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200 mt-2 md:mt-0">
                 <button
                   onClick={() => { setMonthView(2); setViewType('month'); }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded transition-all ${
+                  className={`px-3 py-1 text-xs md:text-sm md:px-4 md:py-1.5 font-medium rounded transition-all ${
                     monthView === 2 && viewType === 'month'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -1157,7 +1296,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={() => { setMonthView(3); setViewType('month'); }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded transition-all ${
+                  className={`px-3 py-1 text-xs md:text-sm md:px-4 md:py-1.5 font-medium rounded transition-all hidden md:block ${
                     monthView === 3 && viewType === 'month'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -1167,7 +1306,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={() => { setMonthView(1); setViewType('month'); }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded transition-all ${
+                  className={`px-3 py-1 text-xs md:text-sm md:px-4 md:py-1.5 font-medium rounded transition-all ${
                     monthView === 1 && viewType === 'month'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -1177,7 +1316,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={() => setViewType('week')}
-                  className={`px-4 py-1.5 text-sm font-medium rounded transition-all ${
+                  className={`px-3 py-1 text-xs md:text-sm md:px-4 md:py-1.5 font-medium rounded transition-all ${
                     viewType === 'week'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -1219,8 +1358,8 @@ export default function SchedulePage() {
               showEventList ? 'lg:col-span-2' : 'lg:col-span-1'
             }`}>
               {viewType === 'month' && (
-                <Card className="border-none shadow-sm bg-white">
-                  <CardContent className="p-6">
+                <Card className="border-none shadow-sm bg-white overflow-hidden">
+                  <CardContent className="p-4 md:p-6">
                     <div className={`grid gap-6 ${
                       monthView === 1 ? 'grid-cols-1' : 
                       monthView === 2 ? 'grid-cols-2' : 

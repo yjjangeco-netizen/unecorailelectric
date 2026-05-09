@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useUser } from '@/hooks/useUser'
 import Sidebar from '@/components/Sidebar'
 import PageBanner from '@/components/PageBanner'
-
+import BottomMenu from '@/components/BottomMenu'
+import { Bell, Menu } from 'lucide-react'
 interface PageInfo {
   title: string
   subtitle: string
@@ -109,6 +110,22 @@ export default function ClientLayout({
         title: '업무도구',
         subtitle: '업무 효율을 높여주는 다양한 도구들을 활용하세요.'
       },
+      '/work-tool/sop': {
+        title: 'SOP',
+        subtitle: '표준 운영 절차(SOP) 게시판입니다.'
+      },
+      '/work-tool/tools': {
+        title: '업무툴',
+        subtitle: '다양한 업무 보조 툴 및 프로그램 자료 게시판입니다.'
+      },
+      '/work-tool/troubleshooting': {
+        title: '고장대응',
+        subtitle: '현장 고장 대응 사례 및 조치 내역을 공유하는 게시판입니다.'
+      },
+      '/work-tool/tech-data': {
+        title: '기술자료',
+        subtitle: '장비 매뉴얼, 도면 등 기술 자료를 보관하는 게시판입니다.'
+      },
       '/settings': {
         title: '설정',
         subtitle: '시스템 설정 및 사용자 권한을 관리하세요.'
@@ -129,6 +146,10 @@ export default function ClientLayout({
         title: '연차/반차 관리',
         subtitle: '연차 및 반차 신청 내역을 관리하세요.'
       },
+      '/as-ss': {
+        title: 'AS/SS 관리',
+        subtitle: '장비 고장 접수 및 조치 내역을 관리합니다.'
+      },
       '/business-trip-management': {
         title: '출장/외근 관리',
         subtitle: '출장 및 외근 신청 내역을 관리하세요.'
@@ -143,11 +164,57 @@ export default function ClientLayout({
 
   const pageInfo = getPageInfo(pathname)
 
+  const [isApp, setIsApp] = useState(false)
+  
+  useEffect(() => {
+    // isNativePlatform()은 네이티브 앱(Android/iOS)에서만 true, 웹브라우저에서는 항상 false
+    const checkIsApp = () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const cap = (window as any).Capacitor;
+          if (cap && typeof cap.isNativePlatform === 'function') {
+            return cap.isNativePlatform();
+          }
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    };
+    setIsApp(checkIsApp());
+  }, [])
+
   return (
-    <div className="flex h-screen bg-[#f4f5f7]">
-      {shouldShowHeader && <Sidebar />}
-      <main className="flex-1 overflow-hidden flex flex-col relative">
-        <div className="flex-1 overflow-auto p-6">
+    <div className={isApp ? "flex flex-col h-[100dvh] bg-[#f4f5f7] relative" : "flex h-[100dvh] bg-[#f4f5f7] relative"}>
+      {shouldShowHeader && !isApp && <Sidebar />}
+      
+      <main className="flex-1 overflow-hidden flex flex-col relative w-full">
+        {shouldShowHeader && user && (
+          <div className="bg-white/90 backdrop-blur-md border-b border-gray-100/50 shadow-sm px-4 md:px-6 pt-12 pb-3 md:py-3 flex items-center justify-between sticky top-0 z-50 shrink-0">
+            {/* 좌측: 소속 및 이름 */}
+            <div className="text-sm text-blue-600 font-bold flex-1 flex justify-start">
+              {user.department || ''} {user.name}
+            </div>
+            
+            {/* 중앙: 브랜드명 */}
+            <div className="text-xl sm:text-2xl font-black tracking-widest text-[#1e3a8a] flex-1 flex justify-center uppercase drop-shadow-sm">
+              UNECORAIL
+            </div>
+            
+            {/* 우측: 알람 및 햄버거 메뉴 */}
+            <div className="flex items-center justify-end gap-2 flex-1">
+              <button className="relative p-1.5 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-all group">
+                <Bell className="w-5 h-5 group-hover:animate-swing" />
+                <span className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white ring-2 ring-red-500/20 animate-pulse"></span>
+              </button>
+              <button className="p-1.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
+                <Menu className="w-6 h-6" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-auto p-4 md:p-6 mb-16 md:mb-0">
           {shouldShowHeader && (
             <PageBanner 
               title={pageInfo.title} 
@@ -157,6 +224,13 @@ export default function ClientLayout({
           {children}
         </div>
       </main>
+      
+      {/* 앱일 경우에만 하단 메뉴바 표시 (position absolute로 하단 고정) */}
+      {shouldShowHeader && isApp && (
+        <div className="absolute bottom-0 left-0 right-0 z-[100] bg-white text-black">
+          <BottomMenu />
+        </div>
+      )}
     </div>
   )
 }

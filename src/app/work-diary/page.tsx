@@ -154,92 +154,51 @@ export default function WorkDiaryPage() {
 
 
               {/* Action Cards Grid */}
-              {/* Action Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-                {/* 업무일지 작성 카드 */}
-                <div 
+              {/* Compact 2-column Action Buttons */}
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto mb-12 mt-4">
+                {/* 업무일지 작성 */}
+                <button 
                   onClick={() => router.push('/work-diary/write')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                  className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl shadow-sm border border-orange-100 hover:shadow-md hover:border-orange-300 hover:bg-orange-50/30 transition-all group active:scale-[0.98]"
                 >
-                  <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <FileText className="h-7 w-7 text-orange-500" />
+                  <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <FileText className="h-7 w-7 text-orange-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">업무일지 작성</h3>
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
-                    오늘의 업무 내용을 기록하고 관리합니다.
-                  </p>
-                  <div className="flex items-center text-orange-600 font-semibold text-sm">
-                    작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
+                  <span className="font-bold text-gray-800 text-base sm:text-lg">업무일지 작성</span>
+                </button>
 
-                {/* AI 업무일지 요약 카드 */}
-                <div 
-                  onClick={() => setIsSummaryModalOpen(true)}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                {/* 업무일지 편집/내역 (History) */}
+                <button 
+                  onClick={() => router.push('/work-diary/history')}
+                  className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl shadow-sm border border-purple-100 hover:shadow-md hover:border-purple-300 hover:bg-purple-50/30 transition-all group active:scale-[0.98]"
                 >
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Sparkles className="h-7 w-7 text-purple-500" />
+                  <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Printer className="h-7 w-7 text-purple-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">업무일지 요약</h3>
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
-                    AI가 업무를 분석하고 인사이트를 제공합니다.
-                  </p>
-                  <div className="flex items-center text-purple-600 font-semibold text-sm">
-                    분석하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
+                  <span className="font-bold text-gray-800 text-base sm:text-lg">내역 및 편집</span>
+                </button>
 
-                {/* 통계 카드 */}
-                <div 
-                  onClick={() => router.push('/work-diary/advanced-stats')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
-                >
-                  <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <BarChart3 className="h-7 w-7 text-violet-500" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-violet-600 transition-colors">통계</h3>
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
-                    업무 현황과 팀 성과를 분석합니다.
-                  </p>
-                  <div className="flex items-center text-violet-600 font-semibold text-sm">
-                    확인하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
-
-                {/* 외근/출장 보고서 작성 카드 */}
-                <div 
+                {/* 외근/출장 보고 */}
+                <button 
                   onClick={() => router.push('/business-trip-reports')}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                  className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl shadow-sm border border-blue-100 hover:shadow-md hover:border-blue-300 hover:bg-blue-50/30 transition-all group active:scale-[0.98]"
                 >
-                  <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Briefcase className="h-7 w-7 text-blue-500" />
+                  <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Briefcase className="h-7 w-7 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">외근/출장 보고서 작성</h3>
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
-                    외근 및 출장 보고서를 작성하고 관리합니다.
-                  </p>
-                  <div className="flex items-center text-blue-600 font-semibold text-sm">
-                    작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
+                  <span className="font-bold text-gray-800 text-base sm:text-lg">외근/출장 보고</span>
+                </button>
 
-                {/* 보고서 출력 카드 */}
-                <div 
-                  onClick={() => setIsReportModalOpen(true)}
-                  className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                {/* 업무일지 요약 (AI) */}
+                <button 
+                  onClick={() => setIsSummaryModalOpen(true)}
+                  className="flex flex-col items-center justify-center py-8 px-4 bg-white rounded-2xl shadow-sm border border-pink-100 hover:shadow-md hover:border-pink-300 hover:bg-pink-50/30 transition-all group active:scale-[0.98]"
                 >
-                  <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <Printer className="h-7 w-7 text-green-500" />
+                  <div className="w-14 h-14 bg-pink-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Sparkles className="h-7 w-7 text-pink-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-green-600 transition-colors">보고서 출력</h3>
-                  <p className="text-gray-500 text-sm mb-6 line-clamp-2">
-                    업무 일지를 보고서로 출력하고 관리합니다.
-                  </p>
-                  <div className="flex items-center text-green-600 font-semibold text-sm">
-                    작성하기 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
+                  <span className="font-bold text-gray-800 text-base sm:text-lg">AI 업무 요약</span>
+                </button>
               </div>
 
               {/* 보고서 모달 */}

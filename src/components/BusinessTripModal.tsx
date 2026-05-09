@@ -32,40 +32,49 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
     endDate: '',
     endTime: '18:00',
     location: '',
-    purpose: ''
+    purpose: '',
+    companions: [] as string[]
   })
-  
+
   const [projectSearch, setProjectSearch] = useState('')
   const [projects, setProjects] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [showProjectList, setShowProjectList] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
       loadProjects()
-      
+      loadUsers()
+
       if (event && event.extendedProps?.type === 'business_trip') {
         // 편집 모드
         const startDate = typeof event.start === 'string' ? parseISO(event.start) : event.start
         const endDate = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : startDate
-        
+
         setFormData({
           tripType: event.extendedProps?.tripType || 'field_work',
           category: event.extendedProps?.category || 'project',
           subType: event.extendedProps?.subType || '',
           projectId: event.extendedProps?.projectId || '',
-          projectName: event.extendedProps?.projectName || '',
+          projectName: event.extendedProps?.projectNumber
+            ? `${event.extendedProps.projectName} (${event.extendedProps.projectNumber})`
+            : (event.extendedProps?.projectName || ''),
           startDate: format(startDate, 'yyyy-MM-dd'),
           startTime: format(startDate, 'HH:mm'),
           endDate: format(endDate, 'yyyy-MM-dd'),
           endTime: format(endDate, 'HH:mm'),
           location: event.extendedProps?.location || '',
-          purpose: event.extendedProps?.description || ''
+          purpose: event.extendedProps?.description || '',
+          companions: event.extendedProps?.companions || []
         })
-        setProjectSearch(event.extendedProps?.projectName || '')
+        const displayName = event.extendedProps?.projectNumber
+          ? `${event.extendedProps.projectName} (${event.extendedProps.projectNumber})`
+          : (event.extendedProps?.projectName || '')
+        setProjectSearch(displayName)
       } else {
         // 생성 모드
-        const targetDate = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        const targetDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
         setFormData({
           tripType: 'field_work',
           category: 'project',
@@ -73,23 +82,27 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
           projectId: '',
           projectName: '',
           startDate: targetDate,
-          startTime: '09:00',
+          startTime: '08:00',
           endDate: targetDate,
-          endTime: '18:00',
+          endTime: '17:00',
           location: '',
-          purpose: ''
+          purpose: '',
+          companions: []
         })
         setProjectSearch('')
       }
     }
   }, [isOpen, selectedDate, event])
-  
+
   const loadProjects = async () => {
     try {
-      const response = await fetch('/api/projects')
+      const headers: HeadersInit = {
+        'x-user-id': user?.id || '',
+        'x-user-level': String(user?.level || '1')
+      }
+      const response = await fetch('/api/projects', { headers })
       if (response.ok) {
         const data = await response.json()
-        // API가 배열을 직접 반환하거나 { projects: [] } 형태일 수 있음
         const projectList = Array.isArray(data) ? data : (data.projects || [])
         console.log('프로젝트 로드됨:', projectList.length)
         setProjects(projectList)
@@ -98,30 +111,88 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
       console.error('프로젝트 로드 실패:', error)
     }
   }
-  
+
+  const loadUsers = async () => {
+    try {
+      const headers: HeadersInit = {
+        'x-user-id': user?.id || '',
+        'x-user-level': String(user?.level || '1')
+      }
+      const response = await fetch('/api/users', { headers })
+      if (response.ok) {
+        const data = await response.json()
+        const userList = Array.isArray(data) ? data : (data.users || [])
+        console.log('사용자 로드됨:', userList.length)
+        setUsers(userList)
+      } else {
+        console.error('사용자 로드 실패 status:', response.status)
+      }
+    } catch (error) {
+      console.error('사용자 로드 실패:', error)
+    }
+  }
+
+  const handleCompanionToggle = (userId: string) => {
+    setFormData(prev => {
+      // @ts-ignore
+      const currentCompanions = prev.companions || []
+      const isSelected = currentCompanions.includes(userId)
+      return {
+        ...prev,
+        companions: isSelected
+          ? currentCompanions.filter((id: string) => id !== userId)
+          : [...currentCompanions, userId]
+      }
+    })
+  }
+
   // 프로젝트 검색 필터링 (name 또는 project_name 모두 지원)
-  const filteredProjects = projectSearch.trim() 
+  const filteredProjects = projectSearch.trim()
     ? projects.filter(project => {
-        const searchLower = projectSearch.toLowerCase()
-        const projectName = (project.name || project.project_name || '').toLowerCase()
-        const projectNumber = (project.project_number || '').toLowerCase()
-        return projectName.includes(searchLower) || projectNumber.includes(searchLower)
-      }).slice(0, 10) // 검색 시 상위 10개
+      const searchLower = projectSearch.toLowerCase()
+      const projectName = (project.name || project.project_name || '').toLowerCase()
+      const projectNumber = (project.project_number || '').toLowerCase()
+      return projectName.includes(searchLower) || projectNumber.includes(searchLower)
+    }).slice(0, 10) // 검색 시 상위 10개
     : projects.slice(0, 20) // 전체 보기 시 상위 20개
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value }
-      
+
       // category가 변경되면 subType 초기화
       if (field === 'category') {
         updated.subType = ''
       }
-      
+
       return updated
     })
   }
-  
+
+  // 날짜 입력 핸들러: 숫자와 하이픈만 허용
+  const handleDateInput = (field: string, rawValue: string) => {
+    let v = rawValue.replace(/[^0-9-]/g, '')
+    if (/^\d{8}$/.test(v)) {
+      v = `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`
+    }
+    handleChange(field, v)
+  }
+
+  // blur 시 월/일 0패딩 처리 (예: 2026-5-3 → 2026-05-03)
+  const handleDateBlur = (field: string) => {
+    const val = formData[field as keyof typeof formData] as string
+    if (!val) return
+    const parts = val.split('-')
+    if (parts.length === 3) {
+      const y = parts[0].padStart(4, '0')
+      const m = parts[1].padStart(2, '0')
+      const d = parts[2].padStart(2, '0')
+      handleChange(field, `${y}-${m}-${d}`)
+    } else if (/^\d{8}$/.test(val)) {
+      handleChange(field, `${val.slice(0, 4)}-${val.slice(4, 6)}-${val.slice(6, 8)}`)
+    }
+  }
+
   // category에 따른 세부유형 옵션
   const getSubTypeOptions = () => {
     switch (formData.category) {
@@ -145,9 +216,12 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
         return []
     }
   }
-  
+
   const handleProjectSelect = (project: any) => {
-    const displayName = project.name || project.project_name || project.project_number || ''
+    const name = project.name || project.project_name || ''
+    const number = project.project_number ? ` (${project.project_number})` : ''
+    const displayName = `${name}${number}`.trim()
+
     setFormData(prev => ({
       ...prev,
       projectId: project.id,
@@ -159,7 +233,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
 
   const handleDelete = async () => {
     if (!event) return
-    
+
     if (!confirm('이 일정을 삭제하시겠습니까?')) {
       return
     }
@@ -168,7 +242,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
     try {
       let apiUrl = ''
       let eventId = ''
-      
+
       // ID 형식에 따라 API 엔드포인트 결정
       if (event.id.startsWith('trip-')) {
         eventId = event.id.replace('trip-', '')
@@ -179,9 +253,9 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
       } else {
         throw new Error('알 수 없는 일정 형식입니다')
       }
-      
+
       console.log('삭제 요청:', { eventId, apiUrl, userId: user?.id, userLevel: user?.level })
-      
+
       const response = await fetch(apiUrl, {
         method: 'DELETE',
         headers: {
@@ -209,11 +283,19 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
   }
 
   const handleSubmit = async () => {
+    // 프로젝트 선택 검증
+    if (formData.category === 'project' && projectSearch.trim()) {
+      if (!formData.projectId || projectSearch !== formData.projectName) {
+        alert('프로젝트를 목록에서 선택해주세요. (직접 입력은 지원되지 않습니다)')
+        return
+      }
+    }
+
     if (!formData.location.trim()) {
       alert('장소를 입력해주세요')
       return
     }
-    
+
     if (!formData.purpose.trim()) {
       alert('내용을 입력해주세요')
       return
@@ -221,7 +303,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
 
     setIsSubmitting(true)
     try {
-      const payload = {
+      const payload: any = {
         user_id: user?.id,
         user_name: user?.name,
         trip_type: formData.tripType,
@@ -235,19 +317,24 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
         start_time: formData.startTime || null,
         end_date: formData.endDate,
         end_time: formData.endTime || null,
-        status: 'approved' // 자동 승인
+        status: 'approved', // 자동 승인
+        companions: formData.companions || []
       }
 
       let url = '/api/business-trips'
       let method = 'POST'
-      
+
       if (event) {
         // 편집 모드
         if (event.id.startsWith('trip-')) {
-          url = `/api/business-trips?id=${event.id.replace('trip-', '')}`
+          const tripId = event.id.replace('trip-', '')
+          url = `/api/business-trips?id=${tripId}`
+          payload.id = tripId
           method = 'PUT'
         } else if (event.id.startsWith('event-')) {
-          url = `/api/events?id=${event.id.replace('event-', '')}`
+          const eventId = event.id.replace('event-', '')
+          url = `/api/events?id=${eventId}`
+          payload.id = eventId
           method = 'PUT'
         }
       }
@@ -286,7 +373,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
             {event ? '일정 수정' : '일정 등록'}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="grid gap-5 py-4">
           {/* 선택 (외근/출장) */}
           <div className="grid grid-cols-4 items-center gap-4">
@@ -355,13 +442,16 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                   onChange={(e) => {
                     setProjectSearch(e.target.value)
                     setShowProjectList(true)
+                    // 텍스트가 변경되면 ID 초기화 (정확한 선택 유도)
+                    if (formData.projectId && e.target.value !== formData.projectName) {
+                      setFormData(prev => ({ ...prev, projectId: '', projectName: '' }))
+                    }
                   }}
                   onFocus={() => setShowProjectList(true)}
                   onBlur={() => {
-                    // 약간의 지연을 줘서 클릭 이벤트가 먼저 처리되도록
                     setTimeout(() => setShowProjectList(false), 200)
                   }}
-                  placeholder="프로젝트 검색..."
+                  placeholder="프로젝트 검색... (반드시 목록에서 선택해주세요)"
                   className="w-full pr-10"
                 />
                 <button
@@ -370,6 +460,7 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                     e.preventDefault()
                     e.stopPropagation()
                     setProjectSearch('')
+                    setFormData(prev => ({ ...prev, projectId: '', projectName: '' }))
                     setShowProjectList(true)
                   }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 rounded-md transition-colors"
@@ -377,12 +468,12 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                   <Search className="h-4 w-4 text-gray-500" />
                 </button>
               </div>
-              
+
               {showProjectList && filteredProjects.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
                   <div className="sticky top-0 bg-gray-50 px-4 py-2 border-b border-gray-200 text-xs text-gray-600">
-                    {projectSearch.trim() 
-                      ? `검색 결과 ${filteredProjects.length}개` 
+                    {projectSearch.trim()
+                      ? `검색 결과 ${filteredProjects.length}개`
                       : `전체 프로젝트 (${filteredProjects.length}개)`
                     }
                   </div>
@@ -392,14 +483,76 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
                       onClick={() => handleProjectSelect(project)}
                       className="px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
                     >
-                      <div className="font-medium text-gray-900">{project.name || project.project_name}</div>
-                      {project.project_number && (
-                        <div className="text-xs text-gray-500 mt-0.5">{project.project_number}</div>
-                      )}
+                      <div className="font-medium text-gray-900">
+                        {project.name || project.project_name}
+                        {project.project_number && (
+                          <span className="text-gray-500 font-normal ml-1">
+                            ({project.project_number})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* 동행자 선택 */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right font-semibold">
+              동행자
+            </Label>
+            <div className="col-span-3">
+              <div className="flex flex-col gap-2">
+                <Select
+                  value="none"
+                  onValueChange={(value) => {
+                    if (value === 'none') {
+                      setFormData(prev => ({ ...prev, companions: [] }))
+                    } else {
+                      handleCompanionToggle(value)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="선택안함" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="none">선택안함 (초기화)</SelectItem>
+                    {users
+                      .filter(u => u.id !== user?.id)
+                      .map(u => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name || u.username} ({u.position || '직급없음'})
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+
+                {/* 선택된 동행자 표시 */}
+                {formData.companions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {formData.companions.map(companionId => {
+                      const companion = users.find(u => u.id === companionId)
+                      return (
+                        <div key={companionId} className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm">
+                          <span>{companion ? (companion.name || companion.username) : '알 수 없음'}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCompanionToggle(companionId)}
+                            className="text-blue-400 hover:text-blue-600 focus:outline-none"
+                          >
+                            <span className="sr-only">삭제</span>
+                            ×
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -412,9 +565,13 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
               <div className="flex-1 relative">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.startDate}
-                  onChange={(e) => handleChange('startDate', e.target.value)}
+                  onChange={(e) => handleDateInput('startDate', e.target.value)}
+                  onBlur={() => handleDateBlur('startDate')}
                   className="pl-9"
                 />
               </div>
@@ -439,9 +596,13 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
               <div className="flex-1 relative">
                 <CalendarIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <Input
-                  type="date"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="YYYY-MM-DD"
                   value={formData.endDate}
-                  onChange={(e) => handleChange('endDate', e.target.value)}
+                  onChange={(e) => handleDateInput('endDate', e.target.value)}
+                  onBlur={() => handleDateBlur('endDate')}
                   className="pl-9"
                 />
               </div>
@@ -494,9 +655,9 @@ export default function BusinessTripModal({ isOpen, onClose, onSave, selectedDat
         <DialogFooter className="flex justify-between">
           <div>
             {event && (
-              <Button 
-                variant="destructive" 
-                onClick={handleDelete} 
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
                 disabled={isSubmitting}
                 className="bg-red-600 hover:bg-red-700"
               >

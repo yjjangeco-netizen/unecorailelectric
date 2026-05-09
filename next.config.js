@@ -4,3 +4,5 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+
+// Forced restart for HMR update

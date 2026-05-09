@@ -21,7 +21,13 @@ export class UserService {
         throw new Error(`[${response.status}] ${errorData.error || '로그인에 실패했습니다'}`);
       }
 
-      const { user } = await response.json();
+      const { user, token } = await response.json();
+      
+      // 앱(웹뷰) 환경에서는 Set-Cookie 헤더가 씹히는 경우가 있어 프론트엔드에서 강제 주입
+      if (token && typeof document !== 'undefined') {
+        document.cookie = `auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      }
+      
       console.log('Supabase 로그인 성공:', user.username);
 
       return user;

@@ -37,8 +37,19 @@ import { useState, useEffect } from 'react'
       ]
     },
     { name: '일정관리', href: '/schedule', icon: Calendar, key: 'schedule' },
-    { name: '업무도구', href: '/work-tool', icon: Settings, key: 'work_tools' },
-    { name: 'SOP', href: '/sop', icon: FileText, key: 'sop' },
+    { 
+      name: '업무도구', 
+      href: '/work-tool', 
+      icon: Settings, 
+      key: 'work_tools',
+      subItems: [
+        { name: 'SOP', href: '/work-tool/sop' },
+        { name: '업무툴', href: '/work-tool/tools' },
+        { name: '고장대응', href: '/work-tool/troubleshooting' },
+        { name: '기술자료', href: '/work-tool/tech-data' }
+      ]
+    },
+    { name: 'AS/SS', href: '/as-ss', icon: FileText, key: 'as_ss' },
     { name: 'Nara', href: '/nara-monitoring', icon: BarChart3, key: 'nara' },
     { 
       name: '설정', 
@@ -59,6 +70,22 @@ export default function Sidebar() {
   const { user, logout } = useUser()
   const [isPinned, setIsPinned] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+
+  // Hydration-safe localStorage reading
+  useEffect(() => {
+    setIsMounted(true)
+    const stored = localStorage.getItem('sidebarPinned')
+    if (stored === 'true') {
+      setIsPinned(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('sidebarPinned', String(isPinned))
+    }
+  }, [isPinned, isMounted])
 
 
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
@@ -119,9 +146,8 @@ export default function Sidebar() {
       // work_tools는 레벨 4, 5 (개별 권한 무시)
       return ['4', '5'].includes(level)
     }
-    if (item.key === 'sop') {
-      // sop 권한 필드 확인, 없으면 레벨 5만
-      return user?.sop === true || (level === '5')
+    if (item.key === 'as_ss') {
+      return true
     }
     if (item.key === 'nara') {
       // NARA는 레벨 5만
