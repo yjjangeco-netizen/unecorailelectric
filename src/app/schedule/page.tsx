@@ -7,6 +7,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Plus, ChevronLeft, ChevronRight, Check, X, Clock, Calendar as CalendarIcon, Filter } from 'lucide-react'
+import MobileCalendar from '@/components/MobileCalendar'
 import BusinessTripModal from '@/components/BusinessTripModal'
 import LeaveRequestModal from '@/components/LeaveRequestModal'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO } from 'date-fns'
@@ -76,6 +77,15 @@ export default function SchedulePage() {
   
   // ?ъ씠?쒕컮 ?좉? ?곹깭
   const [showEventList, setShowEventList] = useState(true)
+
+  // 모바일 감지
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // 드래그 선택 상태 (날짜 범위 선택)
   const [dragStart, setDragStart] = useState<Date | null>(null)
@@ -1129,6 +1139,21 @@ export default function SchedulePage() {
 
   return (
     <AuthGuard requiredLevel={1}>
+      {/* 모바일 전용 네이버 달력 스타일 */}
+      {isMobile ? (
+        <MobileCalendar
+          events={events}
+          categoryFilters={categoryFilters}
+          setCategoryFilters={setCategoryFilters}
+          usersList={usersList}
+          onAddEvent={handleAddEvent}
+          onAddLeave={() => setIsLeaveModalOpen(true)}
+          onEventClick={handleEventClick}
+          onDateClick={handleDateClick}
+          isLoading={isLoadingEvents}
+          onRefresh={fetchEvents}
+        />
+      ) : (
       <div className="min-h-screen bg-gray-50/50 p-1 md:p-6">
         <div className="max-w-[1600px] mx-auto space-y-2 md:space-y-6">
           
@@ -1405,6 +1430,7 @@ export default function SchedulePage() {
           </div>
         </div>
       </div>
+      )}
 
       <BusinessTripModal
         isOpen={isBusinessTripModalOpen}
