@@ -166,7 +166,7 @@ export default function MobileCalendar({
 
   const MAX_SLOTS = isHalfView ? 2 : 3
   const SLOT_H = 18
-  const HEADER_H = 24
+  const HEADER_H = 28
 
   return (
     <div className="flex flex-col h-full bg-white" style={{ minHeight: '100dvh' }}>
@@ -206,7 +206,7 @@ export default function MobileCalendar({
       {/* ── 요일 헤더 ── */}
       <div className="grid grid-cols-7 border-b border-gray-100">
         {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
-          <div key={d} className={`text-center text-[11px] font-medium py-1.5 ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'}`}>
+          <div key={d} className={`text-center text-[12px] font-semibold py-2 ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-600'}`}>
             {d}
           </div>
         ))}
@@ -224,7 +224,7 @@ export default function MobileCalendar({
             const rowH = HEADER_H + visibleSlots * SLOT_H + 8
 
             return (
-              <div key={wi} className="grid grid-cols-7 relative" style={{ minHeight: `${Math.max(rowH, isHalfView ? 50 : 70)}px` }}>
+              <div key={wi} className="grid grid-cols-7 relative border-b border-gray-50" style={{ minHeight: `${Math.max(rowH, isHalfView ? 60 : 100)}px` }}>
                 {week.map((day, di) => {
                   const inMonth = isSameMonth(day, currentDate)
                   const today = isToday(day)
@@ -234,15 +234,15 @@ export default function MobileCalendar({
                   return (
                     <div key={day.toISOString()}
                       onClick={() => { setSelectedDay(day); setIsHalfView(true) }}
-                      className={`border-b border-r border-gray-50 px-0.5 pt-0.5 cursor-pointer transition-colors
-                        ${!inMonth ? 'bg-gray-50/40' : ''}
-                        ${isSelected ? 'bg-blue-50' : ''}
+                      className={`border-r border-gray-50 pl-1 pt-1 cursor-pointer transition-colors
+                        ${!inMonth ? 'opacity-30' : ''}
+                        ${isSelected ? 'bg-blue-50/60' : ''}
                       `}
-                      style={{ minHeight: `${Math.max(rowH, isHalfView ? 50 : 70)}px` }}
+                      style={{ minHeight: `${Math.max(rowH, isHalfView ? 60 : 100)}px` }}
                     >
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-start">
                         <span className={`text-[13px] font-medium leading-none
-                          ${!inMonth ? 'text-gray-300' :
+                          ${!inMonth ? 'text-gray-400' :
                             holiday || di === 0 ? 'text-red-500' :
                             di === 6 ? 'text-blue-500' : 'text-gray-800'}
                           ${today ? 'bg-blue-500 !text-white rounded-full w-6 h-6 flex items-center justify-center text-[12px]' : ''}
@@ -250,7 +250,7 @@ export default function MobileCalendar({
                           {format(day, 'd')}
                         </span>
                         {holiday && inMonth && (
-                          <span className="text-[8px] text-red-400 leading-tight mt-0.5 truncate max-w-full">{holiday}</span>
+                          <span className="text-[8px] text-red-400 leading-tight mt-0.5 truncate max-w-[calc(100%-2px)]">{holiday}</span>
                         )}
                       </div>
                     </div>
@@ -332,7 +332,7 @@ export default function MobileCalendar({
       )}
 
       {/* ── FAB (+) 버튼 ── */}
-      <div className="fixed bottom-20 right-5 z-50">
+      <div className="fixed bottom-28 right-5 z-50">
         {showFabMenu && (
           <div className="absolute bottom-14 right-0 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden min-w-[160px]"
             style={{ animation: 'fadeInUp 0.15s ease' }}>
