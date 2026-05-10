@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, ChevronDown, Menu, Search, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Menu, Plus, X, Home, Package2, FileText, Calendar, Settings } from 'lucide-react'
 
 // 한국 공휴일 (2026년 기준, 필요시 확장)
 const HOLIDAYS: Record<string, string> = {
@@ -41,16 +41,18 @@ interface MobileCalendarProps {
   onDateClick: (date: Date) => void
   isLoading: boolean
   onRefresh: () => void
+  userLevel?: string
 }
 
 export default function MobileCalendar({
   events, categoryFilters, setCategoryFilters, usersList,
-  onAddEvent, onAddLeave, onEventClick, onDateClick, isLoading, onRefresh
+  onAddEvent, onAddLeave, onEventClick, onDateClick, isLoading, onRefresh, userLevel
 }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showViewDropdown, setShowViewDropdown] = useState(false)
+  const [showNavDrawer, setShowNavDrawer] = useState(false)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [isHalfView, setIsHalfView] = useState(false)
@@ -172,8 +174,8 @@ export default function MobileCalendar({
     <div className="flex flex-col h-full bg-white" style={{ minHeight: '100dvh' }}>
       {/* ── 헤더 ── */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-30">
-        <button onClick={() => setShowFilterDrawer(true)} className="p-1">
-          <Menu className="w-5 h-5 text-gray-700" />
+        <button onClick={() => setShowNavDrawer(true)} className="p-1">
+          <ChevronRight className="w-5 h-5 text-gray-400 rotate-180" />
         </button>
         <div className="flex items-center gap-1">
           <button onClick={prevMonth} className="p-1"><ChevronLeft className="w-5 h-5 text-gray-500" /></button>
@@ -198,8 +200,8 @@ export default function MobileCalendar({
             )}
           </div>
         </div>
-        <button onClick={onRefresh} className="p-1">
-          <Search className="w-5 h-5 text-gray-700" />
+        <button onClick={() => setShowFilterDrawer(true)} className="p-1">
+          <Menu className="w-5 h-5 text-gray-600" />
         </button>
         <button
           onClick={() => { setIsHalfView(!isHalfView); if (!isHalfView && !selectedDay) setSelectedDay(new Date()) }}
@@ -237,7 +239,7 @@ export default function MobileCalendar({
 
                   return (
                     <div key={day.toISOString()}
-                      onClick={() => { setSelectedDay(day); setIsHalfView(true) }}
+                      onClick={() => { setSelectedDay(day); if (!isHalfView) setIsHalfView(true) }}
                       className={`border-r border-gray-50 pl-1 pt-1 cursor-pointer transition-colors
                         ${!inMonth ? 'opacity-30' : ''}
                         ${isSelected ? 'bg-blue-50/60' : ''}
@@ -293,19 +295,19 @@ export default function MobileCalendar({
         </div>
       </div>
 
-      {/* ── 하단 일정 리스트 (반 갈라지기 모드) ── */}
+      {/* ── 하단 일정 리스트 (내역보기 모드) ── */}
       {isHalfView && (
         <div className="flex-1 overflow-y-auto bg-white border-t border-gray-200">
           <div className="px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <h3 className="text-sm font-bold text-gray-800">
-              {selectedDay ? format(selectedDay, 'M월 d일 (EEEE)', { locale: ko }) : format(currentDate, 'yyyy년 M월 일정', { locale: ko })}
+              {format(currentDate, 'yyyy년 M월 일정', { locale: ko })}
             </h3>
           </div>
           <div className="divide-y divide-gray-50">
-            {(selectedDay ? selectedDayEvents : currentMonthEvents).length === 0 ? (
+            {currentMonthEvents.length === 0 ? (
               <div className="text-center py-10 text-sm text-gray-400">일정이 없습니다.</div>
             ) : (
-              (selectedDay ? selectedDayEvents : currentMonthEvents).map(event => {
+              currentMonthEvents.map(event => {
                 const es = typeof event.start === 'string' ? parseISO(event.start) : event.start
                 const ee = event.end ? (typeof event.end === 'string' ? parseISO(event.end) : event.end) : null
                 return (
@@ -331,7 +333,7 @@ export default function MobileCalendar({
       )}
 
       {/* ── FAB (+) 버튼 ── */}
-      <div className="fixed bottom-28 right-5 z-50">
+      <div className="fixed bottom-6 right-5 z-50">
         {showFabMenu && (
           <div className="absolute bottom-14 right-0 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden min-w-[160px]"
             style={{ animation: 'fadeInUp 0.15s ease' }}>
@@ -391,6 +393,36 @@ export default function MobileCalendar({
                 </div>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* ── 좌측 네비게이션 서랍 ── */}
+      {showNavDrawer && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-[60]" onClick={() => setShowNavDrawer(false)} />
+          <div className="fixed top-0 left-0 bottom-0 w-64 bg-white z-[61] shadow-2xl"
+            style={{ animation: 'slideInLeft 0.2s ease' }}>
+            <div className="px-4 py-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">UNECORAIL</h3>
+              <p className="text-xs text-gray-400 mt-0.5">유네코레일 전기팀</p>
+            </div>
+            <nav className="py-2">
+              {[
+                { name: '대시보드', href: '/dashboard', icon: Home },
+                { name: 'AS/SS', href: '/as-ss', icon: Package2 },
+                { name: '업무일지', href: '/work-diary', icon: FileText },
+                { name: '일정', href: '/schedule', icon: Calendar },
+                { name: '설정', href: '/settings', icon: Settings },
+              ].map(item => (
+                <a key={item.name} href={item.href}
+                  onClick={() => setShowNavDrawer(false)}
+                  className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <item.icon className="w-5 h-5 text-gray-400" />
+                  {item.name}
+                </a>
+              ))}
+            </nav>
           </div>
         </>
       )}
