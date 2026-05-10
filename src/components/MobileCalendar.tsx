@@ -51,7 +51,7 @@ export default function MobileCalendar({
   const [showFilterDrawer, setShowFilterDrawer] = useState(false)
   const [showFabMenu, setShowFabMenu] = useState(false)
   const [showViewDropdown, setShowViewDropdown] = useState(false)
-  const [viewMode, setViewMode] = useState<'month' | '2month' | 'week' | 'day'>('month')
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [isHalfView, setIsHalfView] = useState(false)
 
@@ -145,7 +145,7 @@ export default function MobileCalendar({
     return result
   }, [getFilteredEvents])
 
-  const viewModeLabel = viewMode === 'month' ? '월' : viewMode === '2month' ? '2달' : viewMode === 'week' ? '주' : '일'
+  const viewModeLabel = viewMode === 'month' ? '월' : viewMode === 'week' ? '주' : '일'
 
   // 선택된 날짜의 일정 목록
   const selectedDayEvents = selectedDay ? getEventsForDate(selectedDay) : []
@@ -165,8 +165,8 @@ export default function MobileCalendar({
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7))
 
   const MAX_SLOTS = isHalfView ? 2 : 3
-  const SLOT_H = 18
-  const HEADER_H = 28
+  const SLOT_H = isHalfView ? 16 : 18
+  const HEADER_H = isHalfView ? 22 : 28
 
   return (
     <div className="flex flex-col h-full bg-white" style={{ minHeight: '100dvh' }}>
@@ -188,7 +188,7 @@ export default function MobileCalendar({
             </button>
             {showViewDropdown && (
               <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[80px]">
-                {[{ k: '2month' as const, l: '2달' }, { k: 'month' as const, l: '월' }, { k: 'week' as const, l: '주' }, { k: 'day' as const, l: '일' }].map(v => (
+                {[{ k: 'month' as const, l: '월' }, { k: 'week' as const, l: '주' }, { k: 'day' as const, l: '일' }].map(v => (
                   <button key={v.k} onClick={() => { setViewMode(v.k); setShowViewDropdown(false) }}
                     className={`block w-full text-left px-4 py-2 text-sm ${viewMode === v.k ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-700 hover:bg-gray-50'}`}>
                     {v.l}
@@ -200,6 +200,12 @@ export default function MobileCalendar({
         </div>
         <button onClick={onRefresh} className="p-1">
           <Search className="w-5 h-5 text-gray-700" />
+        </button>
+        <button
+          onClick={() => { setIsHalfView(!isHalfView); if (!isHalfView && !selectedDay) setSelectedDay(new Date()) }}
+          className={`text-[12px] font-bold px-2.5 py-1 rounded-md transition-colors ${isHalfView ? 'bg-blue-100 text-blue-600' : 'text-gray-500 border border-gray-200'}`}
+        >
+          {isHalfView ? '닫기' : '내역'}
         </button>
       </div>
 
@@ -213,9 +219,7 @@ export default function MobileCalendar({
       </div>
 
       {/* ── 달력 본문 ── */}
-      <div className={`flex-1 overflow-y-auto ${isHalfView ? 'max-h-[45vh]' : ''}`}
-        onTouchEnd={() => { /* 터치 끝나면 반갈라지기 체크 */ }}
-      >
+      <div className={`${isHalfView ? '' : 'flex-1'} overflow-hidden`}>
         <div className="border-b border-gray-100">
           {weeks.map((week, wi) => {
             const slots = allocateSlots(week)
@@ -224,7 +228,7 @@ export default function MobileCalendar({
             const rowH = HEADER_H + visibleSlots * SLOT_H + 8
 
             return (
-              <div key={wi} className="grid grid-cols-7 relative border-b border-gray-50" style={{ minHeight: `${Math.max(rowH, isHalfView ? 60 : 100)}px` }}>
+              <div key={wi} className="grid grid-cols-7 relative border-b border-gray-50" style={{ minHeight: `${Math.max(rowH, isHalfView ? 48 : 90)}px` }}>
                 {week.map((day, di) => {
                   const inMonth = isSameMonth(day, currentDate)
                   const today = isToday(day)
@@ -238,7 +242,7 @@ export default function MobileCalendar({
                         ${!inMonth ? 'opacity-30' : ''}
                         ${isSelected ? 'bg-blue-50/60' : ''}
                       `}
-                      style={{ minHeight: `${Math.max(rowH, isHalfView ? 60 : 100)}px` }}
+                      style={{ minHeight: `${Math.max(rowH, isHalfView ? 48 : 90)}px` }}
                     >
                       <div className="flex flex-col items-start">
                         <span className={`text-[13px] font-medium leading-none
@@ -287,16 +291,11 @@ export default function MobileCalendar({
             )
           })}
         </div>
-
-        {/* 토글 핸들: 위로 올리면 반 갈라지기 */}
-        <div className="flex justify-center py-2 cursor-pointer" onClick={() => setIsHalfView(!isHalfView)}>
-          <div className="w-10 h-1 rounded-full bg-gray-300" />
-        </div>
       </div>
 
       {/* ── 하단 일정 리스트 (반 갈라지기 모드) ── */}
       {isHalfView && (
-        <div className="flex-1 overflow-y-auto bg-white border-t border-gray-200 min-h-[40vh]">
+        <div className="flex-1 overflow-y-auto bg-white border-t border-gray-200">
           <div className="px-4 py-3 border-b border-gray-100 sticky top-0 bg-white z-10">
             <h3 className="text-sm font-bold text-gray-800">
               {selectedDay ? format(selectedDay, 'M월 d일 (EEEE)', { locale: ko }) : format(currentDate, 'yyyy년 M월 일정', { locale: ko })}
