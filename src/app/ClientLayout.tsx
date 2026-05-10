@@ -225,9 +225,9 @@ export default function ClientLayout({
         </div>
       </main>
       
-      {/* 앱일 경우에만 하단 메뉴바 표시 (모바일에서는 MobileCalendar 내장 메뉴 사용) */}
+      {/* 앱일 경우에만 하단 메뉴바 표시 */}
       {shouldShowHeader && isApp && (
-        <div className="absolute bottom-0 left-0 right-0 z-[100] bg-white text-black hidden md:block">
+        <div className="absolute bottom-0 left-0 right-0 z-[100] bg-white text-black">
           <BottomMenu />
         </div>
       )}

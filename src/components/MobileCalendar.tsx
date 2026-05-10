@@ -329,16 +329,8 @@ export default function MobileCalendar({
         </div>
       )}
 
-      {/* ── 하단 네비게이션 버튼 (컴팩트) ── */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-100 z-40 flex items-center px-4 py-2">
-        <button onClick={() => setShowNavDrawer(true)} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-          <Menu className="w-5 h-5 text-gray-600" />
-          <span className="text-xs font-medium text-gray-500">메뉴</span>
-        </button>
-      </div>
-
       {/* ── FAB (+) 버튼 ── */}
-      <div className="fixed bottom-16 right-5 z-50">
+      <div className="fixed bottom-20 right-5 z-50">
         {showFabMenu && (
           <div className="absolute bottom-14 right-0 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden min-w-[160px]"
             style={{ animation: 'fadeInUp 0.15s ease' }}>
