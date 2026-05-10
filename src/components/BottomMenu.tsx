@@ -10,7 +10,7 @@ export default function BottomMenu() {
   const pathname = usePathname()
   const router = useRouter()
   const { user } = useUser()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
 
   const navigationItems = [
     { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
@@ -24,7 +24,6 @@ export default function BottomMenu() {
     const level = String(user?.level || '1')
     const isAdmin = level.toLowerCase() === 'administrator'
     if (isAdmin) return true
-    
     if (item.key === 'dashboard') return ['3', '4', '5'].includes(level)
     if (item.key === 'as_ss') return true
     if (item.key === 'daily_log') return user?.daily_log === true || ['3', '4', '5'].includes(level)
@@ -33,68 +32,49 @@ export default function BottomMenu() {
     return false
   })
 
-  // 현재 페이지명 찾기
-  const currentPage = filteredItems.find(item => 
-    pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')
-  )
-
   return (
     <>
-      {/* 모바일: 컴팩트 햄버거 버튼 */}
-      <div className="md:hidden">
-        {/* 펼쳐진 메뉴 */}
-        {isExpanded && (
-          <div className="border-t border-gray-200 bg-white pb-safe">
-            <nav className="flex items-center justify-around pt-2 pb-10 px-2">
-              {filteredItems.slice(0, 5).map((item) => {
+      {/* 모바일: FAB 스타일 플로팅 버튼 (좌측 하단) */}
+      <div className="md:hidden fixed bottom-6 left-5 z-[110]">
+        {/* 메뉴 팝업 */}
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-[109]" onClick={() => setIsOpen(false)} />
+            <div className="absolute bottom-16 left-0 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden min-w-[160px] z-[111]"
+              style={{ animation: 'fadeInUp 0.15s ease' }}>
+              {filteredItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/')
                 return (
                   <button
                     key={item.key}
-                    onClick={() => { router.push(item.href); setIsExpanded(false) }}
+                    onClick={() => { router.push(item.href); setIsOpen(false) }}
                     className={cn(
-                      "flex flex-col items-center justify-center w-full py-1.5 transition-all duration-200",
-                      isActive ? "text-blue-600" : "text-gray-500 hover:text-gray-900"
+                      "flex items-center gap-3 w-full px-4 py-3 text-sm font-medium transition-colors border-b border-gray-50 last:border-0",
+                      isActive ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"
                     )}
                   >
-                    <div className={cn(
-                      "p-1 rounded-full transition-all duration-200",
-                      isActive ? "bg-blue-50 scale-110" : ""
-                    )}>
-                      <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                    </div>
-                    <span className={cn(
-                      "text-[10px] mt-0.5 font-medium",
-                      isActive ? "text-blue-600" : "text-gray-500"
-                    )}>
-                      {item.name}
-                    </span>
+                    <Icon className="w-4 h-4" />
+                    {item.name}
                   </button>
                 )
               })}
-            </nav>
-          </div>
+            </div>
+          </>
         )}
-        {/* 컴팩트 바: 햄버거 버튼만 */}
-        <div className="flex items-center justify-between px-4 py-2 pb-10 border-t border-gray-100 bg-white">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            {isExpanded ? (
-              <X className="w-5 h-5 text-gray-600" />
-            ) : (
-              <Menu className="w-5 h-5 text-gray-600" />
-            )}
-            <span className="text-xs font-medium text-gray-500">
-              {currentPage ? currentPage.name : '메뉴'}
-            </span>
-          </button>
-        </div>
+        {/* 플로팅 버튼 */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all",
+            isOpen ? "bg-gray-600 rotate-90" : "bg-gray-800"
+          )}
+        >
+          {isOpen ? <X className="w-6 h-6 text-white" /> : <Menu className="w-6 h-6 text-white" />}
+        </button>
       </div>
 
-      {/* 데스크톱: 기존 전체 메뉴 (필요시) */}
+      {/* 데스크톱: 기존 전체 바 */}
       <nav className="hidden md:flex items-center justify-around bg-white border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] pb-2 pt-2 px-2 z-[60]">
         {filteredItems.slice(0, 5).map((item) => {
           const Icon = item.icon
@@ -115,7 +95,7 @@ export default function BottomMenu() {
                 <Icon className="h-6 w-6" strokeWidth={isActive ? 2.5 : 2} />
               </div>
               <span className={cn(
-                "text-[10px] mt-1 font-medium transition-all duration-200",
+                "text-[10px] mt-1 font-medium",
                 isActive ? "text-blue-600" : "text-gray-500"
               )}>
                 {item.name}
@@ -124,6 +104,10 @@ export default function BottomMenu() {
           )
         })}
       </nav>
+
+      <style jsx>{`
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
     </>
   )
 }

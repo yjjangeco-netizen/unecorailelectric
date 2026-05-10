@@ -57,6 +57,9 @@ export default function MobileCalendar({
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
   const [isHalfView, setIsHalfView] = useState(false)
 
+  // 스와이프 제스처
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+
   const prevMonth = () => {
     if (viewMode === 'week') setCurrentDate(prev => addDays(prev, -7))
     else if (viewMode === 'day') setCurrentDate(prev => addDays(prev, -1))
@@ -218,7 +221,18 @@ export default function MobileCalendar({
       </div>
 
       {/* ── 달력 본문 ── */}
-      <div className={`${isHalfView ? '' : 'flex-1'} overflow-hidden`}>
+      <div className={`${isHalfView ? '' : 'flex-1'} overflow-hidden`}
+        onTouchStart={e => setTouchStartX(e.touches[0].clientX)}
+        onTouchEnd={e => {
+          if (touchStartX === null) return
+          const diff = e.changedTouches[0].clientX - touchStartX
+          if (Math.abs(diff) > 60) {
+            if (diff < 0) nextMonth()
+            else prevMonth()
+          }
+          setTouchStartX(null)
+        }}
+      >
         <div className="border-b border-gray-100">
           {weeks.map((week, wi) => {
             const slots = allocateSlots(week)
