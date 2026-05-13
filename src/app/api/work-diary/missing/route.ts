@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { isWeekend, isHoliday } from '@/lib/holidays'
 
 export const dynamic = 'force-dynamic'
-
-// 주말 여부 확인
-const isWeekend = (date: Date) => {
-  const day = date.getDay()
-  return day === 0 || day === 6 // 0: 일요일, 6: 토요일
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = supabaseServer
 
-    // 1. 최근 작동 기준일 (예: 14일치)
+    // 1. 최근 작동 기준일 (예: 14일치) — 주말 + 공휴일 제외
     const MAX_DAYS = 14
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -32,7 +27,8 @@ export async function GET(request: NextRequest) {
     for (let i = 1; i <= MAX_DAYS; i++) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
-      if (!isWeekend(d)) {
+      // 주말 또는 공휴일이면 근무일에서 제외
+      if (!isWeekend(d) && !isHoliday(d)) {
         const dateStr = d.toLocaleDateString('en-CA') // YYYY-MM-DD
         workDays.push(dateStr)
       }
