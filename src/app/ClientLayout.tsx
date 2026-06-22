@@ -233,6 +233,40 @@ export default function ClientLayout({
     };
   }, []);
 
+  // 푸시 알림 등록 (네이티브 + 로그인 상태에서만)
+  useEffect(() => {
+    if (!user?.id) return
+    let cleanup: (() => void) | undefined
+    const setup = async () => {
+      try {
+        const cap = (window as any).Capacitor
+        if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return
+        const { PushNotifications } = await import('@capacitor/push-notifications')
+        let perm = await PushNotifications.checkPermissions()
+        if (perm.receive !== 'granted') perm = await PushNotifications.requestPermissions()
+        if (perm.receive !== 'granted') return
+        await PushNotifications.register()
+        const l1 = await PushNotifications.addListener('registration', async (t: any) => {
+          try {
+            await fetch('/api/notifications/token', {
+              method: 'POST',
+              body: JSON.stringify({ token: t.value, platform: 'android' })
+            })
+          } catch {}
+        })
+        const l2 = await PushNotifications.addListener('pushNotificationActionPerformed', (a: any) => {
+          const link = a?.notification?.data?.link
+          if (link) router.push(link)
+        })
+        cleanup = () => { l1.remove(); l2.remove() }
+      } catch {
+        // 미지원 환경 무시
+      }
+    }
+    setup()
+    return () => { if (cleanup) cleanup() }
+  }, [user?.id, router])
+
   // 홈 위젯에서 넘어온 이동 처리 (날짜 탭 / ＋ 추가)
   useEffect(() => {
     const navigateFromWidget = (nav: { route?: string; date?: string; action?: string }) => {

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "660824877509",
+    "project_id": "uneco-17266",
+    "storage_bucket": "uneco-17266.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:660824877509:android:b7cffc47426488deb303ac",
+        "android_client_info": {
+          "package_name": "com.yjjangeco.unecorailelectric"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBiEYbnPDhwtPZ7fLxdQMOrYPYTDqRdH-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
