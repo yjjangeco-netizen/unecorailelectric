@@ -11,5 +11,14 @@ declare namespace NodeJS {
     // 데이터베이스 설정 (선택사항)
     DATABASE_URL_DEV?: string
     DATABASE_URL_PROD?: string
+
+    // Telegram assistant 설정
+    TELEGRAM_BOT_TOKEN?: string
+    TELEGRAM_WEBHOOK_SECRET?: string
+    TELEGRAM_LINK_CODE?: string
+    TELEGRAM_LINK_ALLOWED_TELEGRAM_IDS?: string
+    TELEGRAM_ALLOWED_CHAT_IDS?: string
+    TELEGRAM_DEFAULT_USER_ID?: string
+    NEXT_PUBLIC_APP_URL?: string
   }
 }

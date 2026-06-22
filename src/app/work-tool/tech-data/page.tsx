@@ -1,12 +1,12 @@
 'use client'
 
 import AuthGuard from '@/components/AuthGuard'
-import GenericBoard from '@/components/GenericBoard'
+import DriveBoard from '@/components/DriveBoard'
 
 export default function TechDataPage() {
   return (
     <AuthGuard>
-      <GenericBoard boardType="TECH_DATA" emptyMessage="등록된 기술자료가 없습니다." basePath="/work-tool/tech-data" />
+      <DriveBoard folderName="engineerData" title="기술자료 자료실" emptyMessage="구글 드라이브(manual/engineerData)에 등록된 기술자료 문서가 없습니다." />
     </AuthGuard>
   )
 }

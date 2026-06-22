@@ -40,8 +40,10 @@ export async function GET(
       id: data.id.toString(),
       project_number: data.project_number || '',
       name: data.project_name || '',
+      project_name: data.project_name || '',
       category: data.category || 'project', // DB: category
       description: data.description || '',
+      ProjectStatus: data.ProjectStatus || 'Manufacturing',
       status: data.ProjectStatus || 'Manufacturing',
       priority: data.priority || 'medium',
       start_date: data.start_date || '',
@@ -51,6 +53,7 @@ export async function GET(
       site_test_date: data.site_test_date || '',
       completion_date: data.completion_date || '',
       warranty_period: data.warranty_period || '',
+      warranty_end_date: data.warranty_end_date || '',
       budget: data.budget || 0,
       manager_id: data.manager_id || '',
       client_name: data.client_name || '',
@@ -146,10 +149,10 @@ export async function PUT(
     
     if (projectData.category !== undefined) updateData.category = projectData.category
     if (projectData.description !== undefined) updateData.description = projectData.description
-    if (projectData.status) {
-      updateData.ProjectStatus = projectData.status
-    } else if (projectData.ProjectStatus) {
+    if (projectData.ProjectStatus) {
       updateData.ProjectStatus = projectData.ProjectStatus
+    } else if (projectData.status) {
+      updateData.ProjectStatus = projectData.status
     }
     if (projectData.priority) updateData.priority = projectData.priority
     if (projectData.start_date !== undefined) updateData.start_date = projectData.start_date || null
@@ -159,6 +162,7 @@ export async function PUT(
     if (projectData.site_test_date !== undefined) updateData.site_test_date = projectData.site_test_date || null
     if (projectData.completion_date !== undefined) updateData.completion_date = projectData.completion_date || null
     if (projectData.warranty_period !== undefined) updateData.warranty_period = projectData.warranty_period
+    if (projectData.warranty_end_date !== undefined) updateData.warranty_end_date = projectData.warranty_end_date || null
     if (projectData.budget !== undefined) updateData.budget = projectData.budget
     if (projectData.manager_id !== undefined) updateData.manager_id = projectData.manager_id
     if (projectData.client_name !== undefined) updateData.client_name = projectData.client_name

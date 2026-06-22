@@ -3,41 +3,25 @@ import { createServerSupabaseClient } from '@/lib/supabaseServer'
 import { logError, measureAsyncPerformance } from '@/lib/utils'
 import { serverAuditLogger, AuditAction } from '@/lib/audit'
 import { stockInSchema } from '@/lib/schemas'
-import { verifyToken } from '@/lib/security'
+import { getApiUser } from '@/lib/apiAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   return measureAsyncPerformance('재고 입고 처리', async () => {
     try {
-      // 인증 토큰 확인
-      const authHeader = request.headers.get('authorization')
-      const token = authHeader?.replace(/^Bearer /i, '')
-      
-      if (!token) {
+      const apiUser = getApiUser(request)
+
+      if (!apiUser) {
         return NextResponse.json(
-          { ok: false, error: '인증 토큰이 필요합니다' },
+          { ok: false, error: '유효하지 않은 인증 정보입니다' },
           { status: 401 }
         )
       }
 
-      // JWT 토큰 검증
-      const decoded = verifyToken(token)
-      
-      if (!decoded) {
-        console.error('Token verification failed for token:', token?.substring(0, 20) + '...')
-        return NextResponse.json(
-          { ok: false, error: '유효하지 않은 토큰입니다 (Verification Failed)' },
-          { status: 401 }
-        )
-      }
-
-      const userId = decoded.userId
-      
-      // 사용자 객체 생성
       const user = {
-        id: userId,
-        email: `${decoded.username}@uneco.com`
+        id: apiUser.userId,
+        email: `${apiUser.username}@uneco.com`
       }
 
       // Supabase 클라이언트 생성
@@ -46,62 +30,84 @@ export async function POST(request: NextRequest) {
       // 요청 본문 파싱 및 검증
       const body = await request.json()
       const validatedData = stockInSchema.parse(body)
-      const userLevel = body.userLevel || '1' // userLevel 추출
+      const receivedBy = validatedData.received_by || apiUser.username || user.id
 
-      // 저장 프로시저 호출
-      const { data: result, error } = await supabase.rpc('process_stock_in', {
-        p_item_name: validatedData.name,
-        p_specification: validatedData.specification,
-        p_maker: validatedData.maker,
-        p_location: validatedData.location,
-        p_quantity: validatedData.quantity,
-        p_unit_price: validatedData.unit_price,
-        p_stock_status: validatedData.stock_status,
-        p_reason: validatedData.reason,
-        p_note: validatedData.note,
-        p_received_by: validatedData.received_by || user.email || user.id
-      })
+      const { data: existingItem, error: findError } = await supabase
+        .from('items')
+        .select('id, closing_quantity, stock_in, stock_out, current_quantity, purpose')
+        .eq('name', validatedData.name)
+        .eq('specification', validatedData.specification)
+        .eq('maker', validatedData.maker || '')
+        .eq('location', validatedData.location)
+        .eq('stock_status', validatedData.stock_status)
+        .maybeSingle()
 
-      if (error) {
-        throw new Error(`입고 처리 실패: ${error.message}`)
+      if (findError) {
+        throw new Error(`품목 조회 실패: ${findError.message}`)
       }
 
-      // 결과 확인
-      if (!result.success) {
-        return NextResponse.json(
-          { 
-            ok: false, 
-            error: result.error,
-            details: result
-          },
-          { status: 400 }
-        )
-      }
+      let itemId: string
+      let newQuantity: number
+      let previousQuantity = 0
 
-      // 중요: stock_in 테이블에 명시적으로 입고 내역 저장
-      try {
-        const { error: stockInInsertError } = await supabase
-          .from('stock_in')
-          .insert({
-            item_id: result.item_id,
-            quantity: validatedData.quantity,
-            received_at: new Date().toISOString(),
-            received_by: validatedData.received_by || user.email || user.id,
+      if (existingItem) {
+        previousQuantity =
+          (existingItem.closing_quantity || 0) +
+          (existingItem.stock_in || 0) -
+          (existingItem.stock_out || 0)
+        const newStockIn = (existingItem.stock_in || 0) + validatedData.quantity
+        newQuantity = (existingItem.closing_quantity || 0) + newStockIn - (existingItem.stock_out || 0)
+
+        const { error: updateError } = await supabase
+          .from('items')
+          .update({
+            stock_in: newStockIn,
+            current_quantity: newQuantity,
+            total_qunty: newQuantity,
             unit_price: validatedData.unit_price,
-            total_amount: validatedData.quantity * validatedData.unit_price,
             note: validatedData.note,
-            product: validatedData.name, // 품목명 백업
-            spec: validatedData.specification, // 규격 백업
-            maker: validatedData.maker, // 제조사 백업
-            purpose: validatedData.reason, // 용도
-            item_condition: validatedData.stock_status // 상태
+            purpose: validatedData.reason || existingItem.purpose,
+            updated_at: new Date().toISOString()
           })
+          .eq('id', existingItem.id)
 
-        if (stockInInsertError) {
-          console.error('stock_in 테이블 저장 실패:', stockInInsertError)
+        if (updateError) {
+          throw new Error(`입고 수량 업데이트 실패: ${updateError.message}`)
         }
-      } catch (insertErr) {
-        console.error('stock_in 테이블 저장 중 예외 발생:', insertErr)
+
+        itemId = existingItem.id
+      } else {
+        newQuantity = validatedData.quantity
+
+        const { data: insertedItem, error: insertError } = await supabase
+          .from('items')
+          .insert({
+            name: validatedData.name,
+            specification: validatedData.specification,
+            maker: validatedData.maker || '',
+            category: '일반',
+            location: validatedData.location,
+            purpose: validatedData.reason || '재고관리',
+            min_stock: 0,
+            current_quantity: newQuantity,
+            closing_quantity: 0,
+            stock_in: validatedData.quantity,
+            stock_out: 0,
+            disposal_qunty: 0,
+            total_qunty: newQuantity,
+            unit_price: validatedData.unit_price,
+            note: validatedData.note,
+            stock_status: validatedData.stock_status,
+            status: 'active'
+          })
+          .select('id')
+          .single()
+
+        if (insertError || !insertedItem) {
+          throw new Error(`신규 품목 생성 실패: ${insertError?.message || '응답 없음'}`)
+        }
+
+        itemId = insertedItem.id
       }
 
       // 감사 로그 기록
@@ -111,7 +117,7 @@ export async function POST(request: NextRequest) {
         user.email || 'unknown',
         'user',
         'item',
-        result.item_id,
+        itemId,
         {
           name: validatedData.name,
           specification: validatedData.specification,
@@ -120,43 +126,34 @@ export async function POST(request: NextRequest) {
         }
       )
 
-      // History Logging (stock_history) - 통합 로그용
-      try {
-        const historyData = {
-          item_id: result.item_id,
-          item_name: validatedData.name || result.item_name || 'Unknown Item',
-          type: 'in',
+      const { error: historyError } = await supabase
+        .from('stock_history')
+        .insert({
+          item_id: itemId,
+          event_type: 'IN',
           quantity: validatedData.quantity,
-          previous_quantity: (result.new_quantity || 0) - validatedData.quantity,
-          new_quantity: result.new_quantity,
+          unit_price: validatedData.unit_price,
           reason: validatedData.reason || '입고',
-          note: validatedData.note || '',
-          location: validatedData.location || 'Unknown Location',
-          user_level: userLevel, // 토큰이나 요청에서 가져온 레벨 사용
-          created_at: new Date().toISOString()
-        }
+          received_by: receivedBy,
+          notes: validatedData.note || '',
+          condition_type: validatedData.stock_status,
+          event_date: new Date().toISOString()
+        })
 
-        const { error: historyError } = await supabase
-          .from('stock_history')
-          .insert(historyData)
-        
-        if (historyError) {
-          console.error('Failed to log stock history:', historyError)
-        }
-      } catch (hErr) {
-        console.error('Exception logging history:', hErr)
+      if (historyError) {
+        console.error('Failed to log stock history:', historyError)
       }
 
       return NextResponse.json({
         ok: true,
         data: {
-          item_id: result.item_id,
-          name: result.item_name,
-          specification: result.item_specification,
+          item_id: itemId,
+          name: validatedData.name,
+          specification: validatedData.specification,
           quantity: validatedData.quantity,
           unit_price: validatedData.unit_price,
-          new_quantity: result.new_quantity,
-          weighted_avg_price: result.weighted_avg_price
+          new_quantity: newQuantity,
+          previous_quantity: previousQuantity
         },
         timestamp: new Date().toISOString()
       })

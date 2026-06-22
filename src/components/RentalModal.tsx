@@ -90,36 +90,36 @@ export default function RentalModal({ isOpen, onClose, stockItems, onRental }: R
 
   const loadRecentHistory = async (itemId: string) => {
     try {
-      // 최근 입고 조회
       const { data: stockInData } = await supabase
-        .from('stock_in')
-        .select('received_at, received_by')
+        .from('stock_history')
+        .select('event_date, received_by')
         .eq('item_id', itemId)
-        .order('received_at', { ascending: false })
+        .eq('event_type', 'IN')
+        .order('event_date', { ascending: false })
         .limit(1)
 
-      // 최근 출고 조회
       const { data: stockOutData } = await supabase
-        .from('stock_out')
-        .select('issued_at, issued_by, project')
+        .from('stock_history')
+        .select('event_date, ordered_by, project')
         .eq('item_id', itemId)
-        .order('issued_at', { ascending: false })
+        .eq('event_type', 'OUT')
+        .order('event_date', { ascending: false })
         .limit(1)
 
-      // 대여 중인 수량 조회
       const { data: rentalData } = await supabase
-        .from('stock_out')
+        .from('stock_history')
         .select('quantity, project')
         .eq('item_id', itemId)
+        .eq('event_type', 'OUT')
         .eq('is_rental', true)
         .is('return_date', null)
 
       const lastStockIn = stockInData?.[0] 
-        ? `${stockInData[0].received_at.split('T')[0]} (${stockInData[0].received_by})`
+        ? `${stockInData[0].event_date.split('T')[0]} (${stockInData[0].received_by || '-'})`
         : '-'
       
       const lastStockOut = stockOutData?.[0]
-        ? `${stockOutData[0].issued_at.split('T')[0]} (${stockOutData[0].issued_by})${stockOutData[0].project ? ` - ${stockOutData[0].project}` : ''}`
+        ? `${stockOutData[0].event_date.split('T')[0]} (${stockOutData[0].ordered_by || '-'})${stockOutData[0].project ? ` - ${stockOutData[0].project}` : ''}`
         : '-'
       
       const rentalCount = rentalData?.reduce((sum, record) => sum + record.quantity, 0) || 0

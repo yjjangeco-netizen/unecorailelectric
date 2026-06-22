@@ -76,74 +76,45 @@ export default function StockHistoryModal({ isOpen, onClose, item }: StockHistor
     setError('')
     
     try {
-      // 입고 이력 조회 (조인 제거)
-      const { data: stockInData, error: stockInError } = await supabase
-        .from('stock_in')
+      const { data: historyData, error: historyError } = await supabase
+        .from('stock_history')
         .select('*')
         .eq('item_id', item.id)
-        .order('received_at', { ascending: false })
+        .order('event_date', { ascending: false })
 
-      if (stockInError) {
-        console.error('입고 이력 조회 오류:', stockInError)
-        throw new Error(`입고 이력 조회 실패: ${stockInError.message}`)
+      if (historyError) {
+        console.error('재고 이력 조회 오류:', historyError)
+        throw new Error(`재고 이력 조회 실패: ${historyError.message}`)
       }
 
-      // 출고 이력 조회 (조인 제거)
-      const { data: stockOutData, error: stockOutError } = await supabase
-        .from('stock_out')
-        .select('*')
-        .eq('item_id', item.id)
-        .order('issued_at', { ascending: false })
+      let runningRemaining = item.current_quantity || 0
+      const allHistory = ((historyData as any) ?? []).map((history: any) => {
+        const isIn = String(history.event_type).toUpperCase() === 'IN'
+        const signedQuantity = isIn ? history.quantity : -history.quantity
+        const rowRemaining = runningRemaining
+        runningRemaining -= signedQuantity
 
-      if (stockOutError) {
-        console.error('출고 이력 조회 오류:', stockOutError)
-        throw new Error(`출고 이력 조회 실패: ${stockOutError.message}`)
-      }
-
-      // 입출고 이력을 하나의 배열로 합치고 날짜순 정렬
-      const allHistory = [
-        ...((stockInData as any)?.map((inItem: any) => ({
-          id: `in-${inItem.id}`,
-          itemName: inItem.product || '', // items 조인 제거로 product 필드 사용
-          spec: inItem.spec || '',
-          maker: inItem.maker || '',
-          purpose: inItem.purpose,
-          unitPrice: inItem.unit_price,
-          quantity: inItem.quantity,
-          totalAmount: inItem.total_amount,
-          transactionType: 'in' as const,
-          transactionDate: inItem.received_at,
-          notes: inItem.note,
-          remaining: 0, // TODO: 누적 계산 로직 추가
-          itemCondition: inItem.item_condition,
-          handler: inItem.received_by || '-' // received_by를 handler로 매핑
-        })) ?? []),
-        ...((stockOutData as any)?.map((outItem: any) => ({
-          id: `out-${outItem.id}`,
-          itemName: outItem.product || '',
-          spec: outItem.spec || '',
-          maker: outItem.maker || '',
-          purpose: outItem.purpose,
-          unitPrice: outItem.unit_price,
-          quantity: -outItem.quantity, // 출고는 음수로 표시
-          totalAmount: outItem.total_amount,
-          transactionType: 'out' as const,
-          transactionDate: outItem.issued_at,
-          notes: outItem.note,
-          remaining: 0, // TODO: 누적 계산 로직 추가
-          itemCondition: outItem.item_condition,
-          handler: outItem.issued_by || '-' // issued_by를 handler로 매핑
-        })) ?? [])
-      ].sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
-
-      // 현재 재고가 있는 항목만 필터링 (입고 > 출고)
-      const stockInTotal = (stockInData as any)?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
-      const stockOutTotal = (stockOutData as any)?.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0) || 0
-      const hasStock = stockInTotal > stockOutTotal
+        return {
+          id: history.id,
+          itemName: item.name || '',
+          spec: item.specification || '',
+          maker: item.maker || '',
+          purpose: item.purpose || history.reason || '',
+          unitPrice: history.unit_price || item.unit_price || 0,
+          quantity: signedQuantity,
+          totalAmount: (history.quantity || 0) * (history.unit_price || item.unit_price || 0),
+          transactionType: isIn ? 'in' as const : 'out' as const,
+          transactionDate: history.event_date || history.created_at,
+          notes: history.notes || history.reason || history.disposal_reason || '',
+          remaining: rowRemaining,
+          itemCondition: history.condition_type,
+          handler: history.received_by || history.ordered_by || history.requester || '-'
+        }
+      })
       
-      if (!hasStock && allHistory.length === 0) {
+      if (allHistory.length === 0) {
         setStockHistory([])
-        setError('현재 재고가 없는 품목입니다.')
+        setError('입출고 내역이 없습니다.')
         return
       }
 

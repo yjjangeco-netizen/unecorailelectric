@@ -51,9 +51,17 @@ export async function GET(request: NextRequest) {
     }
 
     // submitted / approved 가 아닌 모든 항목 (NULL, 'pending', 'rejected', 기타 포함)
-    const trips = (allTrips || []).filter(
-      t => t.report_status !== 'submitted' && t.report_status !== 'approved'
-    )
+    const now = new Date()
+    const trips = (allTrips || []).filter(t => {
+      const isUnreported = t.report_status !== 'submitted' && t.report_status !== 'approved'
+      if (!isUnreported) return false
+
+      const endDate = t.end_date || t.start_date
+      if (!endDate) return false
+      const endTime = t.end_time || t.start_time || '23:59'
+      const tripEnd = new Date(`${endDate}T${String(endTime).slice(0, 5)}:00+09:00`)
+      return tripEnd.getTime() < now.getTime()
+    })
 
     console.log(`[unreported] 전체: ${allTrips?.length}건, 미보고: ${trips.length}건 (isAdmin: ${isAdmin})`)
 

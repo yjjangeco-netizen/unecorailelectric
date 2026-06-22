@@ -633,6 +633,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
                         <SelectItem value="Demolished">철거</SelectItem>
                         <SelectItem value="Warranty">하자보증중</SelectItem>
                         <SelectItem value="WarrantyComplete">하자보증완료</SelectItem>
+                        <SelectItem value="Temporary">임시</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

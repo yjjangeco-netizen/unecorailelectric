@@ -35,7 +35,8 @@ export interface Project {
   project_name: string; // DB: project_name
   category?: string; // DB: category
   description?: string;
-  ProjectStatus: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete'; // DB: ProjectStatus
+  ProjectStatus: 'Manufacturing' | 'Demolished' | 'Warranty' | 'WarrantyComplete' | 'Temporary'; // DB: ProjectStatus
+  status?: string; // API compatibility alias for ProjectStatus
   is_active: boolean;
   assembly_date?: string;
   factory_test_date?: string;
@@ -50,6 +51,7 @@ export interface Project {
   end_date?: string;
   completion_date?: string;
   warranty_period?: string;
+  warranty_end_date?: string;
   budget?: number;
   manager_id?: string;
   client_name?: string;

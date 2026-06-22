@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
+import { getApiUser } from '@/lib/apiAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,25 +14,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '마감 기준일이 필요합니다.' }, { status: 400 })
     }
 
-    // Auth check
-    const { data: { session } } = await supabase.auth.getSession()
-
-    // 관리자 권한 확인
-    let isAdmin = false
-    if (session?.user?.id) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('level, role')
-        .eq('id', session.user.id)
-        .single()
-
-      if (userData && (userData.level === 'admin' || userData.role === 'admin' || userData.level === 5)) {
-        isAdmin = true
-      }
+    // 인증/관리자 확인 — 커스텀 JWT 기반 (이 앱은 Supabase Auth 미사용)
+    const apiUser = getApiUser(request)
+    if (!apiUser) {
+      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
     }
 
+    // 토큰의 level 을 그대로 믿지 않고 DB에서 현재 권한을 재확인(파괴적 작업)
+    const { data: userData } = await supabase
+      .from('users')
+      .select('level, username, name')
+      .eq('id', apiUser.userId)
+      .single()
+
+    const level = String(userData?.level ?? '').toLowerCase()
+    const isAdmin =
+      userData?.username === 'admin' ||
+      level === 'admin' ||
+      level === 'administrator' ||
+      level === '5'
+
     if (!isAdmin) {
-      console.warn('Admin check failed for closing process', session?.user?.id)
+      console.warn('Admin check failed for closing process', apiUser.userId)
       return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
     }
 
@@ -56,39 +60,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '마감할 재고가 없습니다.' }, { status: 400 })
     }
 
-    // 2. 마감 이력 테이블 생성 (없는 경우)
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS closing_history (
-        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-        closing_date DATE NOT NULL,
-        item_id INTEGER NOT NULL,
-        product TEXT NOT NULL,
-        spec TEXT,
-        maker TEXT,
-        location TEXT,
-        closing_quantity INTEGER DEFAULT 0,
-        unit_price DECIMAL(15,2) DEFAULT 0,
-        total_amount DECIMAL(18,2) DEFAULT 0,
-        closed_by TEXT,
-        created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
-      );
-      
-      CREATE INDEX IF NOT EXISTS idx_closing_history_date ON closing_history(closing_date);
-      CREATE INDEX IF NOT EXISTS idx_closing_history_item ON closing_history(item_id);
-    `
-
-    try {
-      const { error: createTableError } = await supabase.rpc('exec_sql', { sql: createTableSQL })
-      if (createTableError) {
-        console.warn('마감 이력 테이블 생성 실패 (RPC exec_sql 없음 또는 권한 부족):', createTableError)
-      }
-    } catch (e) {
-      console.warn('RPC exec_sql 호출 중 예외 발생:', e)
-    }
-
-    // 3. 마감 이력에 현재 상태 저장
-    const closedBy = session?.user?.email || 'system'
+    // 2. 마감 이력 저장 (closing_history 테이블은 database/create_closing_history.sql 로 사전 생성)
+    const closedBy = userData?.name || userData?.username || apiUser.username || 'system'
     const closingHistoryData = currentStockData.map(item => ({
       closing_date: closingDate,
       item_id: item.id, // items 테이블의 id 사용

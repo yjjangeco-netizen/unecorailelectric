@@ -1,201 +1,263 @@
-/**
- * Nara 입찰 모니터링 서비스
- */
-
-import type { BidItem, MonitoringStatus, SearchResult, MonitoringConfig } from './types'
+import type { BidItem, MonitoringConfig, MonitoringStatus } from './types'
 import { naraConfigManager } from './config'
+import { getNaraItemKey, searchKorailBids } from './korailSearch'
+import { sendTelegramMessage } from '@/lib/telegram'
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export class NaraMonitoringService {
   private isRunning = false
-  private intervalId: NodeJS.Timeout | null = null
+  private intervalId: ReturnType<typeof setInterval> | null = null
   private bids: BidItem[] = []
   private lastCheck: Date | null = null
   private errors: string[] = []
+  private notifiedKeys = new Set<string>()
+  /** start() 시 받은 config를 직접 보관 (서버 메모리 싱글턴에 의존하지 않기 위함) */
+  private activeConfig: MonitoringConfig | null = null
 
-  constructor() {
-    // 초기화
-  }
-
-  /**
-   * 모니터링 시작
-   */
   async start(config: MonitoringConfig): Promise<boolean> {
     try {
-      if (this.isRunning) {
-        console.log('모니터링이 이미 실행 중입니다')
-        return true
-      }
+      if (this.intervalId) clearInterval(this.intervalId)
 
-      // 설정 업데이트
+      // 서버 메모리에 config 직접 보관 (싱글턴 동기화에 의존 안 함)
+      this.activeConfig = { ...config }
+
       naraConfigManager.update({
         keywords: config.keywords,
         enableTelegramNotifications: config.telegramEnabled,
-        telegramChatId: config.telegramChatId
+        telegramBotToken: config.telegramBotToken || '',
+        telegramChatId: config.telegramChatId,
+        naramarketApiKey: config.naraMarketApiKey || ''
       })
 
       this.isRunning = true
       this.errors = []
+      this.bids = []
+      await this.refreshNow({ notify: false })
 
-      // 즉시 한 번 검색 실행
-      await this.performSearch()
-
-      // 주기적 검색 설정
-      const intervalMs = config.checkInterval * 1000
-      this.intervalId = setInterval(async () => {
-        await this.performSearch()
+      const intervalMs = Math.max(10, config.checkInterval || 30) * 1000
+      this.intervalId = setInterval(() => {
+        this.refreshNow().catch((error) => {
+          this.errors.push(error instanceof Error ? error.message : 'NARA 검색 실패')
+        })
       }, intervalMs)
 
-      console.log(`모니터링 시작: ${config.checkInterval}초 간격`)
       return true
     } catch (error) {
-      console.error('모니터링 시작 실패:', error)
       this.isRunning = false
+      this.errors.push(error instanceof Error ? error.message : 'NARA 모니터링 시작 실패')
       return false
     }
   }
 
-  /**
-   * 모니터링 중지
-   */
   stop(): boolean {
-    try {
-      if (this.intervalId) {
-        clearInterval(this.intervalId)
-        this.intervalId = null
-      }
-
-      this.isRunning = false
-      console.log('모니터링 중지')
-      return true
-    } catch (error) {
-      console.error('모니터링 중지 실패:', error)
-      return false
+    if (this.intervalId) {
+      clearInterval(this.intervalId)
+      this.intervalId = null
     }
+    this.isRunning = false
+    return true
   }
 
-  /**
-   * 검색 실행
-   */
-  private async performSearch(): Promise<void> {
-    try {
-      this.lastCheck = new Date()
-      const config = naraConfigManager.getSearchConfig()
-      const newBids: BidItem[] = []
+  async refreshNow(options: { notify?: boolean } = {}): Promise<BidItem[]> {
+    this.lastCheck = new Date()
 
-      // 모의 데이터 생성 (실제로는 API 호출)
-      const mockBids: BidItem[] = [
-        {
-          id: `bid-${Date.now()}-1`,
-          title: '전력케이블 공급계약',
-          company: 'ABC전력',
-          price: '15,000,000원',
-          deadline: '2024-01-15',
-          status: 'active',
-          url: 'https://naramarket.com/bid/1',
-          source: 'naramarket',
-          createdAt: new Date().toISOString(),
-          description: '고압 전력케이블 공급계약',
-          location: '서울',
-          category: '전기'
+    // 1) DB(Supabase)에서 최신 설정을 동기적으로 로드하여 런타임 매니저 및 activeConfig 동기화
+    try {
+      const { data, error } = await supabaseServer
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'nara-monitoring')
+        .maybeSingle()
+
+      if (!error && data?.value) {
+        const dbConfig = data.value
+        naraConfigManager.update({
+          keywords: dbConfig.keywords,
+          enableTelegramNotifications: dbConfig.telegramEnabled,
+          telegramBotToken: dbConfig.telegramBotToken,
+          telegramChatId: dbConfig.telegramChatId,
+          naramarketApiKey: dbConfig.naraMarketApiKey
+        })
+        if (this.activeConfig) {
+          this.activeConfig.keywords = dbConfig.keywords
+          this.activeConfig.telegramEnabled = dbConfig.telegramEnabled
+          this.activeConfig.telegramChatId = dbConfig.telegramChatId
+          this.activeConfig.naraMarketApiKey = dbConfig.naraMarketApiKey
+          this.activeConfig.checkInterval = dbConfig.checkInterval || 30
+          // activeConfig 인터페이스에 telegramBotToken이 필요하므로 동적 바인딩
+          ;(this.activeConfig as any).telegramBotToken = dbConfig.telegramBotToken
+        } else {
+          this.activeConfig = {
+            enabled: true,
+            keywords: dbConfig.keywords,
+            telegramEnabled: dbConfig.telegramEnabled,
+            telegramChatId: dbConfig.telegramChatId,
+            naraMarketApiKey: dbConfig.naraMarketApiKey,
+            checkInterval: dbConfig.checkInterval || 30,
+            sources: ['korail', 'naramarket'],
+            workHoursOnly: false
+          }
+          ;(this.activeConfig as any).telegramBotToken = dbConfig.telegramBotToken
         }
-      ]
-
-      // 새 입찰공고가 있으면 추가
-      if (mockBids.length > 0) {
-        this.bids = [...this.bids, ...mockBids]
       }
-
-      // 에러 로그 정리 (최근 100개만 유지)
-      if (this.errors.length > 100) {
-        this.errors = this.errors.slice(-100)
-      }
-
-    } catch (error) {
-      console.error('검색 실행 실패:', error)
-      this.errors.push(`검색 실행 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`)
+    } catch (dbError) {
+      console.error('[NaraMonitoringService] DB 설정 동기화 실패:', dbError)
     }
+
+    // activeConfig에서 키워드 사용. 없으면 naraConfigManager fallback
+    const keywords = this.activeConfig?.keywords ?? naraConfigManager.getSearchConfig().keywords
+    const result = await searchKorailBids(keywords, { naraMarketApiKey: this.activeConfig?.naraMarketApiKey })
+
+    const next = new Map(this.bids.map((bid) => [bid.id, bid]))
+    const newItems: BidItem[] = []
+
+    result.bids.forEach((bid) => {
+      if (!next.has(bid.id)) newItems.push(bid)
+      next.set(bid.id, bid)
+    })
+
+    this.bids = Array.from(next.values())
+    if (options.notify !== false) {
+      await this.notifyNewItems(newItems)
+    }
+
+    this.errors.push(...result.errors)
+    if (this.bids.length === 0 && result.errors.length === 0) {
+      this.errors.push(`NARA 검색 결과가 없습니다. 검색 키워드: ${keywords.join(', ')}`)
+    }
+    if (this.errors.length > 100) this.errors = this.errors.slice(-100)
+
+    return this.getBids()
   }
 
-  /**
-   * 모니터링 상태 조회
-   */
   getStatus(): MonitoringStatus {
-    const nextCheck = this.intervalId ? 
-      new Date(Date.now() + naraConfigManager.get('searchIntervalHours') * 60 * 60 * 1000) : 
-      null
+    const intervalHours = naraConfigManager.get('searchIntervalHours')
+    const nextCheck = this.isRunning ? new Date(Date.now() + intervalHours * 60 * 60 * 1000) : null
 
     return {
       enabled: this.isRunning,
       lastCheck: this.lastCheck?.toISOString() || null,
       totalBids: this.bids.length,
-      newBids: this.bids.filter(bid => {
+      newBids: this.bids.filter((bid) => {
         const createdAt = new Date(bid.createdAt)
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
-        return createdAt > oneHourAgo
+        return createdAt.getTime() > Date.now() - 60 * 60 * 1000
       }).length,
       errors: [...this.errors],
       nextCheck: nextCheck?.toISOString() || null
     }
   }
 
-  /**
-   * 입찰공고 목록 조회
-   */
   getBids(): BidItem[] {
-    return [...this.bids]
+    return [...this.bids].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }
 
-  /**
-   * 특정 키워드로 필터링된 입찰공고 조회
-   */
   getBidsByKeywords(keywords: string[]): BidItem[] {
-    if (keywords.length === 0) return this.bids
+    const normalized = keywords.map((keyword) => keyword.toLowerCase())
+    if (normalized.length === 0) return this.getBids()
 
-    return this.bids.filter(bid => {
-      const searchText = `${bid.title} ${bid.description || ''} ${bid.category || ''}`.toLowerCase()
-      return keywords.some(keyword => 
-        searchText.includes(keyword.toLowerCase())
-      )
+    return this.getBids().filter((bid) => {
+      const text = `${bid.title} ${bid.description || ''} ${bid.category || ''}`.toLowerCase()
+      return normalized.some((keyword) => text.includes(keyword))
     })
   }
 
-  /**
-   * 입찰공고 상태별 조회
-   */
   getBidsByStatus(status: 'active' | 'closed' | 'upcoming'): BidItem[] {
-    return this.bids.filter(bid => bid.status === status)
+    return this.getBids().filter((bid) => bid.status === status)
   }
 
-  /**
-   * 입찰공고 소스별 조회
-   */
   getBidsBySource(source: 'naramarket' | 'korail'): BidItem[] {
-    return this.bids.filter(bid => bid.source === source)
+    return this.getBids().filter((bid) => bid.source === source)
   }
 
-  /**
-   * 입찰공고 정리 (오래된 것 제거)
-   */
   cleanup(daysToKeep = 30): void {
     const cutoffDate = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000)
-    this.bids = this.bids.filter(bid => new Date(bid.createdAt) > cutoffDate)
-    console.log(`입찰공고 정리 완료: ${daysToKeep}일 이전 데이터 제거`)
+    this.bids = this.bids.filter((bid) => new Date(bid.createdAt) > cutoffDate)
   }
 
-  /**
-   * 에러 로그 조회
-   */
   getErrors(): string[] {
     return [...this.errors]
   }
 
-  /**
-   * 에러 로그 정리
-   */
   clearErrors(): void {
     this.errors = []
   }
+
+  private async notifyNewItems(items: BidItem[]) {
+    const telegramEnabled = naraConfigManager.get('enableTelegramNotifications')
+    const token = naraConfigManager.get('telegramBotToken') || undefined
+    const chatId = naraConfigManager.get('telegramChatId') || process.env['TELEGRAM_WORK_CHAT_ID']
+    if (!telegramEnabled || !chatId || items.length === 0) return
+
+    const unsent: BidItem[] = []
+    for (const item of items) {
+      if (await this.markNotificationPending(item)) unsent.push(item)
+    }
+
+    if (unsent.length === 0) return
+
+    const chunks = chunkItems(unsent, 8)
+    for (const chunk of chunks) {
+      const text = [
+        `<b>NARA 신규 검색 결과 ${chunk.length}건</b>`,
+        ...chunk.map((item, index) => [
+          '',
+          `<b>${index + 1}. ${escapeHtml(item.title)}</b>`,
+          `분류: ${escapeHtml(item.category || 'Korail')}`,
+          item.deadline ? `마감/일자: ${escapeHtml(item.deadline)}` : '',
+          item.price ? `금액: ${escapeHtml(item.price)}` : '',
+          escapeHtml(item.url)
+        ].filter(Boolean).join('\n'))
+      ].join('\n')
+
+      const result = await sendTelegramMessage({ chatId, text, token })
+      if (!result?.ok) {
+        this.errors.push(`텔레그램 전송 실패: ${result?.description || 'unknown error'}`)
+      }
+    }
+  }
+
+  private async markNotificationPending(item: BidItem) {
+    const key = getNaraItemKey(item)
+    if (this.notifiedKeys.has(key)) return false
+    this.notifiedKeys.add(key)
+
+    try {
+      const { error } = await supabaseServer
+        .from('nara_sent_notifications')
+        .insert({
+          item_key: key,
+          title: item.title,
+          category: item.category || null,
+          url: item.url,
+          sent_at: new Date().toISOString()
+        })
+
+      if (!error) return true
+      if (error.code === '23505') return false
+
+      // 테이블이 아직 없으면 메모리 중복 제거만 사용합니다.
+      if (error.code === '42P01' || error.message?.includes('nara_sent_notifications')) return true
+
+      console.warn(`NARA duplicate record failed: ${error.message}`)
+      return true
+    } catch (error) {
+      console.warn(`NARA duplicate record failed: ${error instanceof Error ? error.message : 'unknown error'}`)
+      return true
+    }
+  }
 }
 
-// 전역 모니터링 서비스 인스턴스
 export const naraMonitoringService = new NaraMonitoringService()
+
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size))
+  return chunks
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}

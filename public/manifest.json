@@ -1,7 +1,7 @@
 {
   "name": "유네코레일 전기팀",
   "short_name": "유네코레일",
-  "description": "유네코레일 전기팀 자재관리 시스템",
+  "description": "유네코레일 전기팀 업무관리 시스템",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B0E14",

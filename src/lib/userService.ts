@@ -3,16 +3,16 @@ import { supabase } from './supabaseClient';
 
 export class UserService {
   // API를 통한 로그인 (Supabase만 사용)
-  static async login(username: string, password: string): Promise<User | null> {
+  static async login(username: string, password: string, autoLogin: boolean = false): Promise<User | null> {
     try {
-      console.log('Supabase 로그인 시도:', username);
+      console.log('Supabase 로그인 시도:', username, '자동로그인:', autoLogin);
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, autoLogin }),
       });
 
       if (!response.ok) {
@@ -25,7 +25,8 @@ export class UserService {
       
       // 앱(웹뷰) 환경에서는 Set-Cookie 헤더가 씹히는 경우가 있어 프론트엔드에서 강제 주입
       if (token && typeof document !== 'undefined') {
-        document.cookie = `auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+        const maxAge = autoLogin ? 60 * 60 * 24 * 365 * 10 : 60 * 60 * 24 * 7;
+        document.cookie = `auth-token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
       }
       
       console.log('Supabase 로그인 성공:', user.username);

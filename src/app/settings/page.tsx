@@ -11,8 +11,7 @@ import {
   Users,
   FolderOpen,
   Settings as SettingsIcon,
-  ArrowRight,
-  BarChart3
+  ArrowRight
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -72,10 +71,6 @@ export default function SettingsPage() {
     router.push('/project-management')
   }
 
-  const handleNaraSettings = () => {
-    router.push('/nara-settings')
-  }
-
   return (
     <AuthGuard requiredLevel={5}>
       <div className="min-h-screen bg-white">
@@ -120,24 +115,6 @@ export default function SettingsPage() {
               </div>
             </Card>
 
-            {/* 입찰모니터링 관리 카드 */}
-            <Card className="p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer group"
-              onClick={handleNaraSettings}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-purple-100 rounded-xl">
-                    <BarChart3 className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1">입찰모니터링 관리</h3>
-                    <p className="text-gray-600 text-sm">
-                      Nara 입찰 모니터링 설정 및 관리
-                    </p>
-                  </div>
-                </div>
-                <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
-              </div>
-            </Card>
           </div>
 
           {/* 추가 설정 옵션들 */}

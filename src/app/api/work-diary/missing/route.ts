@@ -1,37 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
-import { isWeekend, isHoliday } from '@/lib/holidays'
+import { isHoliday } from '@/lib/holidays'
 
 export const dynamic = 'force-dynamic'
+
+const KST_TIME_ZONE = 'Asia/Seoul'
+
+function formatKstDate(date: Date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: KST_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date)
+}
+
+function dateStringToUtcDate(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function addDaysToDateString(date: string, days: number) {
+  const next = dateStringToUtcDate(date)
+  next.setUTCDate(next.getUTCDate() + days)
+  return next.toISOString().slice(0, 10)
+}
+
+function isWeekendDate(date: string) {
+  const day = dateStringToUtcDate(date).getUTCDay()
+  return day === 0 || day === 6
+}
+
+function isWorkday(date: string) {
+  return !isWeekendDate(date) && !isHoliday(date)
+}
+
+function normalizeDateString(value: string | Date) {
+  if (value instanceof Date) return formatKstDate(value)
+
+  const datePart = String(value).match(/^\d{4}-\d{2}-\d{2}/)?.[0]
+  if (datePart) return datePart
+
+  return formatKstDate(new Date(value))
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl
     const userId = searchParams.get('userId')
     const userLevel = searchParams.get('userLevel')
+    const scope = searchParams.get('scope')
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 })
     }
 
-    const isAdminOrLevel5 = userLevel === '5' || userLevel?.toLowerCase() === 'administrator'
+    const normalizedUserLevel = String(userLevel || '').toLowerCase()
+    const isAdminOrLevel5 = scope !== 'self' && (['5', 'level5', 'admin', 'administrator'].includes(normalizedUserLevel) || userId === 'admin')
 
     const supabase = supabaseServer
 
     // 1. 최근 작동 기준일 (예: 14일치) — 주말 + 공휴일 제외
     const MAX_DAYS = 14
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const now = new Date()
+    const todayStr = formatKstDate(now)
 
     const workDays: string[] = []
     for (let i = 1; i <= MAX_DAYS; i++) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
+      const dateStr = addDaysToDateString(todayStr, -i)
       // 주말 또는 공휴일이면 근무일에서 제외
-      if (!isWeekend(d) && !isHoliday(d)) {
-        const dateStr = d.toLocaleDateString('en-CA') // YYYY-MM-DD
+      if (isWorkday(dateStr)) {
         workDays.push(dateStr)
       }
+    }
+    const nowKst = new Date(now.toLocaleString('en-US', { timeZone: KST_TIME_ZONE }))
+    const canReportToday = nowKst.getHours() > 16 || (nowKst.getHours() === 16 && nowKst.getMinutes() >= 30)
+    if (canReportToday && isWorkday(todayStr)) {
+      workDays.unshift(todayStr)
     }
 
     // 2. 조회할 대상 사용자 목록
@@ -72,23 +117,25 @@ export async function GET(request: NextRequest) {
     const diarySet = new Set()
     diaries?.forEach(diary => {
       // YYYY-MM-DD 형식으로 비교
-      const dateStr = new Date(diary.work_date).toLocaleDateString('en-CA')
+      const dateStr = normalizeDateString(diary.work_date)
       diarySet.add(`${diary.user_id}_${dateStr}`)
     })
 
     // 4. 연차/휴가 데이터도 포함하여 필터링
 
-    // 4-1. calendar_events 테이블에서 연차/반차/휴가 조회
+    // 4-1. events(캘린더) 테이블에서 연차/반차/휴가 조회
+    //  - 라이브 DB에는 calendar_events 가 없고 events 가 캘린더 테이블이며,
+    //    사용자 키 컬럼은 user_id 가 아니라 participant_id 이다.
     const { data: vacations } = await supabase
-      .from('calendar_events')
-      .select('user_id, start_date')
+      .from('events')
+      .select('participant_id, start_date')
       .in('category', ['연차', '반차', '휴가'])
       .gte('start_date', minDate)
       .lte('start_date', maxDate)
 
     vacations?.forEach(vac => {
-      const dateStr = new Date(vac.start_date).toLocaleDateString('en-CA')
-      diarySet.add(`${vac.user_id}_${dateStr}`)
+      const dateStr = normalizeDateString(vac.start_date)
+      diarySet.add(`${vac.participant_id}_${dateStr}`)
     })
 
     // 4-2. leave_requests 테이블에서 연차 조회 (start_date ~ end_date 범위 전체 제외)
@@ -100,11 +147,10 @@ export async function GET(request: NextRequest) {
 
     leaveRequests?.forEach(leave => {
       // 다일 연차도 start_date ~ end_date 전체 날짜를 제외 목록에 추가
-      const start = new Date(leave.start_date)
-      const end = new Date(leave.end_date)
-      for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        if (!isWeekend(d)) {
-          const dateStr = d.toLocaleDateString('en-CA')
+      const start = normalizeDateString(leave.start_date)
+      const end = normalizeDateString(leave.end_date)
+      for (let dateStr = start; dateStr <= end; dateStr = addDaysToDateString(dateStr, 1)) {
+        if (!isWeekendDate(dateStr)) {
           diarySet.add(`${leave.user_id}_${dateStr}`)
         }
       }

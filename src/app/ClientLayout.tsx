@@ -139,8 +139,12 @@ export default function ClientLayout({
         subtitle: '나라장터 입찰 모니터링 설정을 관리하세요.'
       },
       '/manual-management': {
-        title: '메뉴얼 관리',
-        subtitle: '업무 메뉴얼을 등록하고 관리하세요.'
+        title: '매뉴얼 관리',
+        subtitle: '업무 매뉴얼과 알람 문구를 등록하고 관리하세요.'
+      },
+      '/chatbot-management': {
+        title: '챗봇 관리',
+        subtitle: 'QR 챗봇으로 넘어가는 매뉴얼/알람 색인을 확인하세요.'
       },
       '/leave-management': {
         title: '연차/반차 관리',
@@ -158,7 +162,7 @@ export default function ClientLayout({
 
     return pageMap[path] || {
       title: 'UNECO RAIL',
-      subtitle: '유네코레일 전기팀 자재관리 시스템입니다.'
+      subtitle: '유네코레일 전기팀 업무관리 시스템입니다.'
     }
   }
 
@@ -183,6 +187,47 @@ export default function ClientLayout({
     };
     setIsApp(checkIsApp());
   }, [])
+
+  // 모바일 하드웨어 뒤로가기 버튼 제어
+  useEffect(() => {
+    let backButtonListener: any = null;
+
+    const setupBackButton = async () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const cap = (window as any).Capacitor;
+          if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
+            const { App } = await import('@capacitor/app');
+            
+            backButtonListener = await App.addListener('backButton', ({ canGoBack }) => {
+              const currentPath = window.location.pathname;
+              console.log('하드웨어 뒤로가기 감지 - 경로:', currentPath, 'canGoBack:', canGoBack);
+              
+              // 로그인, 대시보드, 재고관리 메인 화면에서는 앱 종료
+              if (['/', '/login', '/dashboard', '/stock-management'].includes(currentPath)) {
+                App.exitApp();
+              } else if (canGoBack) {
+                window.history.back();
+              } else {
+                App.exitApp();
+              }
+            });
+            console.log('Capacitor 하드웨어 뒤로가기 리스너 등록 완료');
+          }
+        } catch (error) {
+          console.error('Capacitor 뒤로가기 리스너 설정 중 오류:', error);
+        }
+      }
+    };
+
+    setupBackButton();
+
+    return () => {
+      if (backButtonListener) {
+        backButtonListener.remove();
+      }
+    };
+  }, []);
 
   return (
     <div className={isApp ? "flex flex-col h-[100dvh] bg-[#f4f5f7] relative" : "flex h-[100dvh] bg-[#f4f5f7] relative"}>

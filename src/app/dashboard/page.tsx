@@ -169,12 +169,32 @@ export default function DashboardPage() {
           )
           .map((trip: any) => {
             const isBusinessTrip = trip.trip_type === 'business' || trip.trip_type === 'business_trip'
+            let tripLabel = isBusinessTrip ? '출장' : '외근'
+            if (trip.trip_type === 'early_leave' || (trip.title || '').includes('조퇴') || (trip.purpose || '').includes('조퇴')) {
+              tripLabel = '조퇴'
+            }
+            let displayTitle = trip.title || ''
+            displayTitle = displayTitle
+              .replace(/선반/g, 'A')
+              .replace(/유니트/g, 'U')
+              .replace(/공장시운전/g, '공시')
+              .replace(/현장시운전/g, '현시')
+
+            let finalSummary = displayTitle
+            if (displayTitle) {
+              if (!displayTitle.includes(tripLabel)) {
+                finalSummary = `${displayTitle} ${tripLabel}`
+              }
+            } else {
+              finalSummary = `${trip.user_name} ${tripLabel}`
+            }
+
             return {
               id: trip.id,
               category: '출장/외근',
               subCategory: isBusinessTrip ? '출장' : '외근',
               subSubCategory: trip.purpose || '기타',
-              summary: `[${isBusinessTrip ? '출장' : '외근'}] ${trip.title}`,
+              summary: finalSummary,
               description: trip.purpose,
               location: trip.location || '미지정',
               start: {
@@ -216,12 +236,32 @@ export default function DashboardPage() {
             .filter((trip: any) => String(trip.id).startsWith('temp_'))
             .map((trip: any) => {
               const isBusinessTrip = trip.trip_type === 'business' || trip.trip_type === 'business_trip'
+              let tripLabel = isBusinessTrip ? '출장' : '외근'
+              if (trip.trip_type === 'early_leave' || (trip.title || '').includes('조퇴') || (trip.purpose || '').includes('조퇴')) {
+                tripLabel = '조퇴'
+              }
+              let displayTitle = trip.title || ''
+              displayTitle = displayTitle
+                .replace(/선반/g, 'A')
+                .replace(/유니트/g, 'U')
+                .replace(/공장시운전/g, '공시')
+                .replace(/현장시운전/g, '현시')
+
+              let finalSummary = displayTitle
+              if (displayTitle) {
+                if (!displayTitle.includes(tripLabel)) {
+                  finalSummary = `${displayTitle} ${tripLabel}`
+                }
+              } else {
+                finalSummary = `${tripLabel}`
+              }
+
               return {
                 id: trip.id,
                 category: '출장/외근',
                 subCategory: isBusinessTrip ? '출장' : '외근',
                 subSubCategory: trip.purpose || '기타',
-                summary: `[${isBusinessTrip ? '출장' : '외근'}] ${trip.title}`,
+                summary: finalSummary,
                 description: trip.purpose,
                 location: trip.location || '미지정',
                 start: {
@@ -398,23 +438,32 @@ export default function DashboardPage() {
           eventDate.setHours(0, 0, 0, 0)
           return eventDate >= today
         })
-        .map((request: any) => ({
-          id: request.id,
-          title: `${request.leave_type === 'annual' ? '연차' : '반차'} - ${request.reason || '개인사유'}`,
-          start: {
-            date: request.start_date,
-            dateTime: request.start_time ? `${request.start_date}T${request.start_time}` : request.start_date
-          },
-          end: {
-            date: request.end_date,
-            dateTime: request.end_time ? `${request.end_date}T${request.end_time}` : request.end_date
-          },
-          category: '반/연차',
-          participant: {
-            id: request.user_id,
-            name: request.user_name || 'Unknown'
+        .map((request: any) => {
+          let leaveLabel = '휴가'
+          if (request.leave_type === 'annual') leaveLabel = '연차'
+          else if (request.leave_type === 'half_day') leaveLabel = '반차'
+          else if (request.leave_type === 'sick') leaveLabel = '병가'
+          else if (request.leave_type === 'personal') leaveLabel = '개인휴가'
+          else if (request.leave_type === 'early_leave' || request.leave_type === 'early' || request.leave_type === '조퇴') leaveLabel = '조퇴'
+
+          return {
+            id: request.id,
+            title: `${request.user_name || '임직원'} ${leaveLabel}`,
+            start: {
+              date: request.start_date,
+              dateTime: request.start_time ? `${request.start_date}T${request.start_time}` : request.start_date
+            },
+            end: {
+              date: request.end_date,
+              dateTime: request.end_time ? `${request.end_date}T${request.end_time}` : request.end_date
+            },
+            category: '반/연차',
+            participant: {
+              id: request.user_id,
+              name: request.user_name || 'Unknown'
+            }
           }
-        }))
+        })
         .sort((a: any, b: any) => {
           const dateA = new Date(a.start.dateTime || a.start.date || new Date())
           const dateB = new Date(b.start.dateTime || b.start.date || new Date())
@@ -472,7 +521,11 @@ export default function DashboardPage() {
                 scheduleEvents.push({
                   id: `project-${event.id}`,
                   projectId: event.projectId,
-                  projectName: event.project?.projectName || '',
+                  projectName: (event.project?.projectName || '')
+                    .replace(/선반/g, 'A')
+                    .replace(/유니트/g, 'U')
+                    .replace(/공장시운전/g, '공시')
+                    .replace(/현장시운전/g, '현시'),
                   projectNumber: event.project?.projectNumber || '',
                   type: event.eventType,
                   date: event.eventDate,
@@ -830,9 +883,15 @@ export default function DashboardPage() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7] min-h-screen">
           <div className="flex-1 overflow-auto p-2 sm:p-4 lg:p-8">
             <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
-              <div className="space-y-6">
+              <div className="space-y-5">
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-2xl font-bold text-gray-950">대시보드</h1>
+                  <p className="text-sm text-gray-500">보고 누락, 결재 대기, 휴가 및 프로젝트 일정을 카드 섹션으로 확인합니다.</p>
+                </div>
+
+                <section className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-5">
                 {/* 1. 누락된 업무보고 */}
-                <Card className="bg-white rounded-2xl border border-orange-200 shadow-md">
+                <Card className="bg-white rounded-lg border border-orange-200 shadow-sm">
                   <CardHeader className="p-3 sm:px-4 sm:py-3 border-b border-orange-100 bg-orange-50/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -868,7 +927,7 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* 2. 누락된 출장/외근 보고 */}
-                <Card className="bg-white rounded-2xl border border-blue-200 shadow-md">
+                <Card className="bg-white rounded-lg border border-blue-200 shadow-sm">
                   <CardHeader className="p-3 sm:px-4 sm:py-3 border-b border-blue-100 bg-blue-50/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -908,7 +967,7 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* 3. 승인 대기 내역 */}
-                <Card className="bg-white rounded-2xl border border-rose-200 shadow-md">
+                <Card className="bg-white rounded-lg border border-rose-200 shadow-sm">
                   <CardHeader className="p-3 sm:px-4 sm:py-3 border-b border-rose-100 bg-rose-50/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -942,7 +1001,7 @@ export default function DashboardPage() {
                                       <span className="text-rose-600 font-bold text-[11px] bg-rose-100 w-fit px-1.5 py-0.5 rounded mb-0.5">업무일지</span>
                                       <span className="font-bold text-gray-800">{item.user?.department} {item.user?.name} · {item.workDate}</span>
                                     </div>
-                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push('/work-diary/history')}>상세보기</Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push('/work-diary/view')}>상세보기</Button>
                                   </div>
                                 );
                               } else {
@@ -952,7 +1011,7 @@ export default function DashboardPage() {
                                       <span className="text-rose-600 font-bold text-[11px] bg-rose-100 w-fit px-1.5 py-0.5 rounded mb-0.5">출장보고</span>
                                       <span className="font-bold text-gray-800">{item.user_name} · {item.title}</span>
                                     </div>
-                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push('/work-diary/history')}>상세보기</Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push(`/business-trip-reports/${item.id}`)}>상세보기</Button>
                                   </div>
                                 );
                               }
@@ -964,7 +1023,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
                 {/* 연차/월차 예정 */}
-                <Card className="bg-white rounded-2xl border border-emerald-200 shadow-md">
+                <Card className="bg-white rounded-lg border border-emerald-200 shadow-sm">
                   <CardHeader className="p-3 sm:px-4 sm:py-3 border-b border-emerald-100 bg-emerald-50/50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -1018,7 +1077,7 @@ export default function DashboardPage() {
                 </Card>
                 {/* 프로젝트 일정 (로그인 사용자만 표시) */}
                 {user && (
-                  <Card className="bg-white rounded-2xl border border-purple-200 shadow-md">
+                  <Card className="bg-white rounded-lg border border-purple-200 shadow-sm xl:col-span-2">
                     <CardHeader className="p-3 sm:px-4 sm:py-3 border-b border-purple-100 bg-purple-50/50">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -1047,7 +1106,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-gray-100 p-2 bg-gray-50/50">
                             {projectSchedule.map((event) => (
-                                <div key={event.id} className="p-4 m-2 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex items-start gap-4">
+                                <div key={event.id} className="p-4 m-2 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex items-start gap-4">
                                   <div className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-xs shadow-inner ${
                                     event.type === '조완' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
                                     event.type === '공시' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
@@ -1070,6 +1129,7 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
                 )}
+                </section>
               </div>
 
               {/* 보고서 작성 모달 */}

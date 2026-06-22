@@ -38,30 +38,31 @@ export default function WorkToolPage() {
     )
   }
 
-  // 레벨 4 이하 사용자는 준비중 메시지 표시
+  // 개별 권한이 없거나 레벨 2 미만인 사용자는 준비중 메시지 표시
   const userLevel = user?.level || '1'
   const levelNum = parseInt(String(userLevel))
+  const hasWorkToolsPermission = user?.work_tools === true || levelNum >= 2 || userLevel.toLowerCase() === 'administrator'
 
-  if (levelNum < 4 && userLevel !== 'administrator') {
+  if (!hasWorkToolsPermission) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="bg-white rounded-xl shadow-lg p-8">
-            <Wrench className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">업무 도구</h1>
-            <p className="text-gray-600 mb-6">
-              현재 페이지 준비 중입니다.<br />
-              Level 5 이상 사용자만 이용 가능합니다.
-            </p>
-            <div className="text-sm text-gray-500">
-              현재 권한: Level {userLevel}
-            </div>
-            <Button
-              onClick={() => router.push('/dashboard')}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              대시보드로 돌아가기
-            </Button>
+             <Wrench className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+             <h1 className="text-2xl font-bold text-gray-900 mb-2">업무 도구</h1>
+             <p className="text-gray-600 mb-6">
+               현재 페이지 준비 중입니다.<br />
+               Level 2 이상 사용자만 이용 가능합니다.
+             </p>
+             <div className="text-sm text-gray-500">
+               현재 권한: Level {userLevel}
+             </div>
+             <Button
+               onClick={() => router.push('/dashboard')}
+               className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
+             >
+               대시보드로 돌아가기
+             </Button>
           </div>
         </div>
       </div>
@@ -218,8 +219,8 @@ export default function WorkToolPage() {
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="text-sm font-medium text-blue-900 mb-2">업무 도구 접근 권한</h3>
             <div className="text-xs text-blue-800 space-y-1">
-              <p>• Level 3 이상: 업무 도구 접근 가능</p>
-              <p>• Level 1-2: 재고 조회만 가능 (업무 도구 접근 불가)</p>
+              <p>• Level 2 이상: 업무 도구 접근 가능</p>
+              <p>• Level 1: 재고 조회만 가능 (업무 도구 접근 불가)</p>
               <p>• 각 도구는 개발 진행 중이며, 향후 기능이 추가될 예정입니다.</p>
             </div>
           </div>

@@ -10,7 +10,7 @@ interface UserContextType {
   user: User | null
   loading: boolean
   error: string | null
-  login: (username: string, password: string) => Promise<boolean>
+  login: (username: string, password: string, autoLogin?: boolean) => Promise<boolean>
   logout: () => void
   hasPermission: (permission: string) => boolean
   isAdmin: () => boolean
@@ -70,14 +70,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // 로그인 함수
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (username: string, password: string, autoLogin: boolean = false): Promise<boolean> => {
     try {
       setLoading(true)
       setError(null)
       
       // console.log('UserContext: 로그인 시도:', username)
       
-      const user = await UserService.login(username, password)
+      const user = await UserService.login(username, password, autoLogin)
       if (user) {
         // console.log('UserContext: 로그인 성공:', user.username)
         setUser(user)
@@ -91,6 +91,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         
         // localStorage에 사용자 정보 저장
         localStorage.setItem('user', JSON.stringify(user))
+        if (autoLogin) {
+          localStorage.setItem('autoLogin', 'true')
+        } else {
+          localStorage.removeItem('autoLogin')
+        }
         
         return true
       } else {
@@ -117,6 +122,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       
       // 2. 로컬 스토리지 및 쿠키 정리
       localStorage.removeItem('user')
+      localStorage.removeItem('autoLogin')
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
       
       // 3. 서버 세션 정리 (비동기 시도하되 기다리지 않음 또는 에러 무시)

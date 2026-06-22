@@ -1,54 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { naraMonitoringService } from '@/lib/nara/monitoring'
+import type { MonitoringConfig } from '@/lib/nara/types'
+import { supabaseServer } from '@/lib/supabaseServer'
 
 export const dynamic = 'force-dynamic'
+
+const DEFAULT_KEYWORDS = ['전기', '전력', '케이블', '변압기']
+
+function normalizeKeywords(keywords: unknown) {
+  const values = Array.isArray(keywords)
+    ? keywords.map((keyword) => String(keyword).trim()).filter(Boolean)
+    : []
+
+  return values.length > 0 ? values : DEFAULT_KEYWORDS
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { keywords, telegramEnabled, telegramChatId, checkInterval } = body
+    const { telegramEnabled, telegramBotToken, telegramChatId, naraMarketApiKey, checkInterval } = body
+    const keywords = normalizeKeywords(body.keywords)
 
-    // 모니터링 설정 검증
-    if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
-      return NextResponse.json(
-        { message: '키워드가 필요합니다.' },
-        { status: 400 }
-      )
+    if (telegramEnabled && !telegramChatId && !process.env['TELEGRAM_WORK_CHAT_ID']) {
+      return NextResponse.json({ message: '텔레그램 채팅 ID가 필요합니다.' }, { status: 400 })
     }
 
-    if (telegramEnabled && !telegramChatId) {
-      return NextResponse.json(
-        { message: '텔레그램 채팅 ID가 필요합니다.' },
-        { status: 400 }
-      )
-    }
-
-    // TODO: 실제 모니터링 서비스 시작 로직 구현
-    // - 키워드 기반 크롤링 시작
-    // - 텔레그램 봇 설정
-    // - 주기적 확인 스케줄링
-
-    console.log('모니터링 시작:', {
+    const config: MonitoringConfig = {
+      enabled: true,
       keywords,
-      telegramEnabled,
-      telegramChatId,
-      checkInterval
-    })
+      telegramEnabled: Boolean(telegramEnabled),
+      telegramBotToken: telegramBotToken || '',
+      telegramChatId: telegramChatId || '',
+      naraMarketApiKey: naraMarketApiKey || '',
+      checkInterval: Number(checkInterval) || 30,
+      sources: ['korail', 'naramarket'],
+      workHoursOnly: false
+    }
+
+    await supabaseServer
+      .from('app_settings')
+      .upsert({
+        key: 'nara-monitoring',
+        value: {
+          keywords,
+          telegramEnabled: Boolean(telegramEnabled),
+          telegramBotToken: telegramBotToken || '',
+          telegramChatId: telegramChatId || '',
+          naraMarketApiKey: naraMarketApiKey || '',
+          checkInterval: Number(checkInterval) || 30
+        },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' })
+
+    const started = await naraMonitoringService.start(config)
+
+    if (!started) {
+      return NextResponse.json({ message: '모니터링 시작에 실패했습니다.' }, { status: 500 })
+    }
 
     return NextResponse.json({
       success: true,
-      message: '모니터링이 시작되었습니다.',
-      config: {
-        keywords,
-        telegramEnabled,
-        telegramChatId,
-        checkInterval
-      }
+      message: '모니터링을 시작했습니다.',
+      config: { keywords, telegramEnabled, telegramBotToken, telegramChatId, naraMarketApiKey, checkInterval },
+      bidItems: naraMonitoringService.getBids(),
+      status: naraMonitoringService.getStatus()
     })
   } catch (error) {
-    console.error('모니터링 시작 오류:', error)
-    return NextResponse.json(
-      { message: '모니터링 시작에 실패했습니다.' },
-      { status: 500 }
-    )
+    console.error('NARA monitoring start error:', error)
+    return NextResponse.json({ message: '모니터링 시작에 실패했습니다.' }, { status: 500 })
   }
 }

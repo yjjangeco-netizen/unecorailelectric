@@ -32,6 +32,7 @@ export async function GET(_request: NextRequest) {
         project_name: item.project_name || '', // FIXED: project_name을 project_name으로 반환
         category: item.category || 'project', // DB: category
         description: item.description || '',
+        ProjectStatus: item.ProjectStatus || 'Manufacturing',
         status: item.ProjectStatus || 'Manufacturing',
         priority: item.priority || 'medium',
         start_date: item.start_date || '',
@@ -41,6 +42,7 @@ export async function GET(_request: NextRequest) {
         site_test_date: item.site_test_date || '',
         completion_date: item.completion_date || '',
         warranty_period: item.warranty_period || '',
+        warranty_end_date: item.warranty_end_date || '',
         budget: item.budget || 0,
         manager_id: item.manager_id || '',
         client_name: item.client_name || '',
@@ -149,13 +151,16 @@ export async function POST(request: NextRequest) {
           project_name: projectName, // name 또는 project_name 모두 허용
           category: projectData.category || 'project', // DB: category
           description: projectData.description || null,
-          ProjectStatus: projectData.status || 'Manufacturing', // FIXED: ProjectStatus
+          ProjectStatus: projectData.ProjectStatus || projectData.status || 'Manufacturing', // FIXED: ProjectStatus
           priority: projectData.priority || 'medium',
           start_date: projectData.start_date || null,
           end_date: projectData.end_date || null,
           assembly_date: projectData.assembly_date || null,
           factory_test_date: projectData.factory_test_date || null,
           site_test_date: projectData.site_test_date || null,
+          completion_date: projectData.completion_date || null,
+          warranty_period: projectData.warranty_period || null,
+          warranty_end_date: projectData.warranty_end_date || null,
           budget: projectData.budget || null,
           manager_id: projectData.manager_id || null,
           client_name: projectData.client_name || null,

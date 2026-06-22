@@ -8,7 +8,7 @@ export interface BidItem {
   company: string
   price: string
   deadline: string
-  status: 'active' | 'closed' | 'upcoming'
+  status: 'active' | 'closed' | 'upcoming' | 'ending' | 'ended'
   url: string
   source: 'naramarket' | 'korail'
   createdAt: string
@@ -92,7 +92,9 @@ export interface MonitoringConfig {
   keywords: string[]
   checkInterval: number
   telegramEnabled: boolean
+  telegramBotToken?: string
   telegramChatId: string
+  naraMarketApiKey?: string
   sources: ('naramarket' | 'korail')[]
   workHoursOnly: boolean
 }

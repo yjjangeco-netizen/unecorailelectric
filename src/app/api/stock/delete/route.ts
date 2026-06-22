@@ -45,7 +45,7 @@ export async function DELETE(request: NextRequest) {
     // 재고 존재 확인
     const { data: item, error: fetchError } = await supabase
       .from('items')
-      .select('id, item_name')
+      .select('id, name')
       .eq('id', itemId)
       .single()
 
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
       message: '재고 품목이 성공적으로 삭제되었습니다.',
       deletedItem: {
         id: item.id,
-        name: item.item_name
+        name: item.name
       }
     })
 

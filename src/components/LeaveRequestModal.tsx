@@ -22,7 +22,7 @@ interface LeaveRequestModalProps {
 export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDate, event }: LeaveRequestModalProps) {
   const { user } = useUser()
   const [formData, setFormData] = useState({
-    leaveType: 'annual' as 'annual' | 'half_day' | 'sick' | 'personal',
+    leaveType: 'annual' as 'annual' | 'half_day' | 'sick' | 'personal' | 'early_leave',
     startDate: '',
     endDate: '',
     startTime: '',
@@ -101,12 +101,12 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
     setFormData(prev => {
       const updated = { ...prev, [field]: value }
       
-      // 반차인 경우 시간 필수
-      if (field === 'leaveType' && value === 'half_day') {
-        updated.startTime = '08:00'
-        updated.endTime = '12:00'
+      // 반차나 조퇴인 경우 시간 필수 및 일수 계산
+      if (field === 'leaveType' && (value === 'half_day' || value === 'early_leave')) {
+        updated.startTime = value === 'half_day' ? '08:00' : '14:00'
+        updated.endTime = value === 'half_day' ? '12:00' : '18:00'
         updated.totalDays = 0.5
-      } else if (field === 'leaveType' && value !== 'half_day') {
+      } else if (field === 'leaveType' && value !== 'half_day' && value !== 'early_leave') {
         updated.startTime = ''
         updated.endTime = ''
       }
@@ -118,7 +118,7 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
           const end = new Date(updated.endDate)
           const diffTime = Math.abs(end.getTime() - start.getTime())
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
-          updated.totalDays = updated.leaveType === 'half_day' ? 0.5 : diffDays
+          updated.totalDays = (updated.leaveType === 'half_day' || updated.leaveType === 'early_leave') ? 0.5 : diffDays
         }
       }
       
@@ -156,8 +156,8 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
       return
     }
 
-    if (formData.leaveType === 'half_day' && (!formData.startTime || !formData.endTime)) {
-      alert('반차는 시작 시간과 종료 시간이 필수입니다.')
+    if ((formData.leaveType === 'half_day' || formData.leaveType === 'early_leave') && (!formData.startTime || !formData.endTime)) {
+      alert('반차 및 조퇴는 시작 시간과 종료 시간이 필수입니다.')
       return
     }
 
@@ -248,6 +248,12 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
                     <span>반차 (오전/오후)</span>
                   </div>
                 </SelectItem>
+                <SelectItem value="early_leave" className="hover:bg-blue-50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🏃</span>
+                    <span>조퇴</span>
+                  </div>
+                </SelectItem>
                 <SelectItem value="sick" className="hover:bg-blue-50">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🏥</span>
@@ -305,8 +311,8 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
             </div>
           </div>
 
-          {/* 반차인 경우 시간 선택 */}
-          {formData.leaveType === 'half_day' && (
+          {/* 반차 또는 조퇴인 경우 시간 선택 */}
+          {(formData.leaveType === 'half_day' || formData.leaveType === 'early_leave') && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-gray-700">
@@ -381,6 +387,10 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
                   <li className="flex items-start gap-2">
                     <span className="text-amber-600 font-bold">•</span>
                     <span><strong>반차:</strong> 오전 또는 오후 반나절 휴가</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-amber-600 font-bold">•</span>
+                    <span><strong>조퇴:</strong> 근무 시간 중 조기 퇴근</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-amber-600 font-bold">•</span>

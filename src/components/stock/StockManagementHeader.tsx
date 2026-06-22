@@ -27,7 +27,7 @@ export default function StockManagementHeader({
         <div className="flex justify-between items-center py-6">
           <div className="flex items-center">
             <Package className="h-8 w-8 text-blue-600 mr-3" />
-            <h1 className="text-2xl font-bold text-gray-900">유네코레일 전기팀 자재관리 시스템</h1>
+            <h1 className="text-2xl font-bold text-gray-900">유네코레일 전기팀 업무관리 시스템</h1>
           </div>
           
           {/* 우측: 로그인/사용자 정보 */}

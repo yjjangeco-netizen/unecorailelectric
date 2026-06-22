@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
-import { verifyToken } from '@/lib/security'
+import { getApiUser } from '@/lib/apiAuth'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,23 +8,11 @@ export async function POST(request: NextRequest) {
   try {
     console.log('=== 재고 트랜잭션 API 호출됨 ===')
 
-    // 인증 토큰 확인
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: '인증 토큰이 필요합니다' },
-        { status: 401 }
-      )
-    }
+    const apiUser = getApiUser(request)
 
-    // JWT 토큰 검증
-    const decoded = verifyToken(token)
-    
-    if (!decoded) {
+    if (!apiUser) {
       return NextResponse.json(
-        { error: '유효하지 않은 토큰입니다' },
+        { error: '유효하지 않은 인증 정보입니다' },
         { status: 401 }
       )
     }
@@ -33,7 +21,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('요청 데이터:', body)
     
-    const { type, itemId, quantity, userId, reason, note } = body
+    const { type, itemId, quantity, reason, note } = body
     
     // 필수 필드 검증
     if (!type || !itemId || !quantity) {
@@ -63,7 +51,7 @@ export async function POST(request: NextRequest) {
     // 현재 재고 조회
     const { data: currentItem, error: fetchError } = await supabase
       .from('items')
-      .select('id, item_name, current_quantity, stock_in, stock_out')
+      .select('id, name, current_quantity, closing_quantity, stock_in, stock_out')
       .eq('id', itemId)
       .single()
 
@@ -76,7 +64,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 트랜잭션 유형에 따라 처리
-    let newCurrentQuantity = currentItem.current_quantity || 0
+    let newCurrentQuantity =
+      (currentItem.closing_quantity || 0) +
+      (currentItem.stock_in || 0) -
+      (currentItem.stock_out || 0)
     let newStockIn = currentItem.stock_in || 0
     let newStockOut = currentItem.stock_out || 0
 
@@ -127,16 +118,13 @@ export async function POST(request: NextRequest) {
     try {
       const historyData = {
         item_id: itemId,
-        item_name: updatedItem.item_name || updatedItem.name || updatedItem.product || 'Unknown Item',
-        type: type,
-        quantity: quantity,
-        previous_quantity: currentItem.current_quantity,
-        new_quantity: newCurrentQuantity,
+        event_type: type === 'in' || type === '입고' ? 'IN' : 'OUT',
+        quantity,
         reason: reason || 'Stock Out',
-        note: note,
-        location: updatedItem.location || '',
-        user_level: body.userLevel || '1',
-        created_at: new Date().toISOString()
+        notes: note,
+        received_by: type === 'in' || type === '입고' ? apiUser.username : undefined,
+        ordered_by: type === 'out' || type === '출고' ? apiUser.username : undefined,
+        event_date: new Date().toISOString()
       }
       console.log('Logging History Data:', historyData)
 
@@ -158,10 +146,13 @@ export async function POST(request: NextRequest) {
       message: `재고 ${type === 'in' || type === '입고' ? '입고' : '출고'}가 성공적으로 처리되었습니다.`,
       data: {
         itemId: updatedItem.id,
-        itemName: updatedItem.item_name,
+        itemName: updatedItem.name,
         transactionType: type,
         quantity,
-        previousQuantity: currentItem.current_quantity,
+        previousQuantity:
+          (currentItem.closing_quantity || 0) +
+          (currentItem.stock_in || 0) -
+          (currentItem.stock_out || 0),
         newQuantity: updatedItem.current_quantity
       }
     })

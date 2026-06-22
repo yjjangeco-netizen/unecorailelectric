@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [status, setStatus] = useState('idle')
   const [saveId, setSaveId] = useState(false)
   const [savePassword, setSavePassword] = useState(false)
+  const [autoLogin, setAutoLogin] = useState(false)
   
   const { login, user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
@@ -31,6 +32,7 @@ export default function LoginPage() {
     const savedPassword = localStorage.getItem('savedPassword')
     const saveIdChecked = localStorage.getItem('saveId') === 'true'
     const savePasswordChecked = localStorage.getItem('savePassword') === 'true'
+    const autoLoginChecked = localStorage.getItem('autoLoginChecked') === 'true'
     
     if (savedId && saveIdChecked) {
       setUsername(savedId)
@@ -39,6 +41,9 @@ export default function LoginPage() {
     if (savedPassword && savePasswordChecked) {
       setPassword(savedPassword)
       setSavePassword(true)
+    }
+    if (autoLoginChecked) {
+      setAutoLogin(true)
     }
   }, [])
 
@@ -49,7 +54,7 @@ export default function LoginPage() {
     setStatus('loading')
 
     try {
-      const success = await login(username, password)
+      const success = await login(username, password, autoLogin)
       
       if (success) {
         if (saveId) {
@@ -66,6 +71,12 @@ export default function LoginPage() {
         } else {
           localStorage.removeItem('savedPassword')
           localStorage.removeItem('savePassword')
+        }
+
+        if (autoLogin) {
+          localStorage.setItem('autoLoginChecked', 'true')
+        } else {
+          localStorage.removeItem('autoLoginChecked')
         }
 
 
@@ -127,7 +138,7 @@ export default function LoginPage() {
             <Building2 className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">유네코레일</h2>
-          <p className="mt-2 text-sm text-gray-600 font-medium">전기팀 자재관리 시스템</p>
+          <p className="mt-2 text-sm text-gray-600 font-medium">전기팀 업무관리 시스템</p>
         </div>
 
         <div className="space-y-6 relative">
@@ -199,8 +210,8 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center">
+          <div className="grid grid-cols-3 gap-2 py-2">
+            <div className="flex items-center justify-start">
               <input
                 id="save-id"
                 name="save-id"
@@ -209,12 +220,12 @@ export default function LoginPage() {
                 checked={saveId}
                 onChange={(e) => setSaveId(e.target.checked)}
               />
-              <label htmlFor="save-id" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
+              <label htmlFor="save-id" className="ml-1.5 block text-xs sm:text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900 whitespace-nowrap">
                 아이디 저장
               </label>
             </div>
             
-            <div className="flex items-center">
+            <div className="flex items-center justify-center">
               <input
                 id="save-password"
                 name="save-password"
@@ -223,8 +234,22 @@ export default function LoginPage() {
                 checked={savePassword}
                 onChange={(e) => setSavePassword(e.target.checked)}
               />
-              <label htmlFor="save-password" className="ml-2 block text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900">
-                비밀번호 저장
+              <label htmlFor="save-password" className="ml-1.5 block text-xs sm:text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900 whitespace-nowrap">
+                비번 저장
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end">
+              <input
+                id="auto-login"
+                name="auto-login"
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors cursor-pointer"
+                checked={autoLogin}
+                onChange={(e) => setAutoLogin(e.target.checked)}
+              />
+              <label htmlFor="auto-login" className="ml-1.5 block text-xs sm:text-sm text-gray-600 cursor-pointer select-none hover:text-gray-900 whitespace-nowrap">
+                자동 로그인
               </label>
             </div>
           </div>

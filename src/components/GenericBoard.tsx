@@ -28,6 +28,8 @@ export default function GenericBoard({ boardType, emptyMessage = '등록된 게�
   const router = useRouter()
   const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState('')
+  const [machineFilter, setMachineFilter] = useState('전체')
+  const [hardwareFilter, setHardwareFilter] = useState('전체')
   const [boardData, setBoardData] = useState<BoardItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -60,7 +62,15 @@ export default function GenericBoard({ boardType, emptyMessage = '등록된 게�
     fetchBoards()
   }, [boardType])
 
-  const filteredData = boardData.filter(item => item.title.includes(searchTerm))
+  const filteredData = boardData.filter(item => {
+    const matchesSearch = item.title.includes(searchTerm)
+    const matchesMachine = boardType !== 'TECH_DATA' || machineFilter === '전체' || item.title.includes(`[${machineFilter}]`)
+    const matchesHardware = boardType !== 'TECH_DATA' || hardwareFilter === '전체' || item.title.includes(`[${hardwareFilter}]`)
+    return matchesSearch && matchesMachine && matchesHardware
+  })
+
+  const machineOptions = ['전체', '선반', '전삭기', '디스크 선반', 'WSMS', '공통']
+  const hardwareOptions = ['전체', 'Siemens', 'Fanuc', '공통']
 
   return (
     <div className="flex flex-col space-y-4">
@@ -75,6 +85,28 @@ export default function GenericBoard({ boardType, emptyMessage = '등록된 게�
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        {boardType === 'TECH_DATA' && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={machineFilter}
+              onChange={(event) => setMachineFilter(event.target.value)}
+              className="h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {machineOptions.map((option) => (
+                <option key={option} value={option}>기기면: {option}</option>
+              ))}
+            </select>
+            <select
+              value={hardwareFilter}
+              onChange={(event) => setHardwareFilter(event.target.value)}
+              className="h-10 rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {hardwareOptions.map((option) => (
+                <option key={option} value={option}>하드웨어: {option}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <Button onClick={() => router.push(`${basePath}/write`)} className="bg-blue-600 hover:bg-blue-700 text-white shrink-0">
           <Plus className="h-4 w-4 mr-2" />
           글쓰기

@@ -2,7 +2,7 @@
 
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +46,15 @@ interface Project {
   description?: string
 }
 
+function formatKstDate(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date)
+}
+
 export default function WorkDiaryWritePage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
@@ -54,9 +63,9 @@ export default function WorkDiaryWritePage() {
   const [workDate, setWorkDate] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      return params.get('date') || new Date().toISOString().split('T')[0]
+      return params.get('date') || formatKstDate()
     }
-    return new Date().toISOString().split('T')[0]
+    return formatKstDate()
   })
   const [dailyStartTime, setDailyStartTime] = useState('08:00')
   const [dailyEndTime, setDailyEndTime] = useState('17:00')
@@ -69,6 +78,8 @@ export default function WorkDiaryWritePage() {
   const [loading, setLoading] = useState(false)
   const [isProjectSearchOpen, setIsProjectSearchOpen] = useState(false)
   const [currentSearchIndex, setCurrentSearchIndex] = useState<number | null>(null)
+  const [missingReports, setMissingReports] = useState<any[]>([])
+  const [loadingMissingReports, setLoadingMissingReports] = useState(false)
 
   // 근무시간 계산 함수 (퇴근시간 - 출근시간 - 1시간)
   const calculateWorkHours = (startTime: string, endTime: string): number => {
@@ -143,6 +154,27 @@ export default function WorkDiaryWritePage() {
   useEffect(() => {
     loadProjects()
   }, [])
+
+  const loadMissingReports = useCallback(async () => {
+    if (!user?.id) return
+
+    setLoadingMissingReports(true)
+    try {
+      const response = await fetch(`/api/work-diary/missing?userId=${encodeURIComponent(user.id)}&userLevel=${encodeURIComponent(String(user.level || ''))}&scope=self`)
+      if (response.ok) {
+        const result = await response.json()
+        setMissingReports(result.data || [])
+      }
+    } catch (error) {
+      console.error('미보고 업무보고 조회 실패:', error)
+    } finally {
+      setLoadingMissingReports(false)
+    }
+  }, [user?.id, user?.level])
+
+  useEffect(() => {
+    loadMissingReports()
+  }, [loadMissingReports])
 
   const loadProjects = async () => {
     try {
@@ -284,6 +316,37 @@ export default function WorkDiaryWritePage() {
       <div className="container mx-auto px-4 py-8">
         {/* 헤더 */}
 
+
+        <Card className="mb-4 border-orange-200 bg-orange-50/40 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base text-orange-900">
+              <FileText className="h-5 w-5 text-orange-600" />
+              미보고된 업무보고
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingMissingReports ? (
+              <p className="text-sm text-orange-700">미보고 내역을 확인하는 중입니다.</p>
+            ) : missingReports.length === 0 ? (
+              <p className="text-sm text-gray-600">현재 작성할 미보고 업무보고가 없습니다.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {missingReports.map((report, index) => (
+                  <Button
+                    key={`${report.date}-${index}`}
+                    type="button"
+                    variant={workDate === report.date ? 'default' : 'outline'}
+                    size="sm"
+                    className={workDate === report.date ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'border-orange-200 bg-white text-orange-700 hover:bg-orange-100'}
+                    onClick={() => setWorkDate(report.date)}
+                  >
+                    {report.date}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="bg-white border border-gray-200 shadow-sm">
           <CardContent className="p-8 space-y-8">

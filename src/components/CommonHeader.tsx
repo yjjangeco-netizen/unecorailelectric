@@ -45,13 +45,14 @@ export default function CommonHeader({
   onShowUserManagement: _onShowUserManagement,
   onLogout,
   onShowLoginModal,
-  title = "유네코레일 전기팀 자재관리 시스템",
+  title = "유네코레일 전기팀 업무관리 시스템",
   backUrl: _backUrl,
   customButtons = [],
   showUserSpecificMenus = false
 }: CommonHeaderProps) {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isNaraOpen, setIsNaraOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const handleLogout = () => {
@@ -112,7 +113,7 @@ export default function CommonHeader({
         case 'schedule':
           return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
         case 'work_tools':
-          return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
+          return currentUser?.work_tools === true || isLevel2 || isLevel3 || isLevel4 || isLevel5
         case 'sop':
           return isLevel3 || isLevel4 || isLevel5 // Level 3 이상
         case 'nara':
@@ -193,6 +194,52 @@ export default function CommonHeader({
                 const Icon = item.icon
                 
                 // 설정 메뉴인 경우 서브메뉴 처리
+                if (item.key === 'nara') {
+                  return (
+                    <div key={item.name}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          if (!isNaraOpen) {
+                            router.push(item.href)
+                          }
+                          setIsNaraOpen(!isNaraOpen)
+                          setIsSettingsOpen(false)
+                        }}
+                        className="w-full text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3 justify-start"
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                        <svg
+                          className={`ml-auto h-4 w-4 transition-transform ${isNaraOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </Button>
+
+                      {isNaraOpen && (
+                        <div className="ml-8 mt-2 space-y-1">
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              router.push('/nara-monitoring')
+                              setIsMenuOpen(false)
+                              setIsNaraOpen(false)
+                            }}
+                            className="w-full text-gray-500 hover:bg-gray-50 hover:text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-3 justify-start text-sm"
+                          >
+                            <BarChart3 className="h-4 w-4" />
+                            <span>입찰 모니터링</span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
                 if (item.key === 'settings') {
                   return (
                     <div key={item.name}>
@@ -204,6 +251,7 @@ export default function CommonHeader({
                             router.push(item.href)
                           }
                           setIsSettingsOpen(!isSettingsOpen)
+                          setIsNaraOpen(false)
                         }}
                         className="w-full text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-4 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3 justify-start"
                       >
@@ -245,18 +293,6 @@ export default function CommonHeader({
                           >
                             <Package className="h-4 w-4" />
                             <span>프로젝트 관리</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => {
-                              router.push('/nara-settings')
-                              setIsMenuOpen(false)
-                              setIsSettingsOpen(false)
-                            }}
-                            className="w-full text-gray-500 hover:bg-gray-50 hover:text-gray-900 px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-3 justify-start text-sm"
-                          >
-                            <BarChart3 className="h-4 w-4" />
-                            <span>입찰모니터링 관리</span>
                           </Button>
                         </div>
                       )}

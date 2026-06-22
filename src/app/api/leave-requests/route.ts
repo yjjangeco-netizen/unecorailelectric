@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createApiClient } from '@/lib/supabaseServer'
+import { notifyWorkUpdate } from '@/lib/assistantNotifications'
 
 export async function GET(request: NextRequest) {
   try {
     const userLevel = request.headers.get('x-user-level') || '1'
+    const { searchParams } = new URL(request.url)
+    const startDate = searchParams.get('startDate') || new Date().toISOString().split('T')[0]
+    const endDate = searchParams.get('endDate')
     
     // 레벨 5 이상 또는 administrator만 모든 연차 조회 가능
     const canViewAll = userLevel === '5' || userLevel === 'admin' || userLevel === 'administrator'
@@ -19,8 +23,12 @@ export async function GET(request: NextRequest) {
           name
         )
       `)
-      .gte('start_date', new Date().toISOString().split('T')[0])
+      .gte('end_date', startDate)
       .order('start_date', { ascending: true })
+
+    if (endDate) {
+      query = query.lte('start_date', endDate)
+    }
     
     // 레벨이 낮으면 자신의 것만
     if (!canViewAll) {
@@ -161,6 +169,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('연차 신청 성공:', data)
+    await notifyWorkUpdate('휴가/조퇴 일정이 등록되었습니다.', `${user_id} ${leave_type} ${start_date}~${end_date}`)
     return NextResponse.json(data)
     
   } catch (error) {

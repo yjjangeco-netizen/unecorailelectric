@@ -1,7 +1,6 @@
 'use client'
 
 import { useUser } from '@/hooks/useUser'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,22 +14,13 @@ import ProjectEditModal from '@/components/ProjectEditModal'
 import SpecificationGenerator from '@/components/SpecificationGenerator'
 import type { Project } from '@/lib/types'
 import {
-  ArrowLeft,
   Plus,
   Edit,
   FileText,
   BarChart3,
-  Users,
-  Calendar,
-  CheckCircle,
-  XCircle,
   Search,
   X,
   Settings,
-  Trash2,
-  PlayCircle,
-  Clock,
-  FolderOpen
 } from 'lucide-react'
 
 // 프로젝트명 업데이트 함수 (현장명 생성)
@@ -89,6 +79,11 @@ const getUpdatedProjectName = (project: Project) => {
 
       return siteNames[number] || `선반 현장 ${number}`
     }
+    else if (projectNumber.startsWith('CNCDWL')) {
+      const number = projectNumber.replace('CNCDWL-', '')
+      return `디스크 선반 현장 ${number}`
+    }
+
     // CNCUWL 시리즈 - 전삭기 현장 (실제 현장명 매핑)
     else if (projectNumber.startsWith('CNCUWL')) {
       const number = projectNumber.replace('CNCUWL-', '')
@@ -174,9 +169,44 @@ const getUpdatedProjectName = (project: Project) => {
   return '미지정 현장'
 }
 
+const getProjectStatus = (project: Project) => (
+  (project.ProjectStatus || project.status || 'Manufacturing') as string
+)
+
+const getProjectMachineType = (project: Project) => {
+  const projectNumber = project.project_number || ''
+  if (projectNumber.startsWith('CNCWL')) return '차륜선반'
+  if (projectNumber.startsWith('CNCUWL')) return '차륜전삭기'
+  if (projectNumber.startsWith('CNCDWL')) return '디스크 선반'
+  return '-'
+}
+
+const isTemporaryProject = (project: Project) => {
+  const status = getProjectStatus(project)
+  const projectNumber = project.project_number || ''
+  return status === 'Temporary' || /(^|-)T\d+/i.test(projectNumber)
+}
+
+const isDemolitionProject = (project: Project) => {
+  const status = getProjectStatus(project)
+  const projectName = getUpdatedProjectName(project)
+  return status === 'Demolished' || status === 'cancelled' || projectName.includes('철거')
+}
+
+const getProjectFolder = (project: Project) => {
+  const status = getProjectStatus(project)
+  const category = project.category || 'project'
+
+  if (category !== 'project') return 'other'
+  if (isDemolitionProject(project)) return 'demolition'
+  if (isTemporaryProject(project)) return 'temporary'
+  if (status === 'Warranty') return 'warranty'
+  if (status === 'WarrantyComplete' || status === 'Completed') return 'completed'
+  return 'ongoing'
+}
+
 export default function ProjectManagementPage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
-  const router = useRouter()
 
   // 상태 관리
   const [projects, setProjects] = useState<Project[]>([])
@@ -191,12 +221,13 @@ export default function ProjectManagementPage() {
   const [showDemolishedProjects, setShowDemolishedProjects] = useState(false)
   const [showLatheProjects, setShowLatheProjects] = useState(true)
   const [showGrindingProjects, setShowGrindingProjects] = useState(true)
+  const [showDiskLatheProjects, setShowDiskLatheProjects] = useState(true)
   const [statusFilters, setStatusFilters] = useState<string[]>([]) // 상태 필터 (체크박스) - 기본값 전체 표시
   const [sortBy, setSortBy] = useState('project_number') // 정렬 기준
   const [sortOrder, setSortOrder] = useState('asc') // 정렬 순서
 
   // 폴더 네비게이션 상태
-  const [activeFolder, setActiveFolder] = useState('ongoing')
+  const [selectedFolders, setSelectedFolders] = useState<string[]>(['ongoing'])
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -259,34 +290,11 @@ export default function ProjectManagementPage() {
     let filtered = projects
 
     // 1. 폴더별 필터링
-    filtered = filtered.filter(project => {
-      const status = (project.ProjectStatus as string) || 'Manufacturing'
-      const projectName = getUpdatedProjectName(project)
-      const category = project.category || 'project'
-      const isDemolished = status === 'Demolished' || status === 'cancelled' || projectName.includes('철거')
-
-      if (activeFolder === 'ongoing') {
-        // 진행중: 철거 아님, 완료 아님, 임시 아님, 카테고리는 프로젝트
-        return !isDemolished && status !== 'Completed' && status !== 'Temporary' && category === 'project'
-      }
-      if (activeFolder === 'completed') {
-        // 완료: 상태가 Completed
-        return status === 'Completed'
-      }
-      if (activeFolder === 'demolition') {
-        // 철거: 상태가 Demolished/cancelled 또는 이름에 철거 포함
-        return isDemolished
-      }
-      if (activeFolder === 'temporary') {
-        // 임시: 상태가 Temporary
-        return status === 'Temporary'
-      }
-      if (activeFolder === 'other') {
-        // 기타: 카테고리가 프로젝트가 아님
-        return category !== 'project'
-      }
-      return false
-    })
+    if (selectedFolders.length > 0) {
+      filtered = filtered.filter(project => {
+        return selectedFolders.includes(getProjectFolder(project))
+      })
+    }
 
     // 2. 선반/전삭기 프로젝트 필터링 (기타 업무 아닐 때만 적용하거나, 항상 적용? 사용자 의도는 하위 필터로 보임)
     // 기타 업무 폴더는 보통 번호 체계가 다를 수 있으므로 유지해도 무방하나, 보통 'project' 카테고리 내에서 의미가 큼.
@@ -295,11 +303,13 @@ export default function ProjectManagementPage() {
       const projectNumber = project.project_number || ''
       const isLathe = projectNumber.startsWith('CNCWL')
       const isGrinding = projectNumber.startsWith('CNCUWL')
+      const isDiskLathe = projectNumber.startsWith('CNCDWL')
 
       // 선반/전삭기 필터가 켜져 있으면 해당하지 않는 것은 숨김? 
       // 기존 로직: isLathe && !showLatheProjects -> 숨김
       if (isLathe && !showLatheProjects) return false
       if (isGrinding && !showGrindingProjects) return false
+      if (isDiskLathe && !showDiskLatheProjects) return false
 
       return true
     })
@@ -347,9 +357,9 @@ export default function ProjectManagementPage() {
         return sortOrder === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue)
-      } else if (sortBy === 'completion_date') {
-        aValue = a.completion_date || ''
-        bValue = b.completion_date || ''
+      } else if (sortBy === 'warranty_end_date') {
+        aValue = a.warranty_end_date || ''
+        bValue = b.warranty_end_date || ''
         return sortOrder === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue)
@@ -359,7 +369,7 @@ export default function ProjectManagementPage() {
     })
 
     setFilteredProjects(sortedFiltered)
-  }, [projects, searchTerm, activeFolder, showLatheProjects, showGrindingProjects, sortBy, sortOrder])
+  }, [projects, searchTerm, selectedFolders, showLatheProjects, showGrindingProjects, showDiskLatheProjects, sortBy, sortOrder])
 
   // 상태 필터 체크박스 핸들러
   const handleStatusFilterChange = (status: string) => {
@@ -537,6 +547,7 @@ export default function ProjectManagementPage() {
         project_number: project.project_number || '',
         category: project.category || 'project',
         ProjectStatus: project.ProjectStatus || 'Manufacturing',
+        status: project.ProjectStatus || 'Manufacturing',
         is_active: project.is_active !== false
       }
 
@@ -600,17 +611,7 @@ export default function ProjectManagementPage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* 헤더 */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/dashboard')}
-                  className="mr-4"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  뒤로가기
-                </Button>
-              </div>
+            <div className="flex items-center justify-end mb-4">
               <div className="flex gap-3">
                 <Button
                   onClick={() => setShowSpecGenerator(true)}
@@ -760,49 +761,45 @@ export default function ProjectManagementPage() {
               </CardTitle>
 
               {/* 폴더 네비게이션 */}
-              <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <span className="text-sm font-semibold text-slate-700">상태 필터</span>
                 {[
-                  { id: 'ongoing', label: '진행중 프로젝트', icon: PlayCircle, color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-200' },
-                  { id: 'completed', label: '완료 프로젝트', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100', border: 'border-green-200' },
-                  { id: 'demolition', label: '철거 프로젝트', icon: Trash2, color: 'text-red-600', bg: 'bg-red-100', border: 'border-red-200' },
-                  { id: 'temporary', label: '임시 프로젝트', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100', border: 'border-orange-200' },
-                  { id: 'other', label: '기타 업무', icon: FolderOpen, color: 'text-purple-600', bg: 'bg-purple-100', border: 'border-purple-200' },
+                  { id: 'ongoing', label: '진행중 프로젝트' },
+                  { id: 'warranty', label: '하자보증중' },
+                  { id: 'completed', label: '완료 프로젝트' },
+                  { id: 'demolition', label: '철거 프로젝트' },
+                  { id: 'temporary', label: '임시 프로젝트' },
+                  { id: 'other', label: '기타 업무' },
                 ].map((folder) => (
-                  <button
+                  <label
                     key={folder.id}
-                    onClick={() => setActiveFolder(folder.id)}
-                    className={`flex items-center gap-3 px-5 py-4 rounded-xl border-2 transition-all shadow-sm min-w-[200px] ${activeFolder === folder.id
-                      ? `${folder.bg} ${folder.border} ring-2 ring-offset-2 ring-${folder.color.split('-')[1]}-400`
-                      : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
+                    className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer"
                   >
-                    <div className={`p-2 rounded-lg bg-white ${activeFolder === folder.id ? 'shadow-sm' : 'bg-slate-100'}`}>
-                      <folder.icon className={`h-6 w-6 ${folder.color}`} />
-                    </div>
-                    <div className="text-left">
-                      <div className={`font-bold ${activeFolder === folder.id ? 'text-slate-900' : 'text-slate-600'}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedFolders.includes(folder.id)}
+                      onChange={(e) => {
+                        setSelectedFolders(prev => e.target.checked
+                          ? Array.from(new Set([...prev, folder.id]))
+                          : prev.filter(id => id !== folder.id)
+                        )
+                      }}
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">
                         {folder.label}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
+                      </span>
+                      <span className="text-xs text-slate-500">
                         {
                           // 폴더별 개수 계산 (단순화된 로직)
                           projects.filter(p => {
-                            const status = (p.ProjectStatus as string) || 'Manufacturing'
-                            const name = getUpdatedProjectName(p)
-                            const isDemolished = status === 'Demolished' || status === 'cancelled' || name.includes('철거')
-                            const category = p.category || 'project'
-
-                            if (folder.id === 'ongoing') return !isDemolished && status !== 'Completed' && status !== 'Temporary' && category === 'project'
-                            if (folder.id === 'completed') return status === 'Completed'
-                            if (folder.id === 'demolition') return isDemolished
-                            if (folder.id === 'temporary') return status === 'Temporary'
-                            if (folder.id === 'other') return category !== 'project'
-                            return false
+                            return getProjectFolder(p) === folder.id
                           }).length
-                        }개 항목
-                      </div>
+                        }
+                      </span>
                     </div>
-                  </button>
+                  </label>
                 ))}
               </div>
 
@@ -854,6 +851,19 @@ export default function ProjectManagementPage() {
                     />
                     <Label htmlFor="showGrinding" className="text-sm text-slate-700 cursor-pointer font-medium">
                       전삭기 현장
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="showDiskLathe"
+                      checked={showDiskLatheProjects}
+                      onChange={(e) => setShowDiskLatheProjects(e.target.checked)}
+                      className="w-4 h-4 text-slate-600 bg-gray-100 border-gray-300 rounded focus:ring-slate-500 focus:ring-2"
+                    />
+                    <Label htmlFor="showDiskLathe" className="text-sm text-slate-700 cursor-pointer font-medium">
+                      디스크 선반
                     </Label>
                   </div>
                 </div>
@@ -923,6 +933,7 @@ export default function ProjectManagementPage() {
                             )}
                           </button>
                         </th>
+                        <th className="text-left p-3 font-semibold text-slate-800 w-24">장비구분</th>
                         <th className="text-left p-3 font-semibold text-slate-800 w-48">
                           <button
                             onClick={() => {
@@ -998,17 +1009,17 @@ export default function ProjectManagementPage() {
                         <th className="text-left p-3 font-semibold text-slate-800 w-28">
                           <button
                             onClick={() => {
-                              if (sortBy === 'completion_date') {
+                              if (sortBy === 'warranty_end_date') {
                                 setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
                               } else {
-                                setSortBy('completion_date')
+                                setSortBy('warranty_end_date')
                                 setSortOrder('asc')
                               }
                             }}
                             className="flex items-center space-x-1 hover:text-blue-600"
                           >
-                            <span>준공완료일</span>
-                            {sortBy === 'completion_date' && (
+                            <span>하자보증 만료일</span>
+                            {sortBy === 'warranty_end_date' && (
                               <span>{sortOrder === 'asc' ? '↑' : '↓'}</span>
                             )}
                           </button>
@@ -1032,11 +1043,24 @@ export default function ProjectManagementPage() {
                             })()}
                           </td>
                           <td className="p-3 text-slate-600 text-sm font-mono">{project.project_number}</td>
+                          <td className="p-3 text-slate-600 text-sm text-left">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              getProjectMachineType(project) === '차륜선반'
+                                ? 'bg-blue-50 text-blue-700'
+                                : getProjectMachineType(project) === '차륜전삭기'
+                                  ? 'bg-purple-50 text-purple-700'
+                                  : getProjectMachineType(project) === '디스크 선반'
+                                    ? 'bg-amber-50 text-amber-700'
+                                    : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {getProjectMachineType(project)}
+                            </span>
+                          </td>
                           <td className="p-3 text-slate-800 font-medium text-sm">{getUpdatedProjectName(project)}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.assembly_date ? formatDate(project.assembly_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.factory_test_date ? formatDate(project.factory_test_date) : '-'}</td>
                           <td className="p-3 text-slate-600 text-sm text-left">{project.site_test_date ? formatDate(project.site_test_date) : '-'}</td>
-                          <td className="p-3 text-slate-600 text-sm text-left">{project.completion_date ? formatDate(project.completion_date) : '-'}</td>
+                          <td className="p-3 text-slate-600 text-sm text-left">{project.warranty_end_date ? formatDate(project.warranty_end_date) : '-'}</td>
                           <td className="p-3">
                             <Button
                               variant="outline"

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import AuthGuard from '@/components/AuthGuard';
 import { useUser } from '@/hooks/useUser';
@@ -625,6 +626,7 @@ const ExportModal = ({ record, onClose }: ExportModalProps) => {
 /* ─── 메인 ASManager ─────────────────────────────────────────── */
 const ASManager = () => {
   const { user } = useUser();
+  const searchParams = useSearchParams();
   const isLevel5OrAdmin = user?.level && (parseInt(user.level) >= 5 || user.level.toLowerCase() === 'administrator');
 
   const [view, setView] = useState<'list' | 'detail'>('list');
@@ -665,6 +667,14 @@ const ASManager = () => {
   };
 
   useEffect(() => { fetchRecords(); }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') !== 'new') return;
+    setView('list');
+    setSelectedRecord(null);
+    setEditTarget(null);
+    setIsModalOpen(true);
+  }, [searchParams]);
 
   const fetchRecords = async () => {
     setIsLoading(true);

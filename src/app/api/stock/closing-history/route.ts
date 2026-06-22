@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { getApiUser, type ApiUser } from '@/lib/apiAuth'
 
 export const dynamic = 'force-dynamic'
 
+function isAdminUser(user: ApiUser) {
+  const level = String(user.level ?? '').toLowerCase()
+  return user.username === 'admin' || level === 'admin' || level === 'administrator' || level === '5'
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // 로그인 사용자만 조회 가능 (재고 마감 데이터 노출 방지)
+    if (!getApiUser(request)) {
+      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+    }
+
     const { searchParams } = request.nextUrl
     const date = searchParams.get('date')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -64,6 +75,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // 마감 이력 기록(쓰기)은 관리자만
+    const apiUser = getApiUser(request)
+    if (!apiUser) {
+      return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
+    }
+    if (!isAdminUser(apiUser)) {
+      return NextResponse.json({ error: '관리자 권한이 필요합니다.' }, { status: 403 })
+    }
+
     const { closingDate, itemId, product, spec, maker, location, closingQuantity, unitPrice, closedBy } = await request.json()
 
     // 마감 이력 저장

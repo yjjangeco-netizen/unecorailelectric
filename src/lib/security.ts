@@ -1,9 +1,17 @@
 import * as bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 
-// JWT 시크릿 키 (환경변수에서 가져오거나 기본값 사용)
-const JWT_SECRET = process.env['JWT_SECRET'] || 'your-super-secret-jwt-key-change-in-production'
+// JWT 시크릿 키 — 하드코딩 폴백 제거(공개 기본값으로 토큰 위조 방지).
+// 미설정 시: 발급은 throw, 검증은 실패(null) 로 fail-closed.
+const JWT_SECRET = process.env['JWT_SECRET']
 const JWT_EXPIRES_IN = process.env['JWT_EXPIRES_IN'] || '24h'
+
+function requireJwtSecret(): string {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET 환경변수가 설정되지 않았습니다. (서버 환경변수 설정 필요)')
+  }
+  return JWT_SECRET
+}
 
 // 비밀번호 해시화
 export async function hashPassword(password: string): Promise<string> {
@@ -18,11 +26,15 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 
 // JWT 토큰 생성
 export function generateToken(payload: { userId: string; username: string; level: string }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' })
+  return jwt.sign(payload, requireJwtSecret(), { expiresIn: '24h' })
 }
 
 // JWT 토큰 검증
 export function verifyToken(token: string): { userId: string; username: string; level: string } | null {
+  if (!JWT_SECRET) {
+    console.error('JWT_SECRET 미설정 — 토큰 검증을 거부합니다(fail-closed).')
+    return null
+  }
   try {
     return jwt.verify(token, JWT_SECRET) as { userId: string; username: string; level: string }
   } catch (error) {

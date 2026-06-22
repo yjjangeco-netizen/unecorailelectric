@@ -147,8 +147,11 @@ export default function SchedulePage() {
             'x-user-id': user.id
           }
         }),
-        fetch('/api/leave-requests', { 
-          headers: { 'x-user-level': String(user.level || '1') } 
+        fetch('/api/leave-requests?startDate=2020-01-01&endDate=2030-12-31', { 
+          headers: { 
+            'x-user-level': String(user.level || '1'),
+            'x-user-id': user.id
+          } 
         }),
         fetch('/api/events', { 
           headers: { 
@@ -214,9 +217,17 @@ export default function SchedulePage() {
           data.projectEvents.forEach((e: any) => {
             // 프로젝트 일정은 무조건 녹색 (#10B981)
             const bgColor = '#10B981'
+            let projName = e.project?.projectName || ''
+            projName = projName.replace(/선반/g, 'A').replace(/유니트/g, 'U')
+            
+            let eventType = e.eventType || ''
+            eventType = eventType.replace(/공장시운전/g, '공시').replace(/현장시운전/g, '현시')
+            
+            const displayTitle = eventType ? `${projName} ${eventType}` : projName
+            
             newEvents.push({
               id: e.id,
-              title: `[${e.eventType}] ${e.project?.projectName || ''}`,
+              title: displayTitle,
               start: e.eventDate,
               allDay: true,
               backgroundColor: bgColor,
@@ -235,14 +246,36 @@ export default function SchedulePage() {
         const trips = await businessTripRes.json()
         if (Array.isArray(trips)) {
           trips.forEach((trip: any) => {
-            // 출장 유형 결정
-            const tripTypeLabel = trip.trip_type === 'business_trip' ? '출장' : '외근'
-            
-            // 세부 유형 (AS, SS, 시운전 등)
-            const subTypeLabel = trip.sub_type ? ` - ${trip.sub_type}` : ''
-            
-            // 프로젝트 정보
-            const projectInfo = trip.project_name ? ` / ${trip.project_name}` : ''
+            // 일정타입 결정 (출장, 외근, 조퇴)
+            let tripLabel = '외근'
+            if (trip.trip_type === 'business_trip') {
+              tripLabel = '출장'
+            }
+            const subTypeStr = trip.sub_type || ''
+            const titleStr = trip.title || ''
+            if (trip.trip_type === 'early_leave' || subTypeStr.includes('조퇴') || titleStr.includes('조퇴')) {
+              tripLabel = '조퇴'
+            }
+
+            // 프로젝트/기지명 명칭 결정 및 치환
+            let displayName = trip.project_name || trip.title || trip.sub_type || ''
+            displayName = displayName
+              .replace(/선반/g, 'A')
+              .replace(/유니트/g, 'U')
+              .replace(/공장시운전/g, '공시')
+              .replace(/현장시운전/g, '현시')
+
+            // 최종 타이틀 조립: "명칭 일정타입" (이름 제외)
+            let finalTitle = ''
+            if (displayName) {
+              if (displayName.includes(tripLabel)) {
+                finalTitle = displayName
+              } else {
+                finalTitle = `${displayName} ${tripLabel}`
+              }
+            } else {
+              finalTitle = `${trip.user_name} ${tripLabel}`
+            }
 
             // 색상 결정 logic
             let bgColor = '#8B5CF6' // 기본 보라색
@@ -258,7 +291,7 @@ export default function SchedulePage() {
             
             newEvents.push({
               id: `trip-${trip.id}`,
-              title: `[${tripTypeLabel} - ${trip.title || trip.sub_type || ''}] ${trip.user_name}`,
+              title: finalTitle,
               start: trip.start_date + (trip.start_time ? `T${trip.start_time}` : ''),
               end: trip.end_date + (trip.end_time ? `T${trip.end_time}` : ''),
               backgroundColor: bgColor,
@@ -283,17 +316,27 @@ export default function SchedulePage() {
       if (leaveRes.ok) {
         const data = await leaveRes.json()
         data.forEach((leave: any) => {
-          const leaveTypeLabel = leave.leave_type === 'annual' ? '연차' :
-                                 leave.leave_type === 'half_day' ? '반차' :
-                                 leave.leave_type === 'sick' ? '병가' :
-                                 leave.leave_type === 'personal' ? '개인휴가' : leave.leave_type
+          let leaveLabel = '휴가'
+          if (leave.leave_type === 'annual') {
+            leaveLabel = '연차'
+          } else if (leave.leave_type === 'half_day') {
+            leaveLabel = '반차'
+          } else if (leave.leave_type === 'sick') {
+            leaveLabel = '병가'
+          } else if (leave.leave_type === 'personal') {
+            leaveLabel = '개인휴가'
+          } else if (leave.leave_type === 'early_leave' || leave.leave_type === 'early' || leave.leave_type === '조퇴') {
+            leaveLabel = '조퇴'
+          } else {
+            leaveLabel = leave.leave_type || '휴가'
+          }
           
           // 모든 휴가는 주황색 (#F97316) 통일
           const leaveColor = '#F97316'
 
           newEvents.push({
             id: `leave-${leave.id}`,
-            title: `[${leaveTypeLabel}] ${leave.user_name}`,
+            title: `${leave.user_name} ${leaveLabel}`,
             start: leave.start_date + (leave.start_time ? `T${leave.start_time}` : ''),
             end: leave.end_date + (leave.end_time ? `T${leave.end_time}` : ''),
             backgroundColor: leaveColor,
@@ -320,9 +363,23 @@ export default function SchedulePage() {
           // ?ъ슜???됱긽 ?곸슜, ?놁쑝硫?湲곕낯 ?뚯깋
           const bgColor = userColorMap[event.participant_id] || '#6B7280'
 
+          let categoryLabel = event.category || ''
+          let summaryStr = event.summary || ''
+          
+          summaryStr = summaryStr
+            .replace(/선반/g, 'A')
+            .replace(/유니트/g, 'U')
+            .replace(/공장시운전/g, '공시')
+            .replace(/현장시운전/g, '현시')
+
+          let displayTitle = summaryStr
+          if (categoryLabel && !summaryStr.includes(categoryLabel)) {
+            displayTitle = `${summaryStr} ${categoryLabel}`
+          }
+
           newEvents.push({
             id: `event-${event.id}`,
-            title: `[${event.category}] ${event.summary}`,
+            title: displayTitle,
             start: event.start_date + (event.start_time ? `T${event.start_time}` : ''),
             end: event.end_date + (event.end_time ? `T${event.end_time}` : ''),
             backgroundColor: bgColor,

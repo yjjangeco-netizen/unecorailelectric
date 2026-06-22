@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { notifyWorkUpdate } from '@/lib/assistantNotifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,6 +99,8 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', tripId)
 
+    await notifyWorkUpdate('출장/외근 보고서가 등록되었습니다.', `${userName || userId} - ${title || ''}`)
+
     return NextResponse.json({
       success: true,
       message: '보고서가 성공적으로 작성되었습니다.',
@@ -166,6 +169,10 @@ export async function PUT(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
         .eq('id', data[0].trip_id)
+    }
+
+    if (status === 'approved') {
+      await notifyWorkUpdate('출장/외근 보고서가 승인되었습니다.', data?.[0]?.title || id)
     }
 
     return NextResponse.json({

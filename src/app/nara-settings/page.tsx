@@ -18,8 +18,6 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  Clock,
-  FileText,
   BarChart3,
   Save,
   X
@@ -28,25 +26,84 @@ import {
 interface MonitoringConfig {
   keywords: string[]
   telegramEnabled: boolean
+  /** 봇 토큰은 보안상 localStorage에만 저장, 서버로 전송하지 않음 */
+  telegramBotToken: string
   telegramChatId: string
   checkInterval: number
+}
+
+const CONFIG_STORAGE_KEY = 'nara-monitoring-config'
+
+const DEFAULT_CONFIG: MonitoringConfig = {
+  keywords: ['전기', '케이블', '변압기'],
+  telegramEnabled: false,
+  telegramBotToken: '',
+  telegramChatId: '',
+  checkInterval: 30
 }
 
 export default function NaraSettingsPage() {
   const { user, isAuthenticated, loading: authLoading } = useUser()
   const router = useRouter()
-  const [config, setConfig] = useState<MonitoringConfig>({
-    keywords: ['전기', '케이블', '변압기'],
-    telegramEnabled: false,
-    telegramChatId: '',
-    checkInterval: 30
-  })
+  const [config, setConfig] = useState<MonitoringConfig>(DEFAULT_CONFIG)
+  const [newKeyword, setNewKeyword] = useState('')
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [lastCheck, setLastCheck] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
-  // 상태 확인 함수
+  /** localStorage에서 로컬 전용 설정(봇 토큰 등)을 우선 복원한 뒤,
+   *  서버에서 키워드·알림활성화·interval 등을 병합합니다. */
+  /** 서버 DB 설정을 최우선으로 로드하고, 실패 시 로컬 스토리지에서 복원합니다. */
+  const loadConfig = async () => {
+    // 1) 서버에서 최신 설정 가져오기 (키워드, 간격, 텔레그램 토글, 봇 토큰, 채팅 ID 모두 포함)
+    try {
+      const response = await fetch('/api/nara-monitoring/config')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.config) {
+          const loaded: MonitoringConfig = {
+            keywords:
+              Array.isArray(data.config.keywords) && data.config.keywords.length > 0
+                ? data.config.keywords
+                : DEFAULT_CONFIG.keywords,
+            telegramEnabled: Boolean(data.config.telegramEnabled),
+            telegramBotToken: String(data.config.telegramBotToken || ''),
+            telegramChatId: String(data.config.telegramChatId || ''),
+            checkInterval: Number(data.config.checkInterval) || DEFAULT_CONFIG.checkInterval
+          }
+          setConfig(loaded)
+          // 로컬 스토리지에도 최신 상태 갱신
+          localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(loaded))
+          return
+        }
+      }
+    } catch (err) {
+      console.error('서버 NARA 설정 조회 실패:', err)
+    }
+
+    // 2) 서버 실패 시 백업용으로 localStorage 복원
+    try {
+      const stored = localStorage.getItem(CONFIG_STORAGE_KEY)
+      if (stored) {
+        const local = JSON.parse(stored) as Partial<MonitoringConfig>
+        setConfig((prev) => ({
+          ...prev,
+          telegramEnabled: local.telegramEnabled ?? prev.telegramEnabled,
+          telegramBotToken: local.telegramBotToken ?? prev.telegramBotToken,
+          telegramChatId: local.telegramChatId ?? prev.telegramChatId,
+          checkInterval: local.checkInterval ?? prev.checkInterval,
+          keywords:
+            Array.isArray(local.keywords) && local.keywords.length > 0
+              ? local.keywords
+              : prev.keywords
+        }))
+      }
+    } catch {
+      // localStorage 파싱 실패 시 무시
+    }
+  }
+
   const checkStatus = async () => {
     try {
       const response = await fetch('/api/nara-monitoring/status')
@@ -60,39 +117,26 @@ export default function NaraSettingsPage() {
     }
   }
 
-  // 컴포넌트 마운트 시 상태 확인
   useEffect(() => {
+    loadConfig()
     checkStatus()
   }, [])
 
   // 인증 확인
   useEffect(() => {
-    console.log('Nara 설정 - 사용자 상태:', { user, isAuthenticated, authLoading })
-
-    // localStorage에서 직접 사용자 정보 확인
     const storedUser = localStorage.getItem('user')
-    console.log('Nara 설정 - localStorage 직접 확인:', storedUser)
 
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
-        console.log('Nara 설정 - localStorage 사용자 데이터:', userData)
-        // localStorage에 사용자 정보가 있으면 페이지 표시
-        if (userData && userData.id && userData.username) {
-          console.log('Nara 설정 - localStorage 기반 인증 확인, 페이지 표시')
-          return
-        }
+        if (userData && userData.id && userData.username) return
       } catch (err) {
         console.error('localStorage 파싱 오류:', err)
       }
     }
 
-    // 로딩이 완료되고 인증되지 않은 경우에만 리다이렉트
     if (!authLoading && !isAuthenticated && !storedUser) {
-      console.log('Nara 설정 - 로그인 페이지로 리다이렉트')
       router.push('/login')
-    } else if (isAuthenticated) {
-      console.log('Nara 설정 - 인증된 사용자, 페이지 표시')
     }
   }, [authLoading, isAuthenticated, router, user])
 
@@ -111,15 +155,12 @@ export default function NaraSettingsPage() {
     return null
   }
 
-  // 모니터링 시작/중지
   const handleStartMonitoring = async () => {
     try {
       const response = await fetch('/api/nara-monitoring/start', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(config),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
       })
 
       if (response.ok) {
@@ -132,16 +173,14 @@ export default function NaraSettingsPage() {
         const errorData = await response.json()
         setError(errorData.message || '모니터링 시작에 실패했습니다.')
       }
-    } catch (err) {
+    } catch {
       setError('서버와의 통신에 실패했습니다.')
     }
   }
 
   const handleStopMonitoring = async () => {
     try {
-      const response = await fetch('/api/nara-monitoring/stop', {
-        method: 'POST',
-      })
+      const response = await fetch('/api/nara-monitoring/stop', { method: 'POST' })
 
       if (response.ok) {
         setIsMonitoring(false)
@@ -152,41 +191,64 @@ export default function NaraSettingsPage() {
         const errorData = await response.json()
         setError(errorData.message || '모니터링 중지에 실패했습니다.')
       }
-    } catch (err) {
+    } catch {
       setError('서버와의 통신에 실패했습니다.')
     }
   }
 
-  // 설정 저장
-  const handleSaveConfig = () => {
-    setSuccess('설정이 저장되었습니다.')
-    setTimeout(() => setSuccess(null), 3000)
+  const handleSaveConfig = async () => {
+    // 1) localStorage에 즉시 저장
+    try {
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config))
+    } catch {
+      // localStorage 저장 실패 시 무시
+    }
 
-    // 설정이 변경되면 모니터링을 재시작할지 묻기
-    if (isMonitoring) {
-      if (confirm('설정이 변경되었습니다. 모니터링을 재시작하시겠습니까?')) {
-        handleStopMonitoring()
-        setTimeout(() => handleStartMonitoring(), 1000)
+    // 2) 서버에 봇 토큰을 포함한 전체 설정을 전송하여 DB에 영구 저장
+    try {
+      const serverConfig = {
+        keywords: config.keywords,
+        telegramEnabled: config.telegramEnabled,
+        telegramBotToken: config.telegramBotToken,
+        telegramChatId: config.telegramChatId,
+        checkInterval: config.checkInterval
       }
+      const response = await fetch('/api/nara-monitoring/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(serverConfig)
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.details || data.error || '설정 저장에 실패했습니다.')
+      }
+
+      setError(null)
+      setSuccess('설정이 저장되었습니다.')
+      setTimeout(() => setSuccess(null), 3000)
+
+      if (isMonitoring) {
+        await handleStartMonitoring()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '설정 저장에 실패했습니다.')
     }
   }
 
-
-  // 키워드 추가/제거
   const addKeyword = () => {
-    const newKeyword = prompt('새 키워드를 입력하세요:')
-    if (newKeyword && !config.keywords.includes(newKeyword)) {
-      setConfig(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, newKeyword]
-      }))
+    const keyword = newKeyword.trim()
+    if (!keyword) return
+    if (!config.keywords.includes(keyword)) {
+      setConfig((prev) => ({ ...prev, keywords: [...prev.keywords, keyword] }))
     }
+    setNewKeyword('')
   }
 
   const removeKeyword = (keyword: string) => {
-    setConfig(prev => ({
+    setConfig((prev) => ({
       ...prev,
-      keywords: prev.keywords.filter(k => k !== keyword)
+      keywords: prev.keywords.filter((k) => k !== keyword)
     }))
   }
 
@@ -197,18 +259,14 @@ export default function NaraSettingsPage() {
         {error && (
           <Alert className="mb-6 border-red-200 bg-red-50">
             <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              {error}
-            </AlertDescription>
+            <AlertDescription className="text-red-800">{error}</AlertDescription>
           </Alert>
         )}
 
         {success && (
           <Alert className="mb-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              {success}
-            </AlertDescription>
+            <AlertDescription className="text-green-800">{success}</AlertDescription>
           </Alert>
         )}
 
@@ -236,28 +294,17 @@ export default function NaraSettingsPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={checkStatus}
-                >
+                <Button variant="outline" size="sm" onClick={checkStatus}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   상태 확인
                 </Button>
                 {isMonitoring ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleStopMonitoring}
-                  >
+                  <Button variant="destructive" size="sm" onClick={handleStopMonitoring}>
                     <BellOff className="h-4 w-4 mr-2" />
                     중지
                   </Button>
                 ) : (
-                  <Button
-                    size="sm"
-                    onClick={handleStartMonitoring}
-                  >
+                  <Button size="sm" onClick={handleStartMonitoring}>
                     <Bell className="h-4 w-4 mr-2" />
                     시작
                   </Button>
@@ -280,26 +327,26 @@ export default function NaraSettingsPage() {
             <div>
               <Label className="text-sm font-medium">키워드 설정</Label>
               <p className="text-sm text-gray-500 mb-3">입찰 공고에서 검색할 키워드를 설정하세요.</p>
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  {config.keywords.map((keyword, index) => (
-                    <Badge
-                      key={index}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-red-100 hover:text-red-800"
-                      onClick={() => removeKeyword(keyword)}
-                    >
-                      {keyword} <X className="h-3 w-3 ml-1" />
-                    </Badge>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addKeyword}
-                >
-                  키워드 추가
-                </Button>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {config.keywords.map((keyword) => (
+                  <Badge
+                    key={keyword}
+                    variant="secondary"
+                    className="cursor-pointer hover:bg-red-100 hover:text-red-800"
+                    onClick={() => removeKeyword(keyword)}
+                  >
+                    {keyword} <X className="h-3 w-3 ml-1" />
+                  </Badge>
+                ))}
+              </div>
+              <div className="flex max-w-md gap-2">
+                <Input
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addKeyword() }}
+                  placeholder="키워드를 입력하세요"
+                />
+                <Button variant="outline" onClick={addKeyword}>추가</Button>
               </div>
             </div>
 
@@ -307,29 +354,48 @@ export default function NaraSettingsPage() {
             <div className="border-t pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium">텔레그램 알림</Label>
+                  <Label className="text-sm font-medium">텔레그램 알림 사용</Label>
                   <p className="text-sm text-gray-500">새 입찰 공고를 텔레그램으로 알림받기</p>
                 </div>
                 <Switch
                   checked={config.telegramEnabled}
                   onCheckedChange={(checked) =>
-                    setConfig(prev => ({ ...prev, telegramEnabled: checked }))
+                    setConfig((prev) => ({ ...prev, telegramEnabled: checked }))
                   }
                 />
               </div>
 
               {config.telegramEnabled && (
-                <div className="mt-4">
-                  <Label htmlFor="telegramChatId">텔레그램 채팅 ID</Label>
-                  <Input
-                    id="telegramChatId"
-                    value={config.telegramChatId}
-                    onChange={(e) =>
-                      setConfig(prev => ({ ...prev, telegramChatId: e.target.value }))
-                    }
-                    placeholder="채팅 ID를 입력하세요"
-                    className="mt-1"
-                  />
+                <div className="mt-4 space-y-4 p-4 bg-blue-50 rounded-lg">
+                  <div>
+                    <Label htmlFor="telegramBotToken">텔레그램 봇 토큰</Label>
+                    <Input
+                      id="telegramBotToken"
+                      type="password"
+                      value={config.telegramBotToken}
+                      onChange={(e) =>
+                        setConfig((prev) => ({ ...prev, telegramBotToken: e.target.value }))
+                      }
+                      placeholder="봇 토큰을 입력하세요 (예: 123456:ABC-DEF...)"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      @BotFather 에서 발급받은 봇 토큰을 입력하세요.
+                      이 값은 브라우저에만 저장됩니다.
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="telegramChatId">텔레그램 채팅 ID</Label>
+                    <Input
+                      id="telegramChatId"
+                      value={config.telegramChatId}
+                      onChange={(e) =>
+                        setConfig((prev) => ({ ...prev, telegramChatId: e.target.value }))
+                      }
+                      placeholder="채팅 ID를 입력하세요"
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -343,7 +409,7 @@ export default function NaraSettingsPage() {
                 type="number"
                 value={config.checkInterval}
                 onChange={(e) =>
-                  setConfig(prev => ({ ...prev, checkInterval: parseInt(e.target.value) || 30 }))
+                  setConfig((prev) => ({ ...prev, checkInterval: parseInt(e.target.value) || 30 }))
                 }
                 min="10"
                 max="300"
@@ -352,10 +418,7 @@ export default function NaraSettingsPage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/settings')}
-              >
+              <Button variant="outline" onClick={() => router.push('/settings')}>
                 취소
               </Button>
               <Button onClick={handleSaveConfig}>
@@ -378,12 +441,8 @@ export default function NaraSettingsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">키워드</h4>
-                <p className="text-sm text-blue-700">
-                  {config.keywords.length}개 설정됨
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  {config.keywords.join(', ')}
-                </p>
+                <p className="text-sm text-blue-700">{config.keywords.length}개 설정됨</p>
+                <p className="text-xs text-blue-600 mt-1">{config.keywords.join(', ')}</p>
               </div>
 
               <div className="bg-green-50 p-4 rounded-lg">
@@ -391,20 +450,25 @@ export default function NaraSettingsPage() {
                 <p className="text-sm text-green-700">
                   {config.telegramEnabled ? '활성화됨' : '비활성화됨'}
                 </p>
-                {config.telegramEnabled && config.telegramChatId && (
-                  <p className="text-xs text-green-600 mt-1">
-                    채팅 ID: {config.telegramChatId}
-                  </p>
+                {config.telegramEnabled && (
+                  <>
+                    {config.telegramBotToken && (
+                      <p className="text-xs text-green-600 mt-1">봇 토큰: 설정됨 ✓</p>
+                    )}
+                    {config.telegramChatId && (
+                      <p className="text-xs text-green-600">채팅 ID: {config.telegramChatId}</p>
+                    )}
+                  </>
                 )}
               </div>
 
               <div className="bg-purple-50 p-4 rounded-lg">
                 <h4 className="font-medium text-purple-900 mb-2">확인 간격</h4>
-                <p className="text-sm text-purple-700">
-                  {config.checkInterval}초마다 확인
-                </p>
+                <p className="text-sm text-purple-700">{config.checkInterval}초마다 확인</p>
                 <p className="text-xs text-purple-600 mt-1">
-                  {config.checkInterval < 60 ? `${config.checkInterval}초` : `${Math.floor(config.checkInterval / 60)}분 ${config.checkInterval % 60}초`}
+                  {config.checkInterval < 60
+                    ? `${config.checkInterval}초`
+                    : `${Math.floor(config.checkInterval / 60)}분 ${config.checkInterval % 60}초`}
                 </p>
               </div>
             </div>

@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('events')
       .select('*')
+      .not('category', 'eq', '개인일정')
       .order('start_date', { ascending: true })
     
     console.log('Supabase 쿼리 결과:', { data, error })
@@ -24,8 +25,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '이벤트 조회 실패' }, { status: 500 })
     }
     
-    console.log('이벤트 API 응답 데이터:', data)
-    return NextResponse.json(data || [])
+    const visibleEvents = (data || []).filter((event: any) => {
+      const text = `${event.category || ''} ${event.sub_category || ''} ${event.summary || ''}`
+      return !/(개인일정|개인 AI|개인 대화분석|통화녹음 개인)/.test(text)
+    })
+
+    console.log('이벤트 API 응답 데이터:', visibleEvents)
+    return NextResponse.json(visibleEvents)
     
   } catch (error) {
     console.error('이벤트 API 오류:', error)

@@ -1,12 +1,12 @@
 'use client'
 
 import AuthGuard from '@/components/AuthGuard'
-import GenericBoard from '@/components/GenericBoard'
+import DriveBoard from '@/components/DriveBoard'
 
 export default function SOPPage() {
   return (
     <AuthGuard>
-      <GenericBoard boardType="SOP" emptyMessage="등록된 SOP 게시글이 없습니다." basePath="/work-tool/sop" />
+      <DriveBoard folderName="SOP" title="SOP 자료실" emptyMessage="구글 드라이브(manual/SOP)에 등록된 SOP 문서가 없습니다." />
     </AuthGuard>
   )
 }
