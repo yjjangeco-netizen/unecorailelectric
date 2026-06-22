@@ -114,7 +114,7 @@ export default function WorkDiaryWritePage() {
   const getWorkTypeOptions = (projectName: string) => {
     // 모든 프로젝트에 대해 동일한 작업 유형/세부 유형 옵션 제공
     return {
-      workTypes: ['신규', '보완', 'AS', 'SS', 'OV', '기타'],
+      workTypes: ['신규', '보완', '개발', 'AS', 'SS', 'OV', '기타'],
       workSubTypes: ['내근', '출장', '외근', '전화']
     }
   }

@@ -718,27 +718,36 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
                     <div className="h-8 w-1 bg-emerald-500 rounded-full" />
                     <h3 className="text-lg font-bold text-gray-800">하드웨어 구성</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="hardware_type" className="text-gray-600 font-medium">제조사 (PLC/HMI)</Label>
-                      <Select value={hardwareType} onValueChange={setHardwareType}>
-                        <SelectTrigger className="h-11 border-gray-200">
-                          <SelectValue placeholder="하드웨어 선택" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          <SelectItem value="siemens">Siemens (지멘스)</SelectItem>
-                          <SelectItem value="fanuc">Fanuc (화낙)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="hardware_version" className="text-gray-600 font-medium">하드웨어 버전 / 모델명</Label>
-                      <Input 
-                        id="hardware_version" 
-                        value={currentProject.hardware_version || ''} 
-                        onChange={handleChange}
-                        className="h-11 border-gray-200"
-                      />
+                  <div className="space-y-2">
+                    <Label className="text-gray-600 font-medium">컨트롤러 (하드웨어 버전)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { maker: 'Siemens', value: 'Sinumerik 840D' },
+                        { maker: 'Siemens', value: 'Sinumerik 840Dsl' },
+                        { maker: 'Siemens', value: 'Sinumerik ONE' },
+                        { maker: 'Fanuc', value: 'Fanuc 0iTF' }
+                      ].map((opt) => (
+                        <label
+                          key={opt.value}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                            currentProject.hardware_version === opt.value
+                              ? 'border-emerald-500 bg-emerald-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="hardware_version"
+                            checked={currentProject.hardware_version === opt.value}
+                            onChange={() => setCurrentProject((prev) => ({ ...prev, hardware_version: opt.value }))}
+                            className="w-4 h-4 text-emerald-600"
+                          />
+                          <span className="text-sm text-gray-800">
+                            <span className="text-gray-400 text-xs mr-1">{opt.maker}</span>
+                            {opt.value}
+                          </span>
+                        </label>
+                      ))}
                     </div>
                   </div>
                 </section>

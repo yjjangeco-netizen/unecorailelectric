@@ -257,9 +257,11 @@ export default function AdvancedStatsPage() {
                       <SelectItem value="all">전체 유형</SelectItem>
                       <SelectItem value="신규">신규</SelectItem>
                       <SelectItem value="보완">보완</SelectItem>
+                      <SelectItem value="개발">개발</SelectItem>
                       <SelectItem value="AS">AS</SelectItem>
                       <SelectItem value="SS">SS</SelectItem>
                       <SelectItem value="OV">OV</SelectItem>
+                      <SelectItem value="기타">기타</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
