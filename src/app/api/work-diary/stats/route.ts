@@ -302,6 +302,62 @@ function calculateStats(workDiaries: any[]) {
     })
   }
 
+  // 3-1. 프로젝트별 투입시간 (누가 몇시간 — 참여자별 분해)
+  const projectHours = new Map<any, { name: string; hours: number; byUser: Map<string, number> }>()
+  // 3-2. 사용자별 프로젝트 투입시간 (누가 어느 프로젝트에 몇시간)
+  const userHours = new Map<string, { name: string; hours: number; byProject: Map<string, number> }>()
+  workDiaries.forEach(diary => {
+    const hours = (diary.work_hours || 0) + (diary.overtime_hours || 0)
+    if (!hours) return
+    const projectName = diary.projects?.project_name || diary.custom_project_name || '프로젝트 없음'
+    const userName = diary.users?.name || 'Unknown'
+    const pid = diary.project_id ?? projectName
+
+    if (!projectHours.has(pid)) projectHours.set(pid, { name: projectName, hours: 0, byUser: new Map() })
+    const p = projectHours.get(pid)!
+    p.hours += hours
+    p.byUser.set(userName, (p.byUser.get(userName) || 0) + hours)
+
+    if (!userHours.has(diary.user_id)) userHours.set(diary.user_id, { name: userName, hours: 0, byProject: new Map() })
+    const u = userHours.get(diary.user_id)!
+    u.hours += hours
+    u.byProject.set(projectName, (u.byProject.get(projectName) || 0) + hours)
+  })
+
+  const round1 = (n: number) => Math.round(n * 10) / 10
+
+  if (projectHours.size > 0) {
+    stats.push({
+      category: '프로젝트별 투입시간',
+      value: projectHours.size,
+      details: Array.from(projectHours.values())
+        .sort((a, b) => b.hours - a.hours)
+        .map(p => ({
+          name: p.name,
+          totalHours: round1(p.hours),
+          breakdown: Array.from(p.byUser.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, h]) => ({ name, hours: round1(h) }))
+        }))
+    })
+  }
+
+  if (userHours.size > 0) {
+    stats.push({
+      category: '사용자별 프로젝트 투입시간',
+      value: userHours.size,
+      details: Array.from(userHours.values())
+        .sort((a, b) => b.hours - a.hours)
+        .map(u => ({
+          name: u.name,
+          totalHours: round1(u.hours),
+          breakdown: Array.from(u.byProject.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, h]) => ({ name, hours: round1(h) }))
+        }))
+    })
+  }
+
   // 4. 작업 유형별 분포
   const workTypeStats = new Map()
   workDiaries.forEach(diary => {

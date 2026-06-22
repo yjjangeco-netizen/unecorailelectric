@@ -175,8 +175,16 @@ export default function AdvancedStatsPage() {
     <AuthGuard requiredLevel={4}>
       <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8">
-        {/* 헤더 (타이틀 제거, 엑셀 내보내기 버튼만 유지) */}
-        <div className="mb-6 flex justify-end">
+        {/* 헤더 (엑셀/보고서 출력) */}
+        <div className="mb-6 flex justify-end gap-2 print:hidden">
+          <Button
+            onClick={() => window.print()}
+            variant="outline"
+            className="shadow-sm"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            보고서 출력
+          </Button>
           <Button
             onClick={exportStats}
             className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-md"
@@ -365,7 +373,47 @@ export default function AdvancedStatsPage() {
                     return null
                   })()}
 
-                  {stats.map((stat, index) => (
+                  {/* 투입시간 집계 (프로젝트별 / 사용자별) — 보고서 형식 카드 */}
+                  {stats
+                    .filter((s) => s.category === '프로젝트별 투입시간' || s.category === '사용자별 프로젝트 투입시간')
+                    .map((stat, index) => (
+                      <div key={`hours-${index}`} className="rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="bg-indigo-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                          <h3 className="font-semibold text-gray-900">{stat.category}</h3>
+                          <div className="text-sm text-gray-500">{stat.value}건</div>
+                        </div>
+                        <div className="p-4 bg-white">
+                          <table className="w-full border-collapse text-sm">
+                            <thead>
+                              <tr className="bg-gray-50 text-gray-600">
+                                <th className="text-left py-2 px-3 border-b">{stat.category.includes('프로젝트별') ? '프로젝트' : '사용자'}</th>
+                                <th className="text-right py-2 px-3 border-b w-28">총 투입시간</th>
+                                <th className="text-left py-2 px-3 border-b">{stat.category.includes('프로젝트별') ? '참여자별(시간)' : '프로젝트별(시간)'}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(stat.details || []).map((d: any, i: number) => (
+                                <tr key={i} className="border-b last:border-0 align-top">
+                                  <td className="py-2 px-3 font-medium text-gray-900">{d.name}</td>
+                                  <td className="py-2 px-3 text-right font-bold text-indigo-600">{d.totalHours}h</td>
+                                  <td className="py-2 px-3 text-gray-700">
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(d.breakdown || []).map((b: any, j: number) => (
+                                        <span key={j} className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+                                          {b.name} <span className="ml-1 font-semibold text-gray-900">{b.hours}h</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+
+                  {stats.filter((s) => s.category !== '프로젝트별 투입시간' && s.category !== '사용자별 프로젝트 투입시간').map((stat, index) => (
                     <div key={index} className="rounded-lg border border-gray-200 overflow-hidden">
                       <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                         <h3 className="font-semibold text-gray-900">

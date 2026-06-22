@@ -49,9 +49,10 @@ export default function SignupPage() {
 
     try {
       // 모든 필드 검증
-      if (!formData.username || !formData.password || !formData.confirmPassword || 
-          !formData.name || !formData.position || !formData.department || !formData.email) {
-        setError('모든 필드를 입력해주세요.')
+      if (!formData.username || !formData.password || !formData.confirmPassword ||
+          !formData.name || !formData.position || !formData.department || !formData.email ||
+          !formData.phone) {
+        setError('필수 항목(*)을 모두 입력해주세요.')
         return
       }
 
@@ -266,7 +267,7 @@ export default function SignupPage() {
               {/* 전화번호 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  전화번호
+                  전화번호 *
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -277,6 +278,7 @@ export default function SignupPage() {
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="010-0000-0000"
                     className="pl-10"
+                    required
                   />
                 </div>
               </div>
