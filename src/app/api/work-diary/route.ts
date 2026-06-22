@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { createNotifications, getApproverUserIds } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -363,7 +364,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-
+    // 알림: 업무일지 등록 → 관리자(승인권자)
+    try {
+      const approverIds = await getApproverUserIds()
+      await createNotifications({
+        userIds: approverIds,
+        excludeUserId: data.user_id,
+        type: 'work_report_submitted',
+        title: '업무일지가 등록되었습니다',
+        body: `${data.work_date || ''} 업무일지가 올라왔습니다.`,
+        link: '/work-diary'
+      })
+    } catch (e) {
+      console.warn('업무일지 알림 생성 실패:', e)
+    }
 
     return NextResponse.json({
       message: '업무일지가 성공적으로 생성되었습니다',

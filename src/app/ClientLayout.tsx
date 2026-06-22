@@ -6,7 +6,7 @@ import { useUser } from '@/hooks/useUser'
 import Sidebar from '@/components/Sidebar'
 import PageBanner from '@/components/PageBanner'
 import BottomMenu from '@/components/BottomMenu'
-import { Bell, Menu } from 'lucide-react'
+import HeaderControls from '@/components/HeaderControls'
 interface PageInfo {
   title: string
   subtitle: string
@@ -278,20 +278,17 @@ export default function ClientLayout({
               {user.department || ''} {user.name}
             </div>
             
-            {/* 중앙: 브랜드명 */}
-            <div className="text-xl sm:text-2xl font-black tracking-widest text-[#1e3a8a] flex-1 flex justify-center uppercase drop-shadow-sm">
-              UNECORAIL
+            {/* 중앙: 로고 + 브랜드명 */}
+            <div className="flex-1 flex items-center justify-center gap-2">
+              <img src="/logo_new.png" alt="유네코레일" className="h-7 w-auto sm:h-8 object-contain" />
+              <span className="text-xl sm:text-2xl font-black tracking-widest text-[#1e3a8a] uppercase drop-shadow-sm">
+                UNECORAIL
+              </span>
             </div>
-            
-            {/* 우측: 알람 및 햄버거 메뉴 */}
-            <div className="flex items-center justify-end gap-2 flex-1">
-              <button className="relative p-1.5 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-all group">
-                <Bell className="w-5 h-5 group-hover:animate-swing" />
-                <span className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white ring-2 ring-red-500/20 animate-pulse"></span>
-              </button>
-              <button className="p-1.5 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
-                <Menu className="w-6 h-6" />
-              </button>
+
+            {/* 우측: 알람 + 메뉴 */}
+            <div className="flex items-center justify-end gap-1 flex-1">
+              <HeaderControls />
             </div>
           </div>
         )}

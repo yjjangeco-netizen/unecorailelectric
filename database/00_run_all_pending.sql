@@ -169,5 +169,48 @@ update public.users set employment_status = '재직중'
   where is_active = true and (employment_status is null or employment_status = '');
 
 -- ============================================================
+-- 7. 알림 (인앱 + 푸시)
+-- ============================================================
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references users(id) on delete cascade,
+  type text not null,
+  title text not null,
+  body text,
+  link text,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_notifications_user on notifications(user_id, is_read, created_at desc);
+alter table notifications enable row level security;
+drop policy if exists notifications_all on notifications;
+create policy notifications_all on notifications for all using (true) with check (true);
+
+create table if not exists notification_settings (
+  user_id text primary key references users(id) on delete cascade,
+  enabled boolean not null default true,
+  event_created boolean not null default true,
+  work_report_submitted boolean not null default true,
+  report_approved boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+alter table notification_settings enable row level security;
+drop policy if exists notification_settings_all on notification_settings;
+create policy notification_settings_all on notification_settings for all using (true) with check (true);
+
+create table if not exists push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null references users(id) on delete cascade,
+  token text not null unique,
+  platform text default 'android',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists idx_push_tokens_user on push_tokens(user_id);
+alter table push_tokens enable row level security;
+drop policy if exists push_tokens_all on push_tokens;
+create policy push_tokens_all on push_tokens for all using (true) with check (true);
+
+-- ============================================================
 -- 완료. 결과 NOTICE 를 확인하세요.
 -- ============================================================

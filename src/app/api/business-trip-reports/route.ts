@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
 import { notifyWorkUpdate } from '@/lib/assistantNotifications'
+import { createNotifications } from '@/lib/notifications'
 
 export const dynamic = 'force-dynamic'
 
@@ -173,6 +174,16 @@ export async function PUT(request: NextRequest) {
 
     if (status === 'approved') {
       await notifyWorkUpdate('출장/외근 보고서가 승인되었습니다.', data?.[0]?.title || id)
+      // 인앱 알림: 보고서 작성자에게
+      if (data?.[0]?.user_id) {
+        await createNotifications({
+          userIds: [data[0].user_id],
+          type: 'report_approved',
+          title: '출장/외근 보고서가 승인되었습니다',
+          body: data[0].title || '',
+          link: '/business-trip-reports'
+        })
+      }
     }
 
     return NextResponse.json({

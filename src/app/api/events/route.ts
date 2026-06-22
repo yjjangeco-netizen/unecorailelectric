@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { createNotifications, getAllActiveUserIds } from '@/lib/notifications'
 
 export async function GET(request: NextRequest) {
   try {
@@ -176,7 +177,22 @@ export async function POST(request: NextRequest) {
       console.error('오류 상세:', JSON.stringify(error, null, 2))
       return NextResponse.json({ error: `이벤트 생성 실패: ${error.message}` }, { status: 500 })
     }
-    
+
+    // 알림: 일정 등록 → 전체 사용자(등록자 제외)
+    try {
+      const allIds = await getAllActiveUserIds()
+      await createNotifications({
+        userIds: allIds,
+        excludeUserId: createdById || participantId,
+        type: 'event_created',
+        title: '새 일정이 등록되었습니다',
+        body: `${summary}${startDate ? ` (${startDate})` : ''}`,
+        link: '/schedule'
+      })
+    } catch (e) {
+      console.warn('일정 알림 생성 실패:', e)
+    }
+
     return NextResponse.json(data)
     
   } catch (error) {
