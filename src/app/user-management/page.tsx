@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import UserEditModal from '@/components/UserEditModal'
 import UserAddModal from '@/components/UserAddModal'
-import { Package, User, Plus, Edit, Trash2, Search, Globe, Shield, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Package, User, Plus, Edit, Trash2, Search, Globe, Shield, CheckCircle, XCircle, AlertCircle, KeyRound } from 'lucide-react'
 import type { User as UserType, PositionType, DepartmentType, PermissionType } from '@/lib/types'
 
 export default function UserManagementPage() {
@@ -190,7 +190,9 @@ export default function UserManagementPage() {
           position: updatedUser.position,
           level: updatedUser.level,
           is_active: updatedUser.is_active,
-          color: updatedUser.color,
+          employment_status: updatedUser.employment_status,
+          phone: updatedUser.phone,
+          home_address: updatedUser.home_address,
           stock_view: updatedUser.stock_view,
           stock_in: updatedUser.stock_in,
           stock_out: updatedUser.stock_out,
@@ -225,6 +227,23 @@ export default function UserManagementPage() {
       alert('사용자 정보 업데이트에 실패했습니다.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // 비밀번호 초기화
+  const handleResetPassword = async (user: UserType) => {
+    const newPw = prompt(`${user.name} 님의 비밀번호를 초기화합니다.\n새 임시 비밀번호를 입력하세요.`, '0000')
+    if (!newPw) return
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ id: user.id, password: newPw })
+      })
+      if (!response.ok) throw new Error()
+      alert(`비밀번호가 초기화되었습니다.\n임시 비밀번호: ${newPw}\n(로그인 후 변경하도록 안내하세요)`)
+    } catch {
+      alert('비밀번호 초기화에 실패했습니다.')
     }
   }
 
@@ -346,6 +365,15 @@ export default function UserManagementPage() {
                             >
                               <Edit className="h-3 w-3 mr-1" />
                               수정
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleResetPassword(user)}
+                              className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                            >
+                              <KeyRound className="h-3 w-3 mr-1" />
+                              비번초기화
                             </Button>
                             <Button
                               size="sm"

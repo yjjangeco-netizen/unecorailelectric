@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseServer } from '@/lib/supabaseServer'
+import { hashPassword } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,7 +111,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, username, password, name, department, position, email, level, color } = await request.json()
+    const { id, username, password, name, department, position, email, level, phone, home_address } = await request.json()
+
+    // 비밀번호 해시 (평문 저장 방지 — 로그인은 bcrypt 비교)
+    const hashedPassword = password ? await hashPassword(password) : password
 
     // 사용자 생성
     const { data, error } = await supabaseServer
@@ -118,13 +122,15 @@ export async function POST(request: NextRequest) {
       .insert({
         id,
         username,
-        password,
+        password: hashedPassword,
         name,
         department,
         position,
         email,
         level,
-        color, // Re-enable color persistence
+        phone: phone || null,
+        home_address: home_address || null,
+        employment_status: '재직중',
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -154,35 +160,44 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const { 
-      id, name, department, position, level, is_active, color,
-      stock_view, stock_in, stock_out, stock_disposal, 
-      work_tools, daily_log, work_manual, sop, user_management 
+    const {
+      id, name, department, position, level, is_active, employment_status, password,
+      phone, home_address,
+      stock_view, stock_in, stock_out, stock_disposal,
+      work_tools, daily_log, work_manual, sop, user_management
     } = await request.json()
 
-    console.log('사용자 업데이트 요청:', { id, name, department, position, level, is_active, color })
+    console.log('사용자 업데이트 요청:', { id, name, department, position, level, is_active, employment_status })
+
+    const updateData: Record<string, any> = {
+      name,
+      department,
+      position,
+      level,
+      is_active,
+      employment_status,
+      phone,
+      home_address,
+      stock_view,
+      stock_in,
+      stock_out,
+      stock_disposal,
+      work_tools,
+      daily_log,
+      work_manual,
+      sop,
+      user_management,
+      updated_at: new Date().toISOString()
+    }
+    // undefined 필드는 제외 (부분 업데이트 호환)
+    Object.keys(updateData).forEach((k) => updateData[k] === undefined && delete updateData[k])
+    // 비밀번호 초기화/변경 요청 시에만 해시하여 반영
+    if (password) updateData.password = await hashPassword(password)
 
     // 사용자 정보 업데이트
     const { data, error } = await supabaseServer
       .from('users')
-      .update({
-        name,
-        department,
-        position,
-        level,
-        is_active,
-        color, // Re-enable color persistence
-        stock_view,
-        stock_in,
-        stock_out,
-        stock_disposal,
-        work_tools,
-        daily_log,
-        work_manual,
-        sop,
-        user_management,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
 

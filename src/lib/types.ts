@@ -13,6 +13,9 @@ export interface User {
   department: DepartmentType;
   position: PositionType;
   is_active: boolean;
+  employment_status?: '재직중' | '휴가중' | '퇴직'; // DB: employment_status
+  phone?: string; // DB: phone
+  home_address?: string; // DB: home_address
   // 권한 필드
   stock_view?: boolean;
   stock_in?: boolean;
