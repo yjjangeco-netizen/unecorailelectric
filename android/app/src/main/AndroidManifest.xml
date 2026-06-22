@@ -38,11 +38,6 @@
                 android:resource="@xml/calendar_widget_info" />
         </receiver>
 
-        <service
-            android:name=".CalendarWidgetService"
-            android:permission="android.permission.BIND_REMOTE_VIEWS"
-            android:exported="false" />
-
         <receiver
             android:name=".MemoWidgetProvider"
             android:exported="true">
@@ -53,11 +48,6 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/memo_widget_info" />
         </receiver>
-
-        <service
-            android:name=".MemoWidgetService"
-            android:permission="android.permission.BIND_REMOTE_VIEWS"
-            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

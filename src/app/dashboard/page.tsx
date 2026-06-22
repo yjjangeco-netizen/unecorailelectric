@@ -884,11 +884,6 @@ export default function DashboardPage() {
           <div className="flex-1 overflow-auto p-2 sm:p-4 lg:p-8">
             <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
               <div className="space-y-5">
-                <div className="flex flex-col gap-1">
-                  <h1 className="text-2xl font-bold text-gray-950">대시보드</h1>
-                  <p className="text-sm text-gray-500">보고 누락, 결재 대기, 휴가 및 프로젝트 일정을 카드 섹션으로 확인합니다.</p>
-                </div>
-
                 <section className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-5">
                 {/* 1. 누락된 업무보고 */}
                 <Card className="bg-white rounded-lg border border-orange-200 shadow-sm">

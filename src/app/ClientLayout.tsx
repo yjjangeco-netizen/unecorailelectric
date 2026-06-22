@@ -146,6 +146,10 @@ export default function ClientLayout({
         title: '챗봇 관리',
         subtitle: 'QR 챗봇으로 넘어가는 매뉴얼/알람 색인을 확인하세요.'
       },
+      '/memo': {
+        title: '메모',
+        subtitle: '메모와 할일을 빠르게 적고 색으로 구분하세요.'
+      },
       '/leave-management': {
         title: '연차/반차 관리',
         subtitle: '연차 및 반차 신청 내역을 관리하세요.'

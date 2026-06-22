@@ -1,5 +1,7 @@
 package com.yjjangeco.unecorailelectric;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,6 +17,36 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         handleWidgetIntent(getIntent());
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // 앱을 벗어날 때 위젯이 최신 저장 데이터를 다시 읽도록 강제 갱신
+        refreshWidgets();
+    }
+
+    private void refreshWidgets() {
+        try {
+            AppWidgetManager mgr = AppWidgetManager.getInstance(this);
+
+            int[] calIds = mgr.getAppWidgetIds(new ComponentName(this, CalendarWidgetProvider.class));
+            if (calIds.length > 0) {
+                Intent i = new Intent(this, CalendarWidgetProvider.class);
+                i.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, calIds);
+                sendBroadcast(i);
+            }
+
+            int[] memoIds = mgr.getAppWidgetIds(new ComponentName(this, MemoWidgetProvider.class));
+            if (memoIds.length > 0) {
+                Intent i2 = new Intent(this, MemoWidgetProvider.class);
+                i2.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                i2.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, memoIds);
+                sendBroadcast(i2);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

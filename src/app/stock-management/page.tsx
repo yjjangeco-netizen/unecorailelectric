@@ -38,7 +38,6 @@ import {
   Edit,
   Printer
 } from "lucide-react"
-import StockStatistics from '@/components/stock/StockStatistics'
 import AuthGuard from '@/components/AuthGuard'
 import DisposalModal from '@/components/DisposalModal'
 import StockInModal from '@/components/StockInModal'
@@ -514,16 +513,6 @@ export default function StockManagementPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#f4f5f7]">
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-[1600px] mx-auto space-y-6">
-            
-            {/* Removed duplicate StockStatistics */}
-
-            {/* Gradient Banner Header */}
-
-
-            {/* Statistics Cards - Full Width Row */}
-            <div className="mb-8">
-               <StockStatistics {...statistics} userLevel={userLevel} />
-            </div>
 
             {/* Main Content: Stock List (Card Style) */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
@@ -545,7 +534,7 @@ export default function StockManagementPage() {
                         setIsEditMode(false)
                         setStockInModalOpen(true)
                       }}
-                      className="h-10 px-4 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 rounded-xl transition-all"
+                      className="h-10 px-4 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       입고
@@ -556,7 +545,7 @@ export default function StockManagementPage() {
                     <Button
                       onClick={() => setStockOutModalOpen(true)}
                       disabled={selectedItems.length === 0}
-                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed ${
                         selectedItems.length === 0 
                           ? 'bg-gray-100 text-gray-400' 
                           : 'bg-violet-500 hover:bg-violet-600 text-white shadow-violet-200'
@@ -571,7 +560,7 @@ export default function StockManagementPage() {
                     <Button
                       onClick={() => setDisposalModalOpen(true)}
                       disabled={selectedItems.length === 0}
-                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed ${
                         selectedItems.length === 0 
                           ? 'bg-gray-100 text-gray-400' 
                           : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-200'
@@ -586,7 +575,7 @@ export default function StockManagementPage() {
                     <Button
                       onClick={handleBulkDelete}
                       disabled={selectedItems.length === 0}
-                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all ${
+                      className={`h-10 px-4 text-sm font-semibold shadow-md rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed ${
                         selectedItems.length === 0 
                           ? 'bg-gray-100 text-gray-400' 
                           : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200'
@@ -600,7 +589,7 @@ export default function StockManagementPage() {
                   {isAdmin && (
                     <Button
                       onClick={handleClosing}
-                      className="h-10 px-4 text-sm font-semibold bg-gray-800 hover:bg-gray-900 text-white shadow-md shadow-gray-300 rounded-xl transition-all"
+                      className="h-10 px-4 text-sm font-semibold bg-gray-800 hover:bg-gray-900 text-white shadow-md shadow-gray-300 rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed"
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       마감
@@ -610,7 +599,7 @@ export default function StockManagementPage() {
                   {canReport && (
                     <Button
                       onClick={() => window.open('/stock-management/history', '_blank')}
-                      className="h-10 px-4 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-300 rounded-xl transition-all"
+                      className="h-10 px-4 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-300 rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed"
                     >
                       <Printer className="w-4 h-4 mr-2" />
                       입출고리스트

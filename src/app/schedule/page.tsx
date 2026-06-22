@@ -278,17 +278,8 @@ export default function SchedulePage() {
               finalTitle = `${trip.user_name} ${tripLabel}`
             }
 
-            // 색상 결정 logic
-            let bgColor = '#8B5CF6' // 기본 보라색
-            const subType = trip.sub_type || ''
-            
-            if (subType.includes('AS') || subType.includes('SS')) {
-              bgColor = '#8B5CF6' // 보라색
-            } else {
-              // 사용자 고유 색상 사용, 없으면 기본값(회색 or 보라색)
-              // "나머지 개별" -> 사용자 색상
-              bgColor = userColorMap[trip.user_id] || '#6B7280'
-            }
+            // 출장/외근은 카테고리 색상(빨강)으로 통일 (사람별 색상 제거)
+            const bgColor = '#EF4444'
             
             newEvents.push({
               id: `trip-${trip.id}`,
@@ -362,7 +353,7 @@ export default function SchedulePage() {
         const data = await eventsRes.json()
         data.forEach((event: any) => {
           // ?ъ슜???됱긽 ?곸슜, ?놁쑝硫?湲곕낯 ?뚯깋
-          const bgColor = userColorMap[event.participant_id] || '#6B7280'
+          const bgColor = '#3B82F6'
 
           let categoryLabel = event.category || ''
           let summaryStr = event.summary || ''
@@ -1331,9 +1322,9 @@ export default function SchedulePage() {
                   type="checkbox"
                   checked={categoryFilters.business_trip}
                   onChange={(e) => setCategoryFilters(prev => ({ ...prev, business_trip: e.target.checked }))}
-                  className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-2 focus:ring-purple-500"
+                  className="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-2 focus:ring-red-500"
                 />
-                <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                <span className="w-3 h-3 rounded-full bg-red-500"></span>
                 <span className="text-sm font-medium text-gray-700">출장/외근</span>
               </label>
               
@@ -1342,30 +1333,13 @@ export default function SchedulePage() {
                   type="checkbox"
                   checked={categoryFilters.other}
                   onChange={(e) => setCategoryFilters(prev => ({ ...prev, other: e.target.checked }))}
-                  className="w-4 h-4 text-gray-600 rounded border-gray-300 focus:ring-2 focus:ring-gray-500"
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="w-3 h-3 rounded-full bg-gray-500"></span>
+                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                 <span className="text-sm font-medium text-gray-700">기타</span>
               </label>
             </div>
 
-            {/* 구분선 */}
-            <div className="hidden md:flex items-center mx-3 text-gray-400 font-medium text-sm">
-              범례 <span className="mx-2">|</span>
-            </div>
-
-            {/* 범례: 사용자 목록 */}
-            <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-2">
-              {usersList.map((u) => (
-                <div key={u.id} className="flex items-center gap-1.5">
-                  <span 
-                    className="w-2.5 h-2.5 rounded-full" 
-                    style={{ backgroundColor: u.color || '#6B7280' }}
-                  ></span>
-                  <span className="text-xs text-gray-600">{u.name}</span>
-                </div>
-              ))}
-            </div>
           </div>
           {/* 달력 컨트롤 */}
           <div className="bg-white rounded-lg border border-gray-200 mb-6">
