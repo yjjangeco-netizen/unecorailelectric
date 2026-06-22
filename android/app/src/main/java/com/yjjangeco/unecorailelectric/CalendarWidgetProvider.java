@@ -109,6 +109,11 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
             int e2Id = res.getIdentifier("cell_" + i + "_e2", "id", pkg);
             int moreId = res.getIdentifier("cell_" + i + "_more", "id", pkg);
 
+            // 리소스 id 누락 시 크래시(위젯 추가 불가) 방지
+            if (dateId == 0 || rootId == 0 || e1Id == 0 || e2Id == 0 || moreId == 0) {
+                continue;
+            }
+
             views.setTextViewText(dateId, "");
             views.setInt(dateId, "setBackgroundResource", android.R.color.transparent);
             views.setViewVisibility(e1Id, View.GONE);

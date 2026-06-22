@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const supabase = supabaseServer
 
     const body = await request.json()
-    const { username, password, name, position, department, email, level } = body
+    const { username, password, name, position, department, email, level, phone, home_address } = body
 
     console.log('받은 데이터:', body)
 
@@ -55,6 +55,9 @@ export async function POST(request: NextRequest) {
       department: department,
       position: position,
       email: email,
+      phone: phone || null,
+      home_address: home_address || null,
+      employment_status: '재직중',
       level: username === 'testadmin' ? 'administrator' : (level || 'user'), // testadmin은 관리자로 생성
       is_active: true
     }

@@ -146,5 +146,27 @@ begin
 end $$;
 
 -- ============================================================
+-- 6. 회원: 재직상태 + 연락처 컬럼
+--    is_active 는 유지(로그인/조회 호환), employment_status 와 동기화
+--      재직중/휴가중 → is_active true, 퇴직 → false
+-- ============================================================
+alter table public.users add column if not exists employment_status text not null default '재직중';
+alter table public.users add column if not exists phone text;
+alter table public.users add column if not exists home_address text;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'users_employment_status_check') then
+    alter table public.users
+      add constraint users_employment_status_check
+      check (employment_status in ('재직중', '휴가중', '퇴직'));
+  end if;
+end $$;
+
+update public.users set employment_status = '퇴직' where is_active = false;
+update public.users set employment_status = '재직중'
+  where is_active = true and (employment_status is null or employment_status = '');
+
+-- ============================================================
 -- 완료. 결과 NOTICE 를 확인하세요.
 -- ============================================================
