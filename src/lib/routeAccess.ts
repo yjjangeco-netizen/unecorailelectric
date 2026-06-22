@@ -22,8 +22,7 @@ export const ROUTE_ACCESS_RULES: RouteAccessRule[] = [
   { prefix: '/memo', minLevel: 3 },
   { prefix: '/as-ss', minLevel: 1 },
   { prefix: '/stock-management', minLevel: 1 },
-  { prefix: '/work-tool', minLevel: 3 },
-  { prefix: '/assistant-automation', minLevel: 1 }
+  { prefix: '/work-tool', minLevel: 3 }
 ]
 
 export function isPublicPath(pathname: string) {

@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   BarChart3,
-  Bot,
   Calendar,
   ChevronRight,
   FileText,
@@ -19,7 +18,6 @@ import {
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/useUser'
-import { isAssistantOwner } from '@/lib/assistantAccess'
 import { canAccessRoute } from '@/lib/routeAccess'
 
 const navigationItems = [
@@ -73,7 +71,6 @@ const navigationItems = [
       { name: '입찰 모니터링', href: '/nara-monitoring' }
     ]
   },
-  { name: 'AI 자동화', href: '/assistant-automation', icon: Bot, key: 'assistant_automation' },
   {
     name: '설정',
     href: '/settings',
@@ -126,7 +123,6 @@ export default function Sidebar() {
     if (item.key === 'work_tools') return user?.work_tools === true || ['2', '3', '4', '5'].includes(level)
     if (item.key === 'as_ss') return true
     if (item.key === 'nara') return ['4', '5'].includes(level)
-    if (item.key === 'assistant_automation') return isAssistantOwner(user)
     if (item.key === 'settings') return level === '5'
     return false
   })

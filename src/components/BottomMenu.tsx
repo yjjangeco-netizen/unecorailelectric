@@ -1,10 +1,9 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, FileText, Calendar, StickyNote, Settings, Bot } from 'lucide-react'
+import { Home, FileText, Calendar, StickyNote, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/hooks/useUser'
-import { isAssistantOwner } from '@/lib/assistantAccess'
 
 export default function BottomMenu() {
   const pathname = usePathname()
@@ -17,7 +16,6 @@ export default function BottomMenu() {
     { name: '업무일지', href: '/work-diary', icon: FileText, key: 'daily_log' },
     { name: '일정', href: '/schedule', icon: Calendar, key: 'schedule' },
     { name: '메모', href: '/memo', icon: StickyNote, key: 'memo' },
-    { name: 'AI', href: '/assistant-automation', icon: Bot, key: 'assistant_automation' },
     { name: '설정', href: '/settings', icon: Settings, key: 'settings' },
   ]
 
@@ -30,7 +28,6 @@ export default function BottomMenu() {
     if (item.key === 'daily_log') return user?.daily_log === true || ['3', '4', '5'].includes(level)
     if (item.key === 'schedule') return ['3', '4', '5'].includes(level)
     if (item.key === 'memo') return ['1', '2', '3', '4', '5'].includes(level)
-    if (item.key === 'assistant_automation') return isAssistantOwner(user)
     if (item.key === 'settings') return level === '5'
     return false
   })

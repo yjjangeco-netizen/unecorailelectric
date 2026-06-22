@@ -11,20 +11,8 @@
   },
   "crons": [
     {
-      "path": "/api/assistant/daily-summary",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/assistant/morning-brief",
-      "schedule": "1 23 * * 0-4"
-    },
-    {
-      "path": "/api/assistant/work-report-reminder",
-      "schedule": "30 7 * * 1-5"
-    },
-    {
       "path": "/api/nara-monitoring/cron",
-      "schedule": "0 0 * * *"
+      "schedule": "*/30 * * * *"
     }
   ]
 }
