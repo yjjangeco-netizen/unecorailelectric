@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Bell, Menu, UserCog, BellRing, LogOut, X, Check } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
@@ -192,7 +193,7 @@ function AlarmSettingsModal({ onClose }: { onClose: () => void }) {
     </label>
   )
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-2">
@@ -213,7 +214,8 @@ function AlarmSettingsModal({ onClose }: { onClose: () => void }) {
           <Check className="inline w-4 h-4 mr-1" /> 저장
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -238,7 +240,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[300] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3">
@@ -266,6 +268,7 @@ function ProfileModal({ onClose }: { onClose: () => void }) {
         {status && <p className="mt-2 text-xs text-gray-500">{status}</p>}
         <button onClick={save} className="mt-4 w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">저장</button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
