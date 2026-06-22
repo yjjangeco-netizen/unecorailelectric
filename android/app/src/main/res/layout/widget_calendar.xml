@@ -8,11 +8,11 @@
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal" android:paddingBottom="2dp">
         <TextView android:id="@+id/widget_today_btn" android:layout_width="wrap_content" android:layout_height="32dp" android:gravity="center" android:paddingLeft="6dp" android:paddingRight="6dp" android:text="오늘" android:textColor="#FF111827" android:textSize="14sp" android:textStyle="bold" />
-        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <TextView android:text="" android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
         <TextView android:id="@+id/widget_prev_btn" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="‹" android:textColor="#FF374151" android:textSize="20sp" />
         <TextView android:id="@+id/widget_month_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:includeFontPadding="false" android:minWidth="96dp" android:text="2026.06" android:textColor="#FF111827" android:textSize="21sp" android:textStyle="bold" />
         <TextView android:id="@+id/widget_next_btn" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="›" android:textColor="#FF374151" android:textSize="20sp" />
-        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <TextView android:text="" android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="22dp" android:layout_marginTop="4dp" android:orientation="horizontal">

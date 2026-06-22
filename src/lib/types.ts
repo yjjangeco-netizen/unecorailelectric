@@ -16,6 +16,7 @@ export interface User {
   employment_status?: '재직중' | '휴가중' | '퇴직'; // DB: employment_status
   phone?: string; // DB: phone
   home_address?: string; // DB: home_address
+  hire_date?: string; // DB: hire_date
   // 권한 필드
   stock_view?: boolean;
   stock_in?: boolean;

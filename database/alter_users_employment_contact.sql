@@ -5,6 +5,7 @@
 alter table public.users add column if not exists employment_status text not null default '재직중';
 alter table public.users add column if not exists phone text;
 alter table public.users add column if not exists home_address text;
+alter table public.users add column if not exists hire_date date;
 
 -- CHECK: 허용값
 do $$

@@ -108,6 +108,7 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
         position: user.position || '',
         level: level,
         employment_status: user.employment_status || (user.is_active === false ? '퇴직' : '재직중'),
+        hire_date: user.hire_date || '',
         // 기존 권한이 있으면 유지, 없으면 레벨별 기본값 사용
         stock_view: user.stock_view ?? defaultPermissions['stock_view'],
         stock_in: user.stock_in ?? defaultPermissions['stock_in'],
@@ -257,6 +258,19 @@ export default function UserEditModal({ user, isOpen, onClose, onSave }: UserEdi
               <option value="휴가중">휴가중</option>
               <option value="퇴직">퇴직</option>
             </select>
+          </div>
+
+          {/* 입사일 */}
+          <div>
+            <label className="block text-sm mb-1">입사일</label>
+            <input
+              type="date"
+              value={formData.hire_date || ''}
+              onChange={(e) => handleChange('hire_date', e.target.value)}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${
+                formData.hire_date !== originalData.hire_date ? 'text-blue-600' : 'text-gray-900'
+              }`}
+            />
           </div>
 
           {/* 메뉴 권한 설정 */}

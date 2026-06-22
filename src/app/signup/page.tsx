@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Building2, User, Lock, Mail, Briefcase, Users, ArrowLeft, Phone, Home } from 'lucide-react'
+import { Building2, User, Lock, Mail, Briefcase, Users, ArrowLeft, Phone, Home, Calendar } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -18,7 +18,8 @@ export default function SignupPage() {
     department: '',
     email: '',
     phone: '',
-    home_address: ''
+    home_address: '',
+    hire_date: ''
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -293,6 +294,23 @@ export default function SignupPage() {
                     value={formData.home_address}
                     onChange={(e) => handleInputChange('home_address', e.target.value)}
                     placeholder="집주소를 입력하세요"
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* 입사일 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  입사일
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="hire_date"
+                    type="date"
+                    value={formData.hire_date}
+                    onChange={(e) => handleInputChange('hire_date', e.target.value)}
                     className="pl-10"
                   />
                 </div>

@@ -193,6 +193,7 @@ export default function UserManagementPage() {
           employment_status: updatedUser.employment_status,
           phone: updatedUser.phone,
           home_address: updatedUser.home_address,
+          hire_date: updatedUser.hire_date,
           stock_view: updatedUser.stock_view,
           stock_in: updatedUser.stock_in,
           stock_out: updatedUser.stock_out,

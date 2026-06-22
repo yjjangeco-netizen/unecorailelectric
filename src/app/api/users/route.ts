@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { id, username, password, name, department, position, email, level, phone, home_address } = await request.json()
+    const { id, username, password, name, department, position, email, level, phone, home_address, hire_date } = await request.json()
 
     // 비밀번호 해시 (평문 저장 방지 — 로그인은 bcrypt 비교)
     const hashedPassword = password ? await hashPassword(password) : password
@@ -130,6 +130,7 @@ export async function POST(request: NextRequest) {
         level,
         phone: phone || null,
         home_address: home_address || null,
+        hire_date: hire_date || null,
         employment_status: '재직중',
         is_active: true,
         created_at: new Date().toISOString(),
@@ -162,7 +163,7 @@ export async function PUT(request: NextRequest) {
   try {
     const {
       id, name, department, position, level, is_active, employment_status, password,
-      phone, home_address,
+      phone, home_address, hire_date,
       stock_view, stock_in, stock_out, stock_disposal,
       work_tools, daily_log, work_manual, sop, user_management
     } = await request.json()
@@ -178,6 +179,7 @@ export async function PUT(request: NextRequest) {
       employment_status,
       phone,
       home_address,
+      hire_date,
       stock_view,
       stock_in,
       stock_out,
