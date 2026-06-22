@@ -38,6 +38,27 @@
                 android:resource="@xml/calendar_widget_info" />
         </receiver>
 
+        <service
+            android:name=".CalendarWidgetService"
+            android:permission="android.permission.BIND_REMOTE_VIEWS"
+            android:exported="false" />
+
+        <receiver
+            android:name=".MemoWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/memo_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".MemoWidgetService"
+            android:permission="android.permission.BIND_REMOTE_VIEWS"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

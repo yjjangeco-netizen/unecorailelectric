@@ -12,6 +12,7 @@ import BusinessTripModal from '@/components/BusinessTripModal'
 import LeaveRequestModal from '@/components/LeaveRequestModal'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, isToday, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import { syncWidgetEvents } from '@/lib/widgetSync'
 interface CalendarEvent {
   id: string
   title: string
@@ -398,6 +399,9 @@ export default function SchedulePage() {
 
       setEvents(newEvents)
 
+      // 홈 위젯용 일정 데이터 동기화 (단말 저장 → 네이티브 위젯이 읽음)
+      void syncWidgetEvents(newEvents)
+
       // 5. Todos (?먮윭 臾댁떆)
       try {
         if (todosRes.ok) {
@@ -477,6 +481,40 @@ export default function SchedulePage() {
     setSelectedBusinessTrip(null)
     setIsBusinessTripModalOpen(true)
   }
+
+  // 홈 위젯에서 넘어온 날짜/추가 요청 처리
+  const applyWidgetParams = useCallback((dateStr?: string | null, action?: string | null) => {
+    if (dateStr) {
+      const d = new Date(`${dateStr}T00:00:00`)
+      if (!Number.isNaN(d.getTime())) {
+        setCurrentDate(d)
+        setSelectedDate(d)
+        setViewType('day')
+      }
+    }
+    if (action === 'new') {
+      setSelectedDate(null)
+      setSelectedBusinessTrip(null)
+      setIsBusinessTripModalOpen(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    // 1) 콜드 스타트: /schedule?date=...&action=... 로 진입한 경우
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      const dateParam = sp.get('date')
+      const actionParam = sp.get('action')
+      if (dateParam || actionParam) applyWidgetParams(dateParam, actionParam)
+    }
+    // 2) 실행 중: 위젯 이벤트 직접 수신
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {}
+      applyWidgetParams(detail.date, detail.action)
+    }
+    window.addEventListener('widgetNavigate', handler)
+    return () => window.removeEventListener('widgetNavigate', handler)
+  }, [applyWidgetParams])
 
   const prevMonth = () => setCurrentDate(prev => {
     if (viewType === 'week') return addDays(prev, -7)

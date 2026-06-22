@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useUser } from '@/hooks/useUser'
 import { cn } from '@/lib/utils'
 import { Archive, ArchiveRestore, Plus, Search, StickyNote, Trash2 } from 'lucide-react'
+import { syncWidgetMemos } from '@/lib/widgetSync'
 
 type MemoColor = 'yellow' | 'blue' | 'green' | 'pink' | 'purple' | 'white'
 
@@ -67,6 +68,28 @@ export default function MemoPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, showArchived])
 
+  // 홈 위젯 ＋ (action=new) → 새 메모 생성
+  const widgetNewHandled = useRef(false)
+  useEffect(() => {
+    if (!user?.id) return
+    const tryCreate = (action?: string | null) => {
+      if (action === 'new' && !widgetNewHandled.current) {
+        widgetNewHandled.current = true
+        void createMemo()
+      }
+    }
+    if (typeof window !== 'undefined') {
+      tryCreate(new URLSearchParams(window.location.search).get('action'))
+    }
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail || {}
+      if (detail.route === '/memo') tryCreate(detail.action)
+    }
+    window.addEventListener('widgetNavigate', handler)
+    return () => window.removeEventListener('widgetNavigate', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
   const loadMemos = async () => {
     setLoading(true)
     setStatus('')
@@ -76,6 +99,8 @@ export default function MemoPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.details || data.error || '메모 조회 실패')
       setMemos(data)
+      // 홈 위젯용 메모 동기화 (보관함이 아닌 활성 메모만)
+      if (!showArchived) void syncWidgetMemos(data)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '메모를 불러오지 못했습니다.')
     } finally {

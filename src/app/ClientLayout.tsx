@@ -229,6 +229,39 @@ export default function ClientLayout({
     };
   }, []);
 
+  // 홈 위젯에서 넘어온 이동 처리 (날짜 탭 / ＋ 추가)
+  useEffect(() => {
+    const navigateFromWidget = (nav: { route?: string; date?: string; action?: string }) => {
+      if (!nav?.route) return
+      const params = new URLSearchParams()
+      if (nav.date) params.set('date', nav.date)
+      if (nav.action) params.set('action', nav.action)
+      const query = params.toString()
+      router.push(query ? `${nav.route}?${query}` : nav.route)
+    }
+
+    // 1) 콜드 스타트: 앱 시작 시 저장된 이동 정보 확인
+    const consumePending = async () => {
+      try {
+        const { Preferences } = await import('@capacitor/preferences')
+        const { value } = await Preferences.get({ key: 'widget_nav' })
+        if (!value) return
+        await Preferences.remove({ key: 'widget_nav' })
+        const nav = JSON.parse(value)
+        // 60초 이내의 최근 요청만 반영
+        if (nav?.ts && Date.now() - nav.ts < 60000) navigateFromWidget(nav)
+      } catch {
+        // 웹/미지원 환경 무시
+      }
+    }
+    void consumePending()
+
+    // 2) 실행 중: 네이티브가 보내는 커스텀 이벤트 수신
+    const handler = (e: Event) => navigateFromWidget((e as CustomEvent).detail || {})
+    window.addEventListener('widgetNavigate', handler)
+    return () => window.removeEventListener('widgetNavigate', handler)
+  }, [router]);
+
   return (
     <div className={isApp ? "flex flex-col h-[100dvh] bg-[#f4f5f7] relative" : "flex h-[100dvh] bg-[#f4f5f7] relative"}>
       {shouldShowHeader && !isApp && <Sidebar />}

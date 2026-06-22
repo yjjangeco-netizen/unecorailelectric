@@ -5,4 +5,5 @@
     <string name="package_name">com.yjjangeco.unecorailelectric</string>
     <string name="custom_url_scheme">com.yjjangeco.unecorailelectric</string>
     <string name="calendar_widget_description">유네코레일 월간 일정 위젯</string>
+    <string name="memo_widget_description">유네코레일 메모 위젯</string>
 </resources>

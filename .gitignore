@@ -12,3 +12,4 @@ dist
 build.log
 build_log*.txt
 lint_*.txt
+tsconfig.tsbuildinfo
