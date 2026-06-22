@@ -40,6 +40,13 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* 구글폰트: 깔끔한 본문(Noto Sans KR) + 귀여운 설명(Jua) — 한글 포함 전체 로드 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap"
+          rel="stylesheet"
+        />
         {/* PWA 메타 태그 */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#4DA3FF" />

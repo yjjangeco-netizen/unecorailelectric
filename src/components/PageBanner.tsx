@@ -22,7 +22,7 @@ export default function PageBanner({ title, subtitle, className }: PageBannerPro
           {title}
         </h1>
       </div>
-      <p className="text-gray-500 text-xs sm:text-sm mt-1.5 ml-3.5">
+      <p className="font-cute text-gray-500 text-sm sm:text-base mt-1.5 ml-3.5">
         {subtitle}
       </p>
     </div>
