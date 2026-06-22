@@ -47,16 +47,15 @@ export async function POST(request: NextRequest) {
           telegramBotToken: telegramBotToken || '',
           telegramChatId: telegramChatId || '',
           naraMarketApiKey: naraMarketApiKey || '',
-          checkInterval: Number(checkInterval) || 30
+          checkInterval: Number(checkInterval) || 30,
+          running: true
         },
         updated_at: new Date().toISOString()
       }, { onConflict: 'key' })
 
-    const started = await naraMonitoringService.start(config)
-
-    if (!started) {
-      return NextResponse.json({ message: '모니터링 시작에 실패했습니다.' }, { status: 500 })
-    }
+    // 참고: 실제 주기 검색은 Vercel 크론(/api/nara-monitoring/cron)이 수행한다.
+    // (서버리스에선 setInterval 이 유지되지 않으므로 start() 결과에 의존하지 않음)
+    await naraMonitoringService.start(config).catch(() => false)
 
     return NextResponse.json({
       success: true,

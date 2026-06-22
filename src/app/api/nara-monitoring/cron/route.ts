@@ -14,7 +14,8 @@ const DEFAULT_CONFIG = {
   telegramChatId: '',
   naraMarketApiKey: '',
   checkInterval: 30,
-  naraCronInitialized: false
+  naraCronInitialized: false,
+  running: false
 }
 
 type CronConfig = typeof DEFAULT_CONFIG
@@ -31,7 +32,8 @@ function normalizeConfig(value: any): CronConfig {
     telegramChatId: String(value?.telegramChatId || ''),
     naraMarketApiKey: String(value?.naraMarketApiKey || ''),
     checkInterval: Math.min(300, Math.max(10, Number(value?.checkInterval) || DEFAULT_CONFIG.checkInterval)),
-    naraCronInitialized: Boolean(value?.naraCronInitialized)
+    naraCronInitialized: Boolean(value?.naraCronInitialized),
+    running: Boolean(value?.running)
   }
 }
 
@@ -128,6 +130,8 @@ export async function GET(request: NextRequest) {
   const chatId = config.telegramChatId || process.env['TELEGRAM_WORK_CHAT_ID']
   const token = config.telegramBotToken || process.env['TELEGRAM_BOT_TOKEN']
   const canSendTelegram = config.telegramEnabled && Boolean(chatId) && Boolean(token)
+  // 자동 발송은 "모니터링 시작(running)" 상태일 때만 (중지하면 발송 안 함)
+  const active = canSendTelegram && config.running
 
   if (request.nextUrl.searchParams.get('testTelegram') === '1') {
     if (!canSendTelegram) {
@@ -156,7 +160,7 @@ export async function GET(request: NextRequest) {
   const pending: BidItem[] = []
   let duplicates = 0
 
-  if (!config.naraCronInitialized || canSendTelegram) {
+  if (!config.naraCronInitialized || active) {
     try {
       for (const item of searchResult.bids) {
         if (await markPending(item)) pending.push(item)
@@ -186,7 +190,7 @@ export async function GET(request: NextRequest) {
     })
   }
 
-  if (!canSendTelegram || pending.length === 0) {
+  if (!active || pending.length === 0) {
     return NextResponse.json({
       ok: true,
       found: searchResult.bids.length,
