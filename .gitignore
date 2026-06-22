@@ -13,3 +13,7 @@ build.log
 build_log*.txt
 lint_*.txt
 tsconfig.tsbuildinfo
+
+# Firebase 서비스계정 키 (절대 커밋 금지)
+Firebse Key/
+*firebase-adminsdk*.json

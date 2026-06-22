@@ -219,7 +219,7 @@ export default function SchedulePage() {
             // 프로젝트 일정은 무조건 녹색 (#10B981)
             const bgColor = '#10B981'
             let projName = e.project?.projectName || ''
-            projName = projName.replace(/선반/g, 'A').replace(/유니트/g, 'U')
+            projName = projName.replace(/디스크\s*선반/g, 'D').replace(/전삭기/g, 'U').replace(/선반/g, 'A').replace(/유니트/g, 'U')
             
             let eventType = e.eventType || ''
             eventType = eventType.replace(/공장시운전/g, '공시').replace(/현장시운전/g, '현시')
@@ -261,7 +261,7 @@ export default function SchedulePage() {
             // 프로젝트/기지명 명칭 결정 및 치환
             let displayName = trip.project_name || trip.title || trip.sub_type || ''
             displayName = displayName
-              .replace(/선반/g, 'A')
+              .replace(/디스크\s*선반/g, 'D').replace(/전삭기/g, 'U').replace(/선반/g, 'A')
               .replace(/유니트/g, 'U')
               .replace(/공장시운전/g, '공시')
               .replace(/현장시운전/g, '현시')
@@ -359,7 +359,7 @@ export default function SchedulePage() {
           let summaryStr = event.summary || ''
           
           summaryStr = summaryStr
-            .replace(/선반/g, 'A')
+            .replace(/디스크\s*선반/g, 'D').replace(/전삭기/g, 'U').replace(/선반/g, 'A')
             .replace(/유니트/g, 'U')
             .replace(/공장시운전/g, '공시')
             .replace(/현장시운전/g, '현시')

@@ -162,6 +162,15 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
             views.setOnClickPendingIntent(rootId, datePending);
         }
 
+        // 이번 달에 안 쓰는 마지막 주 행은 숨겨 하단 공백 제거
+        for (int r = 0; r < 6; r++) {
+            int weekId = res.getIdentifier("week_" + r, "id", pkg);
+            if (weekId == 0) continue;
+            int firstDayOfRow = r * 7 - firstWeekday + 1; // 그 주 일요일 칸의 날짜
+            boolean emptyRow = firstDayOfRow > lastDay;
+            views.setViewVisibility(weekId, emptyRow ? View.GONE : View.VISIBLE);
+        }
+
         views.setOnClickPendingIntent(R.id.widget_prev_btn, broadcast(context, appWidgetId, ACTION_PREV));
         views.setOnClickPendingIntent(R.id.widget_next_btn, broadcast(context, appWidgetId, ACTION_NEXT));
         views.setOnClickPendingIntent(R.id.widget_today_btn, broadcast(context, appWidgetId, ACTION_TODAY));
@@ -172,12 +181,19 @@ public class CalendarWidgetProvider extends AppWidgetProvider {
     private void bindEvent(RemoteViews views, int viewId, String[] event) {
         views.setViewVisibility(viewId, View.VISIBLE);
         views.setTextViewText(viewId, event[0]);
-        int color = Color.parseColor("#2563EB");
-        try {
-            if (event[1] != null && event[1].length() > 0) color = Color.parseColor(event[1]);
-        } catch (Exception ignored) {
-        }
-        views.setInt(viewId, "setBackgroundColor", color);
+        views.setInt(viewId, "setBackgroundResource", barDrawable(event[1]));
+    }
+
+    // 카테고리 색상 → 라운드 막대 드로어블
+    private int barDrawable(String hex) {
+        if (hex == null) return R.drawable.widget_bar_default;
+        String h = hex.toUpperCase();
+        if (h.contains("EF4444")) return R.drawable.widget_bar_red;
+        if (h.contains("10B981")) return R.drawable.widget_bar_green;
+        if (h.contains("F97316")) return R.drawable.widget_bar_orange;
+        if (h.contains("3B82F6")) return R.drawable.widget_bar_blue;
+        if (h.contains("8B5CF6")) return R.drawable.widget_bar_purple;
+        return R.drawable.widget_bar_default;
     }
 
     private Map<String, List<String[]>> loadEvents(Context context) {

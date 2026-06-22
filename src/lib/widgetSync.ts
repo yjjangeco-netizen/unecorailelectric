@@ -57,7 +57,7 @@ async function writePreference(key: string, value: unknown) {
   }
 }
 
-/** 일정 목록을 위젯용으로 압축해 저장. 다일 일정은 각 날짜로 펼친다. */
+/** 일정 목록을 위젯용으로 압축해 저장. 다일 일정은 시작일 1개만 넣는다(깔끔하게). */
 export async function syncWidgetEvents(events: WidgetEventInput[]) {
   const items: { date: string; title: string; color: string }[] = []
 
@@ -65,19 +65,13 @@ export async function syncWidgetEvents(events: WidgetEventInput[]) {
     if (!event?.title) continue
     const startDate = toDateString(event.start)
     if (!startDate) continue
-    const endDate = toDateString(event.end) || startDate
 
-    let cursor = startDate
-    for (let i = 0; i <= MAX_SPAN_DAYS && cursor <= endDate; i++) {
-      items.push({
-        date: cursor,
-        title: event.title,
-        color: event.backgroundColor || '#2563eb'
-      })
-      if (cursor === endDate) break
-      cursor = addDays(cursor, 1)
-      if (items.length >= MAX_EVENTS) break
-    }
+    // 연속(다일) 일정도 시작일에 1개만 표시
+    items.push({
+      date: startDate,
+      title: event.title,
+      color: event.backgroundColor || '#2563eb'
+    })
     if (items.length >= MAX_EVENTS) break
   }
 
