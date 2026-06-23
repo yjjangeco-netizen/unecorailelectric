@@ -15,6 +15,7 @@ export default function MyBoardPage() {
           versions: ['840C', '840D', '840Dsl', 'ONE', '공통']
         }}
         minLevel={3}
+        chatbotSync
       />
     </AuthGuard>
   )

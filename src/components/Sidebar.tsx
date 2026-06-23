@@ -66,8 +66,8 @@ const navigationItems: NavItem[] = [
         name: '매뉴얼/알람 관리',
         href: '/chatbot-management',
         subItems: [
-          { name: '알람관리', href: '/chatbot-management?tab=alarm' },
-          { name: '챗봇관리', href: '/chatbot-management?tab=content' },
+          { name: '알람관리', href: '/chatbot-management' },
+          { name: '챗봇관리', href: '/chatbot-knowledge' },
           { name: '메뉴얼 관리', href: '/manual-management' }
         ]
       }

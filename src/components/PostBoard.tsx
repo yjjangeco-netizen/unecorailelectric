@@ -25,13 +25,15 @@ export default function PostBoard({
   title,
   description,
   prefixes,
-  minLevel = 1
+  minLevel = 1,
+  chatbotSync = false
 }: {
   boardType: string
   title: string
   description?: string
   prefixes?: Prefixes
   minLevel?: number
+  chatbotSync?: boolean
 }) {
   const { user } = useUser()
   const userId = user?.id || user?.username || ''
@@ -108,6 +110,25 @@ export default function PostBoard({
       if (!res.ok) {
         const e = await res.json().catch(() => ({}))
         throw new Error(e?.error || '등록 실패')
+      }
+      const created = await res.json().catch(() => null)
+      // 챗봇 연동 게시판이면 QR 챗봇 의미검색 색인에 반영(실패해도 글 등록은 유지)
+      if (chatbotSync && created?.id) {
+        try {
+          await fetch('/api/chatbot-boards/index', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(headers || {}) },
+            body: JSON.stringify({
+              postId: created.id,
+              title: finalTitle,
+              html: formContent,
+              machine: formMachine,
+              version: formVersion
+            })
+          })
+        } catch {
+          /* 색인 실패는 무시 */
+        }
       }
       setFormTitle('')
       setFormContent('')
