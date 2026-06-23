@@ -167,6 +167,32 @@ function AdminConsole() {
   const [showForm, setShowForm] = useState(false)
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
+  const [csvUploading, setCsvUploading] = useState(false)
+
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCsvUploading(true)
+    setMsg('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/chatbot-alarms/import', {
+        method: 'POST',
+        headers: userId ? { 'x-user-id': String(userId) } : undefined,
+        body: fd
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'CSV 업로드 실패')
+      setMsg(`✅ CSV 일괄등록 완료${data['입력행'] ? `: ${data['입력행']}행` : ''}`)
+      loadItems()
+    } catch (err) {
+      setMsg('❌ ' + (err instanceof Error ? err.message : 'CSV 업로드 실패'))
+    } finally {
+      setCsvUploading(false)
+    }
+  }
 
   const loadProfiles = useCallback(async () => {
     try {
@@ -332,7 +358,13 @@ function AdminConsole() {
 
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex justify-end gap-2">
+          {entity === 'alarm' && !showForm && (
+            <label className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              {csvUploading ? 'CSV 업로드 중...' : 'CSV 일괄등록'}
+              <input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} disabled={csvUploading} />
+            </label>
+          )}
           {!showForm ? (
             <Button onClick={openCreate} className="bg-blue-600 text-white hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" />
