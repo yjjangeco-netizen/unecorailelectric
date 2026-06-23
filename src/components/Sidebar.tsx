@@ -47,7 +47,6 @@ const navigationItems: NavItem[] = [
     icon: Settings,
     key: 'work_tools',
     subItems: [
-      { name: 'Drive 라이브러리', href: '/work-tool/library' },
       { name: 'SOP', href: '/work-tool/sop' },
       { name: '업무툴', href: '/work-tool/tools' },
       { name: '고장대응', href: '/work-tool/troubleshooting' },
@@ -64,11 +63,14 @@ const navigationItems: NavItem[] = [
       { name: 'AS/SS 조회', href: '/as-ss' },
       {
         name: '매뉴얼/알람 관리',
-        href: '/chatbot-management',
+        href: '/chatbot-admin',
         subItems: [
-          { name: '알람관리', href: '/chatbot-management' },
-          { name: '챗봇관리', href: '/chatbot-knowledge' },
-          { name: '메뉴얼 관리', href: '/manual-management' }
+          { name: '프로젝트', href: '/chatbot-admin?tab=profile' },
+          { name: '알람', href: '/chatbot-admin?tab=alarm' },
+          { name: 'FAQ', href: '/chatbot-admin?tab=faq' },
+          { name: '정비', href: '/chatbot-admin?tab=maintenance' },
+          { name: '증상', href: '/chatbot-admin?tab=symptom' },
+          { name: '매뉴얼 동기화', href: '/manual-management' }
         ]
       }
     ]

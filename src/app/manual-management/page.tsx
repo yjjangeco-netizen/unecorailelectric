@@ -417,6 +417,12 @@ export default function ManualManagementPage() {
                     </Button>
                   </div>
                   {syncMsg && <p className="text-sm text-gray-700">{syncMsg}</p>}
+                  <p className="text-xs text-gray-500">
+                    동기화에서 &quot;Token expired/revoked&quot; 오류가 나면 드라이브 연결이 만료된 것입니다 →{' '}
+                    <button onClick={connectGoogle} className="font-medium text-blue-600 underline">
+                      Google 재연결
+                    </button>
+                  </p>
                 </CardContent>
               </Card>
 
