@@ -67,9 +67,6 @@ const navigationItems: NavItem[] = [
         subItems: [
           { name: '프로젝트', href: '/chatbot-admin?tab=profile' },
           { name: '알람', href: '/chatbot-admin?tab=alarm' },
-          { name: 'FAQ', href: '/chatbot-admin?tab=faq' },
-          { name: '정비', href: '/chatbot-admin?tab=maintenance' },
-          { name: '증상', href: '/chatbot-admin?tab=symptom' },
           { name: '매뉴얼 동기화', href: '/manual-management' }
         ]
       }

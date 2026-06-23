@@ -321,7 +321,7 @@ function AdminConsole() {
 
         {/* 엔티티 탭 */}
         <div className="mt-5 flex flex-wrap gap-2">
-          {ENTITIES.map((e) => (
+          {ENTITIES.filter((e) => e.key === 'profile' || e.key === 'alarm').map((e) => (
             <Button
               key={e.key}
               variant={entity === e.key ? 'default' : 'outline'}
