@@ -14,6 +14,7 @@ import { X, Save, Settings, Zap, Cpu, Palette, Plus, Trash2, Edit2, FileText, Br
 import MotorSpecModal from './MotorSpecModal'
 import BulkMotorAddModal from './BulkMotorAddModal'
 import SpecificationGenerator from './SpecificationGenerator'
+import ProjectQrCode from './ProjectQrCode'
 
 interface ProjectDetailModalProps {
   project: Project | null
@@ -584,13 +585,17 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="project_number" className="text-gray-600 font-medium">프로젝트 번호</Label>
-                    <Input 
-                      id="project_number" 
-                      value={currentProject.project_number || ''} 
-                      onChange={handleChange} 
+                    <Input
+                      id="project_number"
+                      value={currentProject.project_number || ''}
+                      onChange={handleChange}
                       className="h-12 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-xl transition-all"
                       placeholder="예: CNCUWL-2501"
                     />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label className="text-gray-600 font-medium">현장 QR 코드</Label>
+                    <ProjectQrCode projectNumber={currentProject.project_number} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="base_name" className="text-gray-600 font-medium">기지명</Label>
@@ -722,6 +727,7 @@ export default function ProjectEditModal({ project, isOpen, onClose, onSave, onD
                     <Label className="text-gray-600 font-medium">컨트롤러 (하드웨어 버전)</Label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
+                        { maker: 'Siemens', value: 'Sinumerik 840C' },
                         { maker: 'Siemens', value: 'Sinumerik 840D' },
                         { maker: 'Siemens', value: 'Sinumerik 840Dsl' },
                         { maker: 'Siemens', value: 'Sinumerik ONE' },

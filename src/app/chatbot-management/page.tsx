@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import AuthGuard from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Bot, FileText, RefreshCw, Search, Settings } from 'lucide-react'
+import { Bot, Download, FileText, RefreshCw, Search, Settings, Upload } from 'lucide-react'
+import AlarmEditor from '@/components/AlarmEditor'
 
 type ChatbotIndexItem = {
   id: string
@@ -32,8 +33,32 @@ export default function ChatbotManagementPage() {
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [uploading, setUploading] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const indexUrl = 'https://unecorailelectric.vercel.app/api/chatbot-content-index'
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploading(true)
+    setUploadMsg('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/chatbot-alarms/import', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || '업로드 실패')
+      setUploadMsg(`✅ 업로드 완료: ${data['입력행']}행 입력${data['건너뜀'] ? `, ${data['건너뜀']}행 건너뜀` : ''}`)
+      loadIndex()
+    } catch (err) {
+      setUploadMsg(`❌ ${err instanceof Error ? err.message : '업로드 실패'}`)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const loadIndex = async () => {
     setLoading(true)
@@ -91,11 +116,42 @@ export default function ChatbotManagementPage() {
                 QR_KAKAO 챗봇으로 넘어가는 매뉴얼/알람 색인을 확인합니다.
               </p>
             </div>
-            <Button onClick={loadIndex} disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700">
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              색인 새로고침
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={handleUpload}
+              />
+              <Button
+                onClick={() => { window.location.href = '/api/chatbot-alarms/export' }}
+                variant="outline"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                알람 엑셀 다운로드
+              </Button>
+              <Button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                variant="outline"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {uploading ? '업로드 중...' : '알람 엑셀 업로드'}
+              </Button>
+              <Button onClick={loadIndex} disabled={loading} className="bg-blue-600 text-white hover:bg-blue-700">
+                <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                색인 새로고침
+              </Button>
+            </div>
           </div>
+          {uploadMsg && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              {uploadMsg}
+            </div>
+          )}
+
+          <AlarmEditor />
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

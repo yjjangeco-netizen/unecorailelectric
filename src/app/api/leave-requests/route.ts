@@ -8,9 +8,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate') || new Date().toISOString().split('T')[0]
     const endDate = searchParams.get('endDate')
-    
-    // 레벨 5 이상 또는 administrator만 모든 연차 조회 가능
-    const canViewAll = userLevel === '5' || userLevel === 'admin' || userLevel === 'administrator'
+
+    // 레벨 3 이상 또는 관리자(대소문자 무관)는 팀 전체 예정 연차 조회 가능
+    const lvlNum = parseInt(String(userLevel), 10)
+    const canViewAll =
+      ['admin', 'administrator'].includes(String(userLevel).toLowerCase()) ||
+      (Number.isFinite(lvlNum) && lvlNum >= 3)
     
     const supabase = createApiClient()
     
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
       query = query.lte('start_date', endDate)
     }
     
-    // 레벨이 낮으면 자신의 것만
+    // 레벨이 낮으면(1~2) 자신의 것만
     if (!canViewAll) {
       const userId = request.headers.get('x-user-id')
       if (userId) {

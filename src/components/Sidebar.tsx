@@ -209,7 +209,15 @@ export default function Sidebar() {
             <div key={item.key}>
               <Button
                 variant="ghost"
-                onClick={() => (item.subItems ? toggleExpand(item.key) : router.push(item.href))}
+                onClick={() => {
+                  if (item.subItems) {
+                    toggleExpand(item.key)
+                  } else {
+                    setExpandedKey(null)
+                    setExpandedSubKey(null)
+                    router.push(item.href)
+                  }
+                }}
                 className={cn(
                   'mb-1 h-10 w-full justify-start',
                   isActive
