@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 작업 유형 검증 (프론트엔드와 일치)
-    const validWorkTypes = ['신규', '보완', 'AS', 'SS', 'OV', '기타']
+    const validWorkTypes = ['신규', '보완', '개발', 'AS', 'SS', 'OV', '기타']
     const validWorkSubTypes = ['내근', '출장', '외근', '전화', ''] // 빈 문자열 허용
     
     if (body.workType && !validWorkTypes.includes(body.workType)) {

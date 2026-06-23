@@ -925,6 +925,7 @@ export default function WorkDiaryViewPage() {
                     <SelectContent>
                       <SelectItem value="신규">신규</SelectItem>
                       <SelectItem value="보완">보완</SelectItem>
+                      <SelectItem value="개발">개발</SelectItem>
                       <SelectItem value="AS">AS</SelectItem>
                       <SelectItem value="SS">SS</SelectItem>
                       <SelectItem value="OV">OV</SelectItem>

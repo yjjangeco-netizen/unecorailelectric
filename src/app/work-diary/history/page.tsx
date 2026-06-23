@@ -1156,7 +1156,7 @@ export default function WorkDiaryHistoryPage() {
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent className="bg-white">
-                    {['신규', '보완', 'AS', 'SS', 'OV', '기타'].map((type) => (
+                    {['신규', '보완', '개발', 'AS', 'SS', 'OV', '기타'].map((type) => (
                       <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
                   </SelectContent>
