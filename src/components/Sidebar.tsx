@@ -20,7 +20,11 @@ import { Button } from '@/components/ui/button'
 import { useUser } from '@/hooks/useUser'
 import { canAccessRoute } from '@/lib/routeAccess'
 
-const navigationItems = [
+type NavLeaf = { name: string; href: string }
+type NavSubItem = NavLeaf & { subItems?: NavLeaf[] }
+type NavItem = { name: string; href: string; icon: any; key: string; subItems?: NavSubItem[] }
+
+const navigationItems: NavItem[] = [
   { name: '대시보드', href: '/dashboard', icon: Home, key: 'dashboard' },
   { name: '재고관리', href: '/stock-management', icon: Package2, key: 'stock_view' },
   {
@@ -58,8 +62,15 @@ const navigationItems = [
     subItems: [
       { name: 'AS/SS 등록', href: '/as-ss?action=new' },
       { name: 'AS/SS 조회', href: '/as-ss' },
-      { name: '매뉴얼/알람 관리', href: '/manual-management' },
-      { name: '챗봇 관리', href: '/chatbot-management' }
+      {
+        name: '매뉴얼/알람 관리',
+        href: '/chatbot-management',
+        subItems: [
+          { name: '알람관리', href: '/chatbot-management?tab=alarm' },
+          { name: '챗봇관리', href: '/chatbot-management?tab=content' },
+          { name: '메뉴얼 관리', href: '/manual-management' }
+        ]
+      }
     ]
   },
   {
@@ -89,24 +100,54 @@ export default function Sidebar() {
   const { user, logout } = useUser()
   const isCollapsed = false
 
-  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+  // 한 번에 하나의 메뉴만 펼친다(아코디언). 클릭으로 토글하고, 다른 메뉴를 펼치면 이전 것은 닫힌다.
+  // (마우스 hover로 자동 열림/닫힘 하던 동작은 제거 — 자동으로 닫혀 불편하다는 요청)
+  const [expandedKey, setExpandedKey] = useState<string | null>(() => {
     const activeItem = navigationItems.find((item) =>
       item.subItems && item.subItems.some((sub) => pathname.startsWith(sub.href.split('?')[0]))
     )
-    return activeItem ? [activeItem.key] : []
+    return activeItem ? activeItem.key : null
   })
 
+  // 페이지 이동 시 현재 섹션은 자동으로 펼쳐 둔다(수동으로 다른 걸 열기 전까지 유지)
   useEffect(() => {
     const activeItem = navigationItems.find((item) =>
       item.subItems?.some((sub) => pathname.startsWith(sub.href.split('?')[0]))
     )
     if (activeItem) {
-      setExpandedItems((prev) => prev.includes(activeItem.key) ? prev : [...prev, activeItem.key])
+      setExpandedKey(activeItem.key)
     }
   }, [pathname])
 
   const toggleExpand = (key: string) => {
-    setExpandedItems((prev) => prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key])
+    setExpandedKey((prev) => (prev === key ? null : key))
+  }
+
+  // 2단계(하부메뉴) 펼침 상태 — 예: '매뉴얼/알람 관리' 아래 알람/챗봇/메뉴얼
+  const [expandedSubKey, setExpandedSubKey] = useState<string | null>(() => {
+    for (const item of navigationItems) {
+      const sub = item.subItems?.find((s) =>
+        s.subItems?.some((leaf) => pathname.startsWith(leaf.href.split('?')[0]))
+      )
+      if (sub) return sub.name
+    }
+    return null
+  })
+
+  useEffect(() => {
+    for (const item of navigationItems) {
+      const sub = item.subItems?.find((s) =>
+        s.subItems?.some((leaf) => pathname.startsWith(leaf.href.split('?')[0]))
+      )
+      if (sub) {
+        setExpandedSubKey(sub.name)
+        return
+      }
+    }
+  }, [pathname])
+
+  const toggleSubExpand = (name: string) => {
+    setExpandedSubKey((prev) => (prev === name ? null : name))
   }
 
   const filteredItems = navigationItems.filter((item) => {
@@ -158,26 +199,17 @@ export default function Sidebar() {
           const cleanHref = item.href.split('?')[0]
           const isActive = pathname === cleanHref ||
             (pathname.startsWith(cleanHref) && cleanHref !== '/') ||
-            item.subItems?.some((sub) => pathname.startsWith(sub.href.split('?')[0]))
-          const isExpanded = expandedItems.includes(item.key)
+            item.subItems?.some((sub) =>
+              pathname.startsWith(sub.href.split('?')[0]) ||
+              sub.subItems?.some((leaf) => pathname.startsWith(leaf.href.split('?')[0]))
+            )
+          const isExpanded = expandedKey === item.key
 
           return (
-            <div
-              key={item.key}
-              onMouseLeave={() => {
-                if (item.subItems && !isCollapsed && expandedItems.includes(item.key)) {
-                  toggleExpand(item.key)
-                }
-              }}
-            >
+            <div key={item.key}>
               <Button
                 variant="ghost"
-                onMouseEnter={() => {
-                  if (item.subItems && !isCollapsed && !expandedItems.includes(item.key)) {
-                    toggleExpand(item.key)
-                  }
-                }}
-                onClick={() => router.push(item.href)}
+                onClick={() => (item.subItems ? toggleExpand(item.key) : router.push(item.href))}
                 className={cn(
                   'mb-1 h-10 w-full justify-start',
                   isActive
@@ -209,6 +241,50 @@ export default function Sidebar() {
                       return true
                     })
                     .map((subItem) => {
+                      // 3단계 하부메뉴(예: 매뉴얼/알람 관리 > 알람/챗봇/메뉴얼)
+                      if (subItem.subItems) {
+                        const isSubExpanded = expandedSubKey === subItem.name
+                        const isSubActive = subItem.subItems.some((leaf) =>
+                          pathname.startsWith(leaf.href.split('?')[0])
+                        )
+                        return (
+                          <div key={subItem.name}>
+                            <Button
+                              variant="ghost"
+                              onClick={() => toggleSubExpand(subItem.name)}
+                              className={cn(
+                                'h-8 w-full justify-start text-sm',
+                                isSubActive ? 'font-medium text-white' : 'text-gray-500 hover:text-gray-300'
+                              )}
+                            >
+                              <div className="flex flex-1 items-center justify-between">
+                                <span>{subItem.name}</span>
+                                <ChevronRight className={cn('h-4 w-4 transition-transform', isSubExpanded && 'rotate-90')} />
+                              </div>
+                            </Button>
+                            {isSubExpanded && (
+                              <div className="ml-4 mt-1 space-y-1">
+                                {subItem.subItems.map((leaf) => {
+                                  const isLeafActive = pathname === leaf.href.split('?')[0]
+                                  return (
+                                    <Button
+                                      key={leaf.href}
+                                      variant="ghost"
+                                      onClick={() => router.push(leaf.href)}
+                                      className={cn(
+                                        'h-8 w-full justify-start text-sm',
+                                        isLeafActive ? 'font-medium text-white' : 'text-gray-500 hover:text-gray-300'
+                                      )}
+                                    >
+                                      {leaf.name}
+                                    </Button>
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      }
                       const isSubActive = pathname === subItem.href.split('?')[0]
                       return (
                         <Button
