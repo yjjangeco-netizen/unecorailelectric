@@ -5,7 +5,7 @@ import { useUser } from '@/hooks/useUser'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ExternalLink, FileText, Folder, RefreshCw, Search, Sparkles } from 'lucide-react'
+import { ExternalLink, FileText, Folder, RefreshCw, Search, Sparkles, Upload } from 'lucide-react'
 
 type DriveNode = {
   id: string
@@ -91,6 +91,34 @@ export default function DriveBoard({ folderName, title, emptyMessage = '구글 �
       setLoading(false)
     }
   }, [folderName, headers, user?.id])
+
+  const [uploading, setUploading] = useState(false)
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !user?.id) return
+    setUploading(true)
+    setStatusMessage('')
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', folderName)
+      const res = await fetch('/api/work-tool/drive-upload', {
+        method: 'POST',
+        headers: { 'x-user-id': user.id },
+        body: formData
+      })
+      const data = await res.json()
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || '업로드 실패')
+      setStatusMessage(`✅ 업로드 완료: ${file.name}`)
+      loadFolderData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '업로드에 실패했습니다.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   useEffect(() => {
     loadFolderData()
@@ -179,6 +207,12 @@ export default function DriveBoard({ folderName, title, emptyMessage = '구글 �
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* 파일 업로드 (드라이브 original 폴더로) */}
+          <label className={`inline-flex cursor-pointer items-center rounded-md px-4 py-2 text-sm font-medium ${uploading ? 'bg-gray-300 text-gray-500' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}>
+            <Upload className={`mr-2 h-4 w-4 ${uploading ? 'animate-pulse' : ''}`} />
+            {uploading ? '업로드 중...' : '파일 업로드'}
+            <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} />
+          </label>
           {/* 스마트 분류 실행 버튼 */}
           <Button onClick={runDriveClassification} disabled={classifyLoading || loading} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
             <Sparkles className={`mr-2 h-4 w-4 text-blue-600 ${classifyLoading ? 'animate-pulse' : ''}`} />
