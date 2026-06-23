@@ -1,12 +1,16 @@
 'use client'
 
 import AuthGuard from '@/components/AuthGuard'
-import DriveBoard from '@/components/DriveBoard'
+import PostBoard from '@/components/PostBoard'
 
 export default function SOPPage() {
   return (
     <AuthGuard>
-      <DriveBoard folderName="SOP" title="SOP 자료실" emptyMessage="구글 드라이브(manual/SOP)에 등록된 SOP 문서가 없습니다." />
+      <PostBoard
+        boardType="sop"
+        title="SOP 업무 절차서"
+        description="업무 절차서를 블로그처럼 직접 작성합니다. 글자 크기·색상·링크를 자유롭게 넣을 수 있어요."
+      />
     </AuthGuard>
   )
 }

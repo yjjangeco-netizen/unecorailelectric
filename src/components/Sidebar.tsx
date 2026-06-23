@@ -73,6 +73,7 @@ const navigationItems: NavItem[] = [
       }
     ]
   },
+  { name: '내 전용 게시판', href: '/my-board', icon: StickyNote, key: 'my_board' },
   {
     name: 'Nara',
     href: '/nara-monitoring',
@@ -163,6 +164,7 @@ export default function Sidebar() {
     if (item.key === 'memo') return ['1', '2', '3', '4', '5'].includes(level)
     if (item.key === 'work_tools') return user?.work_tools === true || ['2', '3', '4', '5'].includes(level)
     if (item.key === 'as_ss') return true
+    if (item.key === 'my_board') return ['3', '4', '5'].includes(level)
     if (item.key === 'nara') return ['4', '5'].includes(level)
     if (item.key === 'settings') return level === '5'
     return false
