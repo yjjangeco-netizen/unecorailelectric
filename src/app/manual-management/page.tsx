@@ -72,6 +72,9 @@ export default function ManualManagementPage() {
   const [googleRequired, setGoogleRequired] = useState(false)
   const [warning, setWarning] = useState('')
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const [syncFolder, setSyncFolder] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState('')
 
   const toggleExpand = (id: string) => {
     setExpandedItems((prev) => ({
@@ -165,6 +168,31 @@ export default function ManualManagementPage() {
       window.location.href = data.url
     } catch (error) {
       setWarning(error instanceof Error ? error.message : 'Google 연결에 실패했습니다.')
+    }
+  }
+
+  const handleManualSync = async () => {
+    if (!userId || syncing) return
+    const folderId = syncFolder.trim()
+    if (!folderId) {
+      setSyncMsg('드라이브 폴더 링크 또는 ID를 입력하세요.')
+      return
+    }
+    setSyncing(true)
+    setSyncMsg('동기화 중입니다... (파일이 많으면 시간이 걸립니다)')
+    try {
+      const res = await fetch('/api/chatbot-manuals/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(requestHeaders || {}) },
+        body: JSON.stringify({ folderId })
+      })
+      const data = await res.json()
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || '동기화에 실패했습니다.')
+      setSyncMsg(`✅ ${data.message || '동기화 완료'}`)
+    } catch (error) {
+      setSyncMsg(`❌ ${error instanceof Error ? error.message : '동기화에 실패했습니다.'}`)
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -362,6 +390,36 @@ export default function ManualManagementPage() {
             </Card>
           ) : (
             <>
+              <Card className="mb-6 border-blue-200">
+                <CardHeader>
+                  <CardTitle className="text-base">챗봇 매뉴얼 동기화 (구글 드라이브 · 의미검색)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    매뉴얼이 담긴 구글 드라이브 폴더 링크를 붙여넣고 동기화하면, 파일을 읽어 요약·검색어를
+                    만들고 의미검색용으로 색인해 QR 챗봇 답변에 연결합니다. 이미지 PDF는 자동 OCR합니다.
+                    파일이 많으면 끝날 때까지 여러 번 눌러주세요.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      value={syncFolder}
+                      onChange={(e) => setSyncFolder(e.target.value)}
+                      placeholder="https://drive.google.com/drive/folders/..."
+                      className="w-full flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    />
+                    <Button
+                      onClick={handleManualSync}
+                      disabled={syncing}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      {syncing ? '동기화 중...' : '매뉴얼 동기화'}
+                    </Button>
+                  </div>
+                  {syncMsg && <p className="text-sm text-gray-700">{syncMsg}</p>}
+                </CardContent>
+              </Card>
+
               <div className="mb-6 flex flex-wrap gap-2">
                 <Button
                   variant={activeType === 'manual' ? 'default' : 'outline'}

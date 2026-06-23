@@ -2,7 +2,7 @@
 
 import { useUser } from '@/hooks/useUser'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,6 +75,30 @@ export default function WorkDiaryViewPage() {
   const [selectedDiary, setSelectedDiary] = useState<any>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  // 대시보드 '결재 승인 대기 → 상세보기'로 진입 시 자동으로 해당 일지를 연다
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null)
+  const autoOpenedRef = useRef(false)
+
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search)
+    const date = sp.get('date')
+    const diaryId = sp.get('diaryId')
+    if (date) {
+      setSearchStartDate(date)
+      setSearchEndDate(date)
+    }
+    if (diaryId) setPendingOpenId(diaryId)
+  }, [])
+
+  useEffect(() => {
+    if (autoOpenedRef.current || !pendingOpenId || workDiaries.length === 0) return
+    const target = workDiaries.find((d: any) => String(d.id) === String(pendingOpenId))
+    if (target) {
+      setSelectedDiary(target)
+      setShowDetailModal(true)
+      autoOpenedRef.current = true
+    }
+  }, [workDiaries, pendingOpenId])
 
   // 인증 상태 확인 및 리다이렉트
   useEffect(() => {

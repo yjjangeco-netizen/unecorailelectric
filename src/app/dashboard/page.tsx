@@ -413,6 +413,7 @@ export default function DashboardPage() {
 
     try {
       // DB에서 연월차 데이터 로드
+      // 대시보드 위젯: 레벨3 이상/관리자는 팀 전체 예정 연차가 보인다 (서버에서 판단)
       const response = await fetch('/api/leave-requests', {
         headers: {
           'x-user-level': String(user.level || '1')
@@ -996,7 +997,7 @@ export default function DashboardPage() {
                                       <span className="text-rose-600 font-bold text-[11px] bg-rose-100 w-fit px-1.5 py-0.5 rounded mb-0.5">업무일지</span>
                                       <span className="font-bold text-gray-800">{item.user?.department} {item.user?.name} · {item.workDate}</span>
                                     </div>
-                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push('/work-diary/view')}>상세보기</Button>
+                                    <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => router.push(`/work-diary/view?diaryId=${item.id}&date=${item.workDate}`)}>상세보기</Button>
                                   </div>
                                 );
                               } else {
