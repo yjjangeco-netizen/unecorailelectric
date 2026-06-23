@@ -276,6 +276,7 @@ export type SyncResult = {
   ok: boolean
   created: number
   failed: number
+  removed: number
   indexedChunks: number
   totalFiles: number
   remaining: number
@@ -293,8 +294,29 @@ export async function syncManualsFromDrive(opts: {
   const supabase = getSupabaseAdmin()
 
   const files = await listFolderFiles(drive, folderId)
+  const driveIds = new Set(files.map((f) => f.id))
+
+  // 이 폴더에서 동기화됐던 매뉴얼 중 드라이브에서 사라진 것 = DB에서도 제거
+  // (구글 드라이브에서 직접 파일을 빼면 동기화 시 챗봇에서도 빠진다)
+  let removed = 0
+  const { data: folderManuals } = await supabase
+    .from('machine_manual_links')
+    .select('id, google_file_id')
+    .eq('document_group', folderId)
+    .not('google_file_id', 'is', null)
+  for (const m of folderManuals || []) {
+    if (!driveIds.has(m.google_file_id)) {
+      await supabase.from('machine_manual_chunks').delete().eq('google_file_id', m.google_file_id)
+      await supabase.from('machine_manual_links').delete().eq('id', m.id)
+      removed += 1
+    }
+  }
+
   if (!files.length) {
-    return { ok: true, created: 0, failed: 0, indexedChunks: 0, totalFiles: 0, remaining: 0, message: '폴더에 파일이 없습니다.' }
+    return {
+      ok: true, created: 0, failed: 0, removed, indexedChunks: 0, totalFiles: 0, remaining: 0,
+      message: removed ? `드라이브에서 삭제된 ${removed}건을 챗봇에서 제거했습니다.` : '폴더에 파일이 없습니다.'
+    }
   }
 
   const { data: existingRows } = await supabase
@@ -305,9 +327,11 @@ export async function syncManualsFromDrive(opts: {
 
   const pending = files.filter((f) => !existingById.has(f.id))
   if (!pending.length) {
+    const parts = [`이미 모든 파일(${files.length}건)이 동기화되어 있습니다.`]
+    if (removed) parts.push(`드라이브 삭제분 ${removed}건 제거`)
     return {
-      ok: true, created: 0, failed: 0, indexedChunks: 0, totalFiles: files.length, remaining: 0,
-      message: `이미 모든 파일(${files.length}건)이 동기화되어 있습니다.`
+      ok: true, created: 0, failed: 0, removed, indexedChunks: 0, totalFiles: files.length, remaining: 0,
+      message: parts.join(' · ')
     }
   }
 
@@ -331,6 +355,7 @@ export async function syncManualsFromDrive(opts: {
         google_file_id: file.id,
         google_drive_url: link,
         public_view_url: link,
+        document_group: folderId,
         machine_type,
         hardware_type,
         tags,
@@ -387,9 +412,10 @@ export async function syncManualsFromDrive(opts: {
   const remaining = pending.length - batch.length
   const parts = [`매뉴얼 ${created}건 동기화 완료`]
   if (indexedChunks) parts.push(`의미검색 ${indexedChunks}조각 색인`)
+  if (removed) parts.push(`드라이브 삭제분 ${removed}건 제거`)
   if (failed) parts.push(`실패 ${failed}건`)
   if (remaining > 0) parts.push(`남은 ${remaining}건 — 동기화를 다시 눌러주세요`)
   else parts.push(`전체 ${files.length}건 완료`)
 
-  return { ok: true, created, failed, indexedChunks, totalFiles: files.length, remaining, message: parts.join(' · ') }
+  return { ok: true, created, failed, removed, indexedChunks, totalFiles: files.length, remaining, message: parts.join(' · ') }
 }

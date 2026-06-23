@@ -12,7 +12,8 @@ const TABLE: Record<string, string> = {
   alarm: 'machine_alarm_codes',
   faq: 'machine_faq_entries',
   maintenance: 'machine_maintenance_items',
-  symptom: 'machine_symptom_guides'
+  symptom: 'machine_symptom_guides',
+  manual: 'machine_manual_links'
 }
 
 // 콤마/줄바꿈 문자열 → text[] 로 변환할 필드
@@ -62,6 +63,9 @@ export async function GET(request: NextRequest) {
     let q = sb.from(table).select('*')
     if (entity === 'profile') {
       q = q.order('created_at', { ascending: true })
+    } else if (entity === 'manual') {
+      // 드라이브에서 동기화된 학습데이터(매뉴얼)만
+      q = q.not('google_file_id', 'is', null).order('created_at', { ascending: false })
     } else {
       if (profileId) q = q.eq('machine_profile_id', profileId)
       q = q.order('updated_at', { ascending: false })
@@ -119,6 +123,17 @@ export async function DELETE(request: NextRequest) {
   if (!table || !id) return NextResponse.json({ error: 'entity/id가 필요합니다.' }, { status: 400 })
   try {
     const sb = getSupabaseAdmin()
+    // 매뉴얼은 의미검색 청크도 함께 제거
+    if (entity === 'manual') {
+      const { data: row } = await sb
+        .from('machine_manual_links')
+        .select('google_file_id')
+        .eq('id', id)
+        .maybeSingle()
+      if (row?.google_file_id) {
+        await sb.from('machine_manual_chunks').delete().eq('google_file_id', row.google_file_id)
+      }
+    }
     const { error } = await sb.from(table).delete().eq('id', id)
     if (error) throw error
     return NextResponse.json({ ok: true })

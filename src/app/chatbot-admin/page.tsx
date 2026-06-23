@@ -9,7 +9,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Plus, Trash2, Pencil, X } from 'lucide-react'
 
 // QR 챗봇 통합 관리자 (hectoraaa admin 포팅): 프로젝트/알람/FAQ/정비/증상
-type EntityKey = 'profile' | 'alarm' | 'faq' | 'maintenance' | 'symptom'
+type EntityKey = 'profile' | 'alarm' | 'faq' | 'maintenance' | 'symptom' | 'manual'
+
+// 화면에 노출하는 탭(매뉴얼=학습데이터는 폼이 아니라 동기화/목록)
+const TABS: { key: EntityKey; label: string }[] = [
+  { key: 'profile', label: '프로젝트' },
+  { key: 'alarm', label: '알람' },
+  { key: 'manual', label: '매뉴얼(학습데이터)' }
+]
 
 const MACHINE_TYPES: [string, string][] = [
   ['lathe', '선반'],
@@ -136,6 +143,141 @@ function labelOf(opts: [string, string][], v: string) {
   return opts.find((o) => o[0] === v)?.[1] || v || ''
 }
 
+// 매뉴얼(학습데이터) 탭 — 드라이브 동기화(추가) + 등록 목록 + 삭제(챗봇에서 제거)
+function ManualSection({ userId, headers }: { userId: string; headers?: Record<string, string> }) {
+  const [folder, setFolder] = useState('')
+  const [syncing, setSyncing] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [manuals, setManuals] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/chatbot-admin?entity=manual', { cache: 'no-store' })
+      const data = await res.json()
+      setManuals(Array.isArray(data.items) ? data.items : [])
+    } catch {
+      setManuals([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const connectGoogle = async () => {
+    if (!userId) return
+    try {
+      const res = await fetch('/api/assistant/google/connect', {
+        headers: { 'x-user-id': userId }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Google 연결 준비에 실패했습니다.')
+      window.location.href = data.url
+    } catch (e) {
+      setMsg('❌ ' + (e instanceof Error ? e.message : 'Google 연결에 실패했습니다.'))
+    }
+  }
+
+  const sync = async () => {
+    if (syncing) return
+    const folderId = folder.trim()
+    if (!folderId) {
+      setMsg('드라이브 폴더 링크 또는 ID를 입력하세요.')
+      return
+    }
+    setSyncing(true)
+    setMsg('동기화 중입니다... (파일이 많으면 시간이 걸립니다)')
+    try {
+      const res = await fetch('/api/chatbot-manuals/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(headers || {}) },
+        body: JSON.stringify({ folderId })
+      })
+      const data = await res.json()
+      if (!res.ok || data?.ok === false) throw new Error(data?.error || '동기화에 실패했습니다.')
+      setMsg('✅ ' + (data.message || '동기화 완료'))
+      load()
+    } catch (e) {
+      setMsg('❌ ' + (e instanceof Error ? e.message : '동기화에 실패했습니다.'))
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const removeManual = async (id: string) => {
+    if (!window.confirm('이 학습데이터(매뉴얼)를 챗봇에서 제거할까요?')) return
+    await fetch(`/api/chatbot-admin?entity=manual&id=${id}`, { method: 'DELETE', headers })
+    load()
+  }
+
+  return (
+    <div className="mt-4 space-y-4">
+      <Card className="border-blue-200">
+        <CardContent className="space-y-3 p-4">
+          <p className="text-sm text-gray-600">
+            구글 드라이브 폴더를 동기화하면 파일을 읽어 챗봇 의미검색에 <b>학습데이터로 추가</b>합니다.
+            드라이브에서 파일을 빼고 다시 동기화하면 <b>챗봇에서도 자동으로 빠집니다.</b> 아래 목록에서 직접 삭제할 수도 있습니다.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              value={folder}
+              onChange={(e) => setFolder(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
+              className="w-full flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            />
+            <Button onClick={sync} disabled={syncing} className="bg-blue-600 text-white hover:bg-blue-700">
+              {syncing ? '동기화 중...' : '드라이브 동기화'}
+            </Button>
+          </div>
+          {msg && <p className="text-sm text-gray-700">{msg}</p>}
+          <p className="text-xs text-gray-500">
+            &quot;Token expired/revoked&quot; 오류 시{' '}
+            <button onClick={connectGoogle} className="font-medium text-blue-600 underline">
+              Google 재연결
+            </button>
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <p className="mb-2 text-sm font-medium text-gray-700">등록된 학습데이터 ({manuals.length})</p>
+          {loading ? (
+            <p className="py-6 text-center text-sm text-gray-500">불러오는 중...</p>
+          ) : manuals.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-500">아직 동기화된 매뉴얼이 없습니다.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {manuals.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <a
+                    href={m.public_view_url || m.google_drive_url || '#'}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="truncate text-sm text-gray-800 hover:text-blue-600 hover:underline"
+                  >
+                    {m.title}
+                  </a>
+                  <button
+                    onClick={() => removeManual(m.id)}
+                    className="shrink-0 text-gray-400 hover:text-red-600"
+                    title="챗봇에서 제거"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function AdminConsole() {
   const { user } = useUser()
   const userId = user?.id || user?.username || ''
@@ -147,16 +289,16 @@ function AdminConsole() {
   const searchParams = useSearchParams()
   const tabParam = (searchParams.get('tab') || '') as EntityKey
   const [entity, setEntity] = useState<EntityKey>(
-    ENTITIES.some((e) => e.key === tabParam) ? tabParam : 'profile'
+    TABS.some((t) => t.key === tabParam) ? tabParam : 'profile'
   )
   // 사이드바에서 ?tab= 으로 들어오면 탭 전환(같은 페이지 내 쿼리 변경 대응)
   useEffect(() => {
-    if (tabParam && ENTITIES.some((e) => e.key === tabParam)) {
+    if (tabParam && TABS.some((t) => t.key === tabParam)) {
       setEntity(tabParam)
       setShowForm(false)
     }
   }, [tabParam])
-  const cfg = ENTITIES.find((e) => e.key === entity)!
+  const cfg = ENTITIES.find((e) => e.key === entity) || ENTITIES[0]
 
   const [profiles, setProfiles] = useState<any[]>([])
   const [profileId, setProfileId] = useState<string>('') // '' = 공통/전체
@@ -316,28 +458,28 @@ function AdminConsole() {
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <h1 className="text-2xl font-bold text-gray-900">챗봇 관리자</h1>
         <p className="mt-1 text-sm text-gray-600">
-          QR 챗봇이 사용하는 프로젝트·알람·FAQ·정비·증상을 한곳에서 관리합니다.
+          QR 챗봇이 사용하는 프로젝트·알람·매뉴얼(학습데이터)을 한곳에서 관리합니다.
         </p>
 
         {/* 엔티티 탭 */}
         <div className="mt-5 flex flex-wrap gap-2">
-          {ENTITIES.filter((e) => e.key === 'profile' || e.key === 'alarm').map((e) => (
+          {TABS.map((t) => (
             <Button
-              key={e.key}
-              variant={entity === e.key ? 'default' : 'outline'}
+              key={t.key}
+              variant={entity === t.key ? 'default' : 'outline'}
               onClick={() => {
-                setEntity(e.key)
+                setEntity(t.key)
                 setShowForm(false)
                 setMsg('')
               }}
             >
-              {e.label}
+              {t.label}
             </Button>
           ))}
         </div>
 
-        {/* 프로젝트 선택 (알람/FAQ/정비/증상) */}
-        {entity !== 'profile' && (
+        {/* 프로젝트 선택 (알람만 — 매뉴얼/프로젝트 제외) */}
+        {entity === 'alarm' && (
           <div className="mt-4 flex items-center gap-2">
             <span className="text-sm text-gray-600">대상:</span>
             <select
@@ -358,6 +500,10 @@ function AdminConsole() {
 
         {msg && <div className="mt-3 text-sm text-gray-700">{msg}</div>}
 
+        {entity === 'manual' ? (
+          <ManualSection userId={userId} headers={headers} />
+        ) : (
+        <>
         <div className="mt-4 flex justify-end gap-2">
           {entity === 'alarm' && !showForm && (
             <label className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -462,6 +608,8 @@ function AdminConsole() {
             )}
           </CardContent>
         </Card>
+        </>
+        )}
       </div>
     </div>
   )
