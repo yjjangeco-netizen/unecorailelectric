@@ -7,13 +7,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useUser } from '@/hooks/useUser'
 import { cn } from '@/lib/utils'
-import { Archive, ArchiveRestore, CheckSquare, ListTodo, Plus, Search, Square, StickyNote, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckSquare, Plus, Search, Square, StickyNote, Trash2 } from 'lucide-react'
 import { syncWidgetMemos } from '@/lib/widgetSync'
 
-interface TodoItem {
+// 메모 안에 들어가는 체크박스(할일) 항목
+interface ChecklistItem {
   id: string
-  title: string
-  completed: boolean
+  text: string
+  done: boolean
 }
 
 type MemoColor = 'yellow' | 'blue' | 'green' | 'pink' | 'purple' | 'white'
@@ -25,8 +26,14 @@ type Memo = {
   color: MemoColor
   is_pinned: boolean
   archived: boolean
+  checklist?: ChecklistItem[]
   updated_at: string
 }
+
+const newId = () =>
+  (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
 const colorStyles: Record<MemoColor, string> = {
   yellow: 'bg-[#fff4b8] border-[#ead46a]',
@@ -49,8 +56,6 @@ const colorDots: Array<{ color: MemoColor; label: string }> = [
 export default function MemoPage() {
   const { user } = useUser()
   const [memos, setMemos] = useState<Memo[]>([])
-  const [todos, setTodos] = useState<TodoItem[]>([])
-  const [tab, setTab] = useState<'memo' | 'todo'>('memo')
   const [query, setQuery] = useState('')
   const [showArchived, setShowArchived] = useState(false)
   const [status, setStatus] = useState('')
@@ -73,9 +78,15 @@ export default function MemoPage() {
   useEffect(() => {
     if (!user?.id) return
     loadMemos()
-    loadTodos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, showArchived])
+
+  // 메모가 바뀔 때마다(생성·수정·삭제·보관) 홈 위젯 저장소를 즉시 갱신해
+  // 위젯이 다음 갱신 때 최신 데이터를 읽도록 한다. (활성 메모만 반영)
+  useEffect(() => {
+    if (!user?.id || showArchived) return
+    void syncWidgetMemos(memos)
+  }, [memos, showArchived, user?.id])
 
   // 홈 위젯 ＋ (action=new) → 새 메모 생성
   const widgetNewHandled = useRef(false)
@@ -108,8 +119,7 @@ export default function MemoPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.details || data.error || '메모 조회 실패')
       setMemos(data)
-      // 홈 위젯용 메모 동기화 (보관함이 아닌 활성 메모만)
-      if (!showArchived) void syncWidgetMemos(data)
+      // 위젯 동기화는 위의 memos 변경 useEffect가 처리
     } catch (error) {
       setStatus(error instanceof Error ? error.message : '메모를 불러오지 못했습니다.')
     } finally {
@@ -170,108 +180,34 @@ export default function MemoPage() {
     }
   }
 
-  // ── 할일(Todo) ────────────────────────────────────────────────
-  const loadTodos = async () => {
-    try {
-      const res = await fetch('/api/todos', { headers })
-      const data = await res.json()
-      if (!res.ok) return
-      const list = (Array.isArray(data) ? data : data.todos || [])
-        .filter((t: any) => (t.category || '') !== 'AI 자동화')
-        .map((t: any) => ({ id: t.id, title: t.title, completed: !!t.completed }))
-      setTodos(list)
-    } catch {
-      // 무시
-    }
-  }
-
-  const createTodo = async () => {
-    try {
-      const res = await fetch('/api/todos', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ title: '새 할일', category: '메모할일' })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || '할일 생성 실패')
-      setTodos((prev) => [{ id: data.id, title: data.title, completed: !!data.completed }, ...prev])
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : '할일 생성에 실패했습니다.')
-    }
-  }
-
-  const updateTodo = async (id: string, patch: Partial<TodoItem>) => {
-    setTodos((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t))
-    try {
-      await fetch(`/api/todos/${id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(patch)
-      })
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : '할일 저장에 실패했습니다.')
-    }
-  }
-
-  const deleteTodo = async (id: string) => {
-    try {
-      await fetch(`/api/todos/${id}`, { method: 'DELETE', headers })
-      setTodos((prev) => prev.filter((t) => t.id !== id))
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : '할일 삭제에 실패했습니다.')
-    }
-  }
-
   return (
     <AuthGuard requiredLevel={1}>
       <div className="min-h-screen bg-[#f4f5f7] p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-[1500px] space-y-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* 메모 / 할일 탭 */}
-            <div className="inline-flex w-fit rounded-lg border border-gray-200 bg-white p-1">
-              <button
-                onClick={() => setTab('memo')}
-                className={cn('flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors',
-                  tab === 'memo' ? 'bg-yellow-500 text-white' : 'text-gray-600 hover:bg-gray-100')}
-              >
-                <StickyNote className="h-4 w-4" /> 메모
-              </button>
-              <button
-                onClick={() => setTab('todo')}
-                className={cn('flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors',
-                  tab === 'todo' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100')}
-              >
-                <ListTodo className="h-4 w-4" /> 할일
-              </button>
+            <div className="flex items-center gap-2">
+              <StickyNote className="h-6 w-6 text-yellow-500" />
+              <h1 className="text-xl font-bold text-gray-900">메모 &amp; 할일</h1>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              {tab === 'memo' ? (
-                <>
-                  <div className="relative min-w-[240px]">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    <Input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="메모 검색"
-                      className="pl-9"
-                    />
-                  </div>
-                  <Button variant="outline" onClick={() => setShowArchived((prev) => !prev)}>
-                    {showArchived ? <ArchiveRestore className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
-                    {showArchived ? '활성 메모' : '보관함'}
-                  </Button>
-                  <Button onClick={createMemo}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    새 메모
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={createTodo}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  할일 추가
-                </Button>
-              )}
+              <div className="relative min-w-[240px]">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="메모 검색"
+                  className="pl-9"
+                />
+              </div>
+              <Button variant="outline" onClick={() => setShowArchived((prev) => !prev)}>
+                {showArchived ? <ArchiveRestore className="mr-2 h-4 w-4" /> : <Archive className="mr-2 h-4 w-4" />}
+                {showArchived ? '활성 메모' : '보관함'}
+              </Button>
+              <Button onClick={createMemo}>
+                <Plus className="mr-2 h-4 w-4" />
+                새 메모
+              </Button>
             </div>
           </div>
 
@@ -281,49 +217,27 @@ export default function MemoPage() {
             </div>
           )}
 
-          {tab === 'memo' ? (
-            loading ? (
-              <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-gray-500">
-                메모를 불러오는 중...
-              </div>
-            ) : filteredMemos.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-                <StickyNote className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-                <p className="font-medium text-gray-700">아직 메모가 없습니다.</p>
-                <p className="mt-1 text-sm text-gray-500">새 메모를 눌러 첫 메모를 남겨보세요.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {filteredMemos.map((memo) => (
-                  <MemoCard
-                    key={memo.id}
-                    memo={memo}
-                    onUpdate={(patch) => updateMemo(memo.id, patch)}
-                    onDelete={() => deleteMemo(memo.id)}
-                  />
-                ))}
-              </div>
-            )
+          {loading ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-gray-500">
+              메모를 불러오는 중...
+            </div>
+          ) : filteredMemos.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
+              <StickyNote className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+              <p className="font-medium text-gray-700">아직 메모가 없습니다.</p>
+              <p className="mt-1 text-sm text-gray-500">새 메모를 눌러 첫 메모를 남겨보세요. 메모 안에서 할일 체크박스도 추가할 수 있어요.</p>
+            </div>
           ) : (
-            todos.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
-                <ListTodo className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-                <p className="font-medium text-gray-700">할일이 없습니다.</p>
-                <p className="mt-1 text-sm text-gray-500">할일 추가를 눌러 새 할일을 만들어보세요.</p>
-              </div>
-            ) : (
-              <div className="mx-auto max-w-2xl space-y-2">
-                {todos.map((todo) => (
-                  <TodoRow
-                    key={todo.id}
-                    todo={todo}
-                    onToggle={() => updateTodo(todo.id, { completed: !todo.completed })}
-                    onTitle={(title) => updateTodo(todo.id, { title })}
-                    onDelete={() => deleteTodo(todo.id)}
-                  />
-                ))}
-              </div>
-            )
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {filteredMemos.map((memo) => (
+                <MemoCard
+                  key={memo.id}
+                  memo={memo}
+                  onUpdate={(patch) => updateMemo(memo.id, patch)}
+                  onDelete={() => deleteMemo(memo.id)}
+                />
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -342,11 +256,23 @@ function MemoCard({
 }) {
   const [title, setTitle] = useState(memo.title)
   const [content, setContent] = useState(memo.content)
+  const checklist = memo.checklist ?? []
 
   useEffect(() => {
     setTitle(memo.title)
     setContent(memo.content)
   }, [memo.title, memo.content])
+
+  const doneCount = checklist.filter((c) => c.done).length
+
+  const addCheckItem = () =>
+    onUpdate({ checklist: [...checklist, { id: newId(), text: '', done: false }] })
+  const toggleCheckItem = (id: string) =>
+    onUpdate({ checklist: checklist.map((c) => c.id === id ? { ...c, done: !c.done } : c) })
+  const editCheckItem = (id: string, text: string) =>
+    onUpdate({ checklist: checklist.map((c) => c.id === id ? { ...c, text } : c) })
+  const removeCheckItem = (id: string) =>
+    onUpdate({ checklist: checklist.filter((c) => c.id !== id) })
 
   return (
     <article className={cn('flex min-h-[260px] flex-col rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md', colorStyles[memo.color])}>
@@ -375,8 +301,53 @@ function MemoCard({
         onChange={(e) => setContent(e.target.value)}
         onBlur={() => onUpdate({ content })}
         placeholder="메모를 입력하세요"
-        className="min-h-[150px] flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 text-gray-800 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+        className="min-h-[80px] flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 text-gray-800 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
       />
+
+      {/* 체크리스트(할일) */}
+      <div className="mt-2 border-t border-black/5 pt-2">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-500">
+            할일 {checklist.length > 0 && `(${doneCount}/${checklist.length})`}
+          </span>
+          <button
+            onClick={addCheckItem}
+            className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs text-gray-500 hover:bg-white/60"
+            title="할일 추가"
+          >
+            <Plus className="h-3.5 w-3.5" /> 추가
+          </button>
+        </div>
+        <div className="space-y-1">
+          {checklist.map((item) => (
+            <div key={item.id} className="group flex items-center gap-2">
+              <button
+                onClick={() => toggleCheckItem(item.id)}
+                className={cn('shrink-0', item.done ? 'text-blue-600' : 'text-gray-400')}
+                title="완료 토글"
+              >
+                {item.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+              </button>
+              <input
+                defaultValue={item.text}
+                onBlur={(e) => { if (e.target.value !== item.text) editCheckItem(item.id, e.target.value) }}
+                placeholder="할일 내용"
+                className={cn(
+                  'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400',
+                  item.done && 'text-gray-400 line-through'
+                )}
+              />
+              <button
+                onClick={() => removeCheckItem(item.id)}
+                className="shrink-0 rounded p-0.5 text-gray-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
+                title="항목 삭제"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="flex gap-1">
@@ -412,52 +383,5 @@ function MemoCard({
         </div>
       </div>
     </article>
-  )
-}
-
-function TodoRow({
-  todo,
-  onToggle,
-  onTitle,
-  onDelete
-}: {
-  todo: TodoItem
-  onToggle: () => void
-  onTitle: (title: string) => void
-  onDelete: () => void
-}) {
-  const [title, setTitle] = useState(todo.title)
-
-  useEffect(() => {
-    setTitle(todo.title)
-  }, [todo.title])
-
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
-      <button
-        onClick={onToggle}
-        title="완료 토글"
-        className={cn('shrink-0', todo.completed ? 'text-blue-600' : 'text-gray-400')}
-      >
-        {todo.completed ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
-      </button>
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={() => { if (title !== todo.title) onTitle(title) }}
-        placeholder="할일 내용"
-        className={cn(
-          'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400',
-          todo.completed && 'text-gray-400 line-through'
-        )}
-      />
-      <button
-        onClick={onDelete}
-        className="shrink-0 rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-red-600"
-        title="삭제"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </div>
   )
 }
