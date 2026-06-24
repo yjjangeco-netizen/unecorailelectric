@@ -90,15 +90,38 @@ export default function WorkDiaryViewPage() {
     if (diaryId) setPendingOpenId(diaryId)
   }, [])
 
+  // 대시보드 '상세보기'로 진입(diaryId 존재) 시: 목록에 있으면 그걸 쓰고,
+  // 없으면(다른 날짜·페이지·권한 필터) 단건 API로 직접 불러와 모달을 연다.
   useEffect(() => {
-    if (autoOpenedRef.current || !pendingOpenId || workDiaries.length === 0) return
-    const target = workDiaries.find((d: any) => String(d.id) === String(pendingOpenId))
-    if (target) {
-      setSelectedDiary(target)
+    if (autoOpenedRef.current || !pendingOpenId || pendingOpenId === 'undefined') return
+
+    const inList = workDiaries.find((d: any) => String(d.id) === String(pendingOpenId))
+    if (inList) {
+      setSelectedDiary(inList)
       setShowDetailModal(true)
       autoOpenedRef.current = true
+      return
     }
-  }, [workDiaries, pendingOpenId])
+
+    // 목록 로딩이 끝났는데도 못 찾으면 단건 직접 조회
+    if (!loading) {
+      autoOpenedRef.current = true
+      ;(async () => {
+        try {
+          const res = await fetch(`/api/work-diary/${pendingOpenId}`)
+          if (res.ok) {
+            const json = await res.json()
+            if (json?.data) {
+              setSelectedDiary(json.data)
+              setShowDetailModal(true)
+            }
+          }
+        } catch (e) {
+          console.error('단건 업무일지 조회 실패:', e)
+        }
+      })()
+    }
+  }, [workDiaries, pendingOpenId, loading])
 
   // 인증 상태 확인 및 리다이렉트
   useEffect(() => {

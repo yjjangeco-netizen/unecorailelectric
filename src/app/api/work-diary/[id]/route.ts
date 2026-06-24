@@ -14,15 +14,55 @@ export async function GET(
 
     const supabase = supabaseServer
 
-    const { data, error } = await supabase
+    const { data: diary, error } = await supabase
       .from('work_diary')
       .select('*')
       .eq('id', id)
       .single()
 
-    if (error || !data) {
+    if (error || !diary) {
       console.error(`[GET] 업무일지 조회 실패:`, error)
       return NextResponse.json({ error: '업무일지를 찾을 수 없습니다.' }, { status: 404 })
+    }
+
+    // 프로젝트·작성자 정보 보강 (목록 API와 동일한 형태로 반환)
+    let project: any = null
+    if (diary.project_id) {
+      const { data: p } = await supabase
+        .from('projects')
+        .select('id, project_number, project_name, description')
+        .eq('id', diary.project_id)
+        .single()
+      if (p) project = { id: p.id, project_number: p.project_number || '', project_name: p.project_name || '', description: p.description || '' }
+    }
+
+    let user: any = null
+    if (diary.user_id) {
+      const { data: u } = await supabase
+        .from('users')
+        .select('id, name, level, department, position')
+        .eq('id', diary.user_id)
+        .single()
+      if (u) user = { id: u.id, name: u.name || '알 수 없음', level: u.level || 'user', department: u.department || '', position: u.position || '' }
+    }
+
+    const data = {
+      id: diary.id,
+      workDate: diary.work_date,
+      workContent: diary.work_content,
+      workType: diary.work_type || '',
+      workSubType: diary.work_sub_type || '',
+      customProjectName: diary.custom_project_name || '',
+      projectId: diary.project_id,
+      userId: diary.user_id,
+      createdAt: diary.created_at,
+      updatedAt: diary.updated_at,
+      isConfirmed: diary.is_confirmed || false,
+      adminComment: diary.admin_comment || '',
+      approvalStatus: diary.approval_status || 'pending',
+      work_hours: diary.work_hours || 0,
+      project,
+      user
     }
 
     return NextResponse.json({ data }, { status: 200 })
