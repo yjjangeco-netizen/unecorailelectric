@@ -28,7 +28,8 @@ export async function PUT(
     if (typeof body.archived === 'boolean') updateData.archived = body.archived
     if (Number.isFinite(body.position_x)) updateData.position_x = Number(body.position_x)
     if (Number.isFinite(body.position_y)) updateData.position_y = Number(body.position_y)
-    if (Array.isArray(body.checklist)) updateData.checklist = body.checklist
+    if (typeof body.done === 'boolean') updateData.done = body.done
+    if (Number.isInteger(body.share_level)) updateData.share_level = body.share_level
 
     const { data, error } = await supabaseServer
       .from('memos')

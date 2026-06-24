@@ -16,16 +16,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const includeArchived = searchParams.get('archived') === 'true'
 
-    let query = supabaseServer
-      .from('memos')
-      .select('*')
-      .eq('user_id', userId)
+    // 보는 사람의 레벨 (공유 메모 노출 판단용)
+    const levelRaw = (request.headers.get('x-user-level') || '').trim()
+    const isAdmin = levelRaw.toLowerCase() === 'administrator'
+    const numLevel = isAdmin ? 99 : (Number(levelRaw) || 0)
+
+    let query = supabaseServer.from('memos').select('*')
+
+    if (includeArchived) {
+      // 보관함은 본인 메모만 (보관 포함)
+      query = query.eq('user_id', userId)
+    } else {
+      // 활성 메모: 본인 것 OR 내 레벨에 공개된 남의 메모
+      query = query
+        .eq('archived', false)
+        .or(`user_id.eq.${userId},and(share_level.gte.1,share_level.lte.${numLevel})`)
+    }
+
+    query = query
       .order('is_pinned', { ascending: false })
       .order('updated_at', { ascending: false })
-
-    if (!includeArchived) {
-      query = query.eq('archived', false)
-    }
 
     const { data, error } = await query
 
@@ -64,6 +74,7 @@ export async function POST(request: NextRequest) {
         color,
         is_pinned: Boolean(body.is_pinned),
         archived: false,
+        share_level: Number.isInteger(body.share_level) ? body.share_level : 0,
         position_x: Number(body.position_x || 0),
         position_y: Number(body.position_y || 0),
         created_at: new Date().toISOString(),

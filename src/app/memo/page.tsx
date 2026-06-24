@@ -10,30 +10,32 @@ import { cn } from '@/lib/utils'
 import { Archive, ArchiveRestore, CheckSquare, Plus, Search, Square, StickyNote, Trash2 } from 'lucide-react'
 import { syncWidgetMemos } from '@/lib/widgetSync'
 
-// 메모 안에 들어가는 체크박스(할일) 항목
-interface ChecklistItem {
-  id: string
-  text: string
-  done: boolean
-}
-
 type MemoColor = 'yellow' | 'blue' | 'green' | 'pink' | 'purple' | 'white'
 
 type Memo = {
   id: string
+  user_id?: string
   title: string
   content: string
   color: MemoColor
   is_pinned: boolean
   archived: boolean
-  checklist?: ChecklistItem[]
+  done: boolean
+  share_level: number
   updated_at: string
 }
 
-const newId = () =>
-  (typeof crypto !== 'undefined' && crypto.randomUUID)
-    ? crypto.randomUUID()
-    : `c_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+// 공개 범위: 0=나만 보기(본인만), 1~5=해당 레벨 이상 공개, 99=관리자만
+const SHARE_OPTIONS: Array<{ value: number; label: string }> = [
+  { value: 0, label: '나만 보기' },
+  { value: 1, label: '레벨1 이상' },
+  { value: 2, label: '레벨2 이상' },
+  { value: 3, label: '레벨3 이상' },
+  { value: 4, label: '레벨4 이상' },
+  { value: 5, label: '레벨5 이상' },
+  { value: 99, label: '관리자만' }
+]
+const shareLabel = (v: number) => SHARE_OPTIONS.find((o) => o.value === v)?.label ?? '나만 보기'
 
 const colorStyles: Record<MemoColor, string> = {
   yellow: 'bg-[#fff4b8] border-[#ead46a]',
@@ -136,7 +138,8 @@ export default function MemoPage() {
           title: '',
           content: '',
           color: 'yellow',
-          is_pinned: false
+          is_pinned: false,
+          share_level: 0
         })
       })
       const data = await res.json()
@@ -225,7 +228,7 @@ export default function MemoPage() {
             <div className="rounded-lg border border-dashed border-gray-300 bg-white p-12 text-center">
               <StickyNote className="mx-auto mb-3 h-10 w-10 text-gray-300" />
               <p className="font-medium text-gray-700">아직 메모가 없습니다.</p>
-              <p className="mt-1 text-sm text-gray-500">새 메모를 눌러 첫 메모를 남겨보세요. 메모 안에서 할일 체크박스도 추가할 수 있어요.</p>
+              <p className="mt-1 text-sm text-gray-500">새 메모를 눌러 첫 메모를 남겨보세요. 앞의 체크박스를 켜면 할일로 쓸 수 있어요.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -233,6 +236,7 @@ export default function MemoPage() {
                 <MemoCard
                   key={memo.id}
                   memo={memo}
+                  isOwner={!memo.user_id || memo.user_id === (user?.id || '')}
                   onUpdate={(patch) => updateMemo(memo.id, patch)}
                   onDelete={() => deleteMemo(memo.id)}
                 />
@@ -247,53 +251,64 @@ export default function MemoPage() {
 
 function MemoCard({
   memo,
+  isOwner,
   onUpdate,
   onDelete
 }: {
   memo: Memo
+  isOwner: boolean
   onUpdate: (patch: Partial<Memo>) => void
   onDelete: () => void
 }) {
   const [title, setTitle] = useState(memo.title)
   const [content, setContent] = useState(memo.content)
-  const checklist = memo.checklist ?? []
 
   useEffect(() => {
     setTitle(memo.title)
     setContent(memo.content)
   }, [memo.title, memo.content])
 
-  const doneCount = checklist.filter((c) => c.done).length
-
-  const addCheckItem = () =>
-    onUpdate({ checklist: [...checklist, { id: newId(), text: '', done: false }] })
-  const toggleCheckItem = (id: string) =>
-    onUpdate({ checklist: checklist.map((c) => c.id === id ? { ...c, done: !c.done } : c) })
-  const editCheckItem = (id: string, text: string) =>
-    onUpdate({ checklist: checklist.map((c) => c.id === id ? { ...c, text } : c) })
-  const removeCheckItem = (id: string) =>
-    onUpdate({ checklist: checklist.filter((c) => c.id !== id) })
+  const done = !!memo.done
 
   return (
-    <article className={cn('flex min-h-[260px] flex-col rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md', colorStyles[memo.color])}>
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <article className={cn(
+      'flex min-h-[200px] flex-col rounded-lg border p-4 shadow-sm transition-shadow hover:shadow-md',
+      colorStyles[memo.color],
+      done && 'opacity-60'
+    )}>
+      <div className="mb-3 flex items-center gap-2">
+        {/* 메모 앞 체크박스 = 할일 완료 토글 */}
+        <button
+          onClick={() => isOwner && onUpdate({ done: !done })}
+          disabled={!isOwner}
+          className={cn('shrink-0', done ? 'text-blue-600' : 'text-gray-400', !isOwner && 'cursor-default')}
+          title={done ? '완료 해제' : '완료'}
+        >
+          {done ? <CheckSquare className="h-5 w-5" /> : <Square className="h-5 w-5" />}
+        </button>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={() => onUpdate({ title })}
           placeholder="제목"
-          className="min-w-0 flex-1 bg-transparent text-base font-bold text-gray-900 outline-none placeholder:text-gray-500"
-        />
-        <button
-          onClick={() => onUpdate({ is_pinned: !memo.is_pinned })}
+          readOnly={!isOwner}
           className={cn(
-            'rounded px-2 py-1 text-xs font-bold',
-            memo.is_pinned ? 'bg-gray-900 text-white' : 'bg-white/50 text-gray-500'
+            'min-w-0 flex-1 bg-transparent text-base font-bold text-gray-900 outline-none placeholder:text-gray-500',
+            done && 'text-gray-500 line-through'
           )}
-          title="고정"
-        >
-          PIN
-        </button>
+        />
+        {isOwner && (
+          <button
+            onClick={() => onUpdate({ is_pinned: !memo.is_pinned })}
+            className={cn(
+              'rounded px-2 py-1 text-xs font-bold',
+              memo.is_pinned ? 'bg-gray-900 text-white' : 'bg-white/50 text-gray-500'
+            )}
+            title="고정"
+          >
+            PIN
+          </button>
+        )}
       </div>
 
       <Textarea
@@ -301,87 +316,63 @@ function MemoCard({
         onChange={(e) => setContent(e.target.value)}
         onBlur={() => onUpdate({ content })}
         placeholder="메모를 입력하세요"
-        className="min-h-[80px] flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 text-gray-800 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+        readOnly={!isOwner}
+        className="min-h-[110px] flex-1 resize-none border-0 bg-transparent p-0 text-sm leading-6 text-gray-800 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
       />
 
-      {/* 체크리스트(할일) */}
-      <div className="mt-2 border-t border-black/5 pt-2">
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-xs font-semibold text-gray-500">
-            할일 {checklist.length > 0 && `(${doneCount}/${checklist.length})`}
-          </span>
-          <button
-            onClick={addCheckItem}
-            className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs text-gray-500 hover:bg-white/60"
-            title="할일 추가"
-          >
-            <Plus className="h-3.5 w-3.5" /> 추가
-          </button>
+      {/* 공유 메모(남의 글) 표시 */}
+      {!isOwner && (
+        <div className="mt-2 inline-flex w-fit items-center gap-1 rounded bg-white/60 px-2 py-0.5 text-xs text-gray-500">
+          공유됨 · {shareLabel(memo.share_level)} · 읽기 전용
         </div>
-        <div className="space-y-1">
-          {checklist.map((item) => (
-            <div key={item.id} className="group flex items-center gap-2">
+      )}
+
+      {isOwner && (
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex gap-1">
+            {colorDots.map((dot) => (
               <button
-                onClick={() => toggleCheckItem(item.id)}
-                className={cn('shrink-0', item.done ? 'text-blue-600' : 'text-gray-400')}
-                title="완료 토글"
-              >
-                {item.done ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-              </button>
-              <input
-                defaultValue={item.text}
-                onBlur={(e) => { if (e.target.value !== item.text) editCheckItem(item.id, e.target.value) }}
-                placeholder="할일 내용"
+                key={dot.color}
+                onClick={() => onUpdate({ color: dot.color })}
                 className={cn(
-                  'min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400',
-                  item.done && 'text-gray-400 line-through'
+                  'h-5 w-5 rounded-full border border-black/10',
+                  colorStyles[dot.color],
+                  memo.color === dot.color && 'ring-2 ring-gray-900 ring-offset-1'
                 )}
+                title={dot.label}
               />
-              <button
-                onClick={() => removeCheckItem(item.id)}
-                className="shrink-0 rounded p-0.5 text-gray-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
-                title="항목 삭제"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex gap-1">
-          {colorDots.map((dot) => (
+          <div className="flex items-center gap-1">
+            {/* 공개 범위 선택 */}
+            <select
+              value={memo.share_level ?? 0}
+              onChange={(e) => onUpdate({ share_level: Number(e.target.value) })}
+              className="rounded border border-black/10 bg-white/60 px-1.5 py-1 text-xs text-gray-700 outline-none"
+              title="공개 범위"
+            >
+              {SHARE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
             <button
-              key={dot.color}
-              onClick={() => onUpdate({ color: dot.color })}
-              className={cn(
-                'h-5 w-5 rounded-full border border-black/10',
-                colorStyles[dot.color],
-                memo.color === dot.color && 'ring-2 ring-gray-900 ring-offset-1'
-              )}
-              title={dot.label}
-            />
-          ))}
+              onClick={() => onUpdate({ archived: !memo.archived })}
+              className="rounded p-1.5 text-gray-600 hover:bg-white/50"
+              title={memo.archived ? '보관 해제' : '보관'}
+            >
+              {memo.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={onDelete}
+              className="rounded p-1.5 text-gray-600 hover:bg-white/50 hover:text-red-600"
+              title="삭제"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onUpdate({ archived: !memo.archived })}
-            className="rounded p-1.5 text-gray-600 hover:bg-white/50"
-            title={memo.archived ? '보관 해제' : '보관'}
-          >
-            {memo.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
-          </button>
-          <button
-            onClick={onDelete}
-            className="rounded p-1.5 text-gray-600 hover:bg-white/50 hover:text-red-600"
-            title="삭제"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      )}
     </article>
   )
 }
