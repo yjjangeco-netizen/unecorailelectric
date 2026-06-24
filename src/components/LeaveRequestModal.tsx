@@ -22,7 +22,7 @@ interface LeaveRequestModalProps {
 export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDate, event }: LeaveRequestModalProps) {
   const { user } = useUser()
   const [formData, setFormData] = useState({
-    leaveType: 'annual' as 'annual' | 'half_day' | 'sick' | 'personal' | 'early_leave',
+    leaveType: 'annual' as 'annual' | 'half_day' | 'sick' | 'personal' | 'early_leave' | 'other',
     startDate: '',
     endDate: '',
     startTime: '',
@@ -236,36 +236,12 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
                 <SelectValue placeholder="휴가 구분 선택" />
               </SelectTrigger>
               <SelectContent className="bg-white">
-                <SelectItem value="annual" className="hover:bg-blue-50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">📅</span>
-                    <span>연차 (하루)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="half_day" className="hover:bg-blue-50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">⏰</span>
-                    <span>반차 (오전/오후)</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="early_leave" className="hover:bg-blue-50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🏃</span>
-                    <span>조퇴</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="sick" className="hover:bg-blue-50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">🏥</span>
-                    <span>병가</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="personal" className="hover:bg-blue-50">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">✨</span>
-                    <span>개인 휴가</span>
-                  </div>
-                </SelectItem>
+                <SelectItem value="annual" className="hover:bg-blue-50">연차 (하루)</SelectItem>
+                <SelectItem value="half_day" className="hover:bg-blue-50">반차 (오전/오후)</SelectItem>
+                <SelectItem value="early_leave" className="hover:bg-blue-50">조퇴</SelectItem>
+                <SelectItem value="sick" className="hover:bg-blue-50">병가</SelectItem>
+                <SelectItem value="personal" className="hover:bg-blue-50">개인 휴가</SelectItem>
+                <SelectItem value="other" className="hover:bg-blue-50">기타</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -360,14 +336,14 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
           {/* 사유 */}
           <div className="space-y-2">
             <Label htmlFor="reason" className="text-sm font-semibold text-gray-700">
-              휴가 사유 <span className="text-red-500">*</span>
+              {formData.leaveType === 'other' ? '기타 사유' : '휴가 사유'} <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="reason"
               value={formData.reason}
               onChange={(e) => handleChange('reason', e.target.value)}
               className="min-h-[120px] border-2 border-gray-200 focus:border-blue-500 transition-colors resize-none"
-              placeholder="휴가 사유를 자세히 입력해주세요..."
+              placeholder={formData.leaveType === 'other' ? '기타 사유를 입력해주세요...' : '휴가 사유를 자세히 입력해주세요...'}
             />
           </div>
 
@@ -378,7 +354,7 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
                 <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-amber-900 mb-2 text-sm">📋 신청 안내사항</p>
+                <p className="font-bold text-amber-900 mb-2 text-sm">신청 안내사항</p>
                 <ul className="space-y-2 text-sm text-amber-800">
                   <li className="flex items-start gap-2">
                     <span className="text-amber-600 font-bold">•</span>
@@ -429,7 +405,7 @@ export default function LeaveRequestModal({ isOpen, onClose, onSave, selectedDat
               disabled={isSubmitting}
               className="h-12 px-6 text-base font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
             >
-              {isSubmitting ? (event ? '수정 중...' : '신청 중...') : (event ? '✅ 수정하기' : '✅ 신청하기')}
+              {isSubmitting ? (event ? '수정 중...' : '신청 중...') : (event ? '수정하기' : '신청하기')}
             </Button>
           </div>
         </DialogFooter>

@@ -177,7 +177,7 @@ function ManualSection({ userId, headers }: { userId: string; headers?: Record<s
       if (!res.ok) throw new Error(data?.error || 'Google 연결 준비에 실패했습니다.')
       window.location.href = data.url
     } catch (e) {
-      setMsg('❌ ' + (e instanceof Error ? e.message : 'Google 연결에 실패했습니다.'))
+      setMsg('' + (e instanceof Error ? e.message : 'Google 연결에 실패했습니다.'))
     }
   }
 
@@ -198,10 +198,10 @@ function ManualSection({ userId, headers }: { userId: string; headers?: Record<s
       })
       const data = await res.json()
       if (!res.ok || data?.ok === false) throw new Error(data?.error || '동기화에 실패했습니다.')
-      setMsg('✅ ' + (data.message || '동기화 완료'))
+      setMsg('' + (data.message || '동기화 완료'))
       load()
     } catch (e) {
-      setMsg('❌ ' + (e instanceof Error ? e.message : '동기화에 실패했습니다.'))
+      setMsg('' + (e instanceof Error ? e.message : '동기화에 실패했습니다.'))
     } finally {
       setSyncing(false)
     }
@@ -327,10 +327,10 @@ function AdminConsole() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'CSV 업로드 실패')
-      setMsg(`✅ CSV 일괄등록 완료${data['입력행'] ? `: ${data['입력행']}행` : ''}`)
+      setMsg(`CSV 일괄등록 완료${data['입력행'] ? `: ${data['입력행']}행` : ''}`)
       loadItems()
     } catch (err) {
-      setMsg('❌ ' + (err instanceof Error ? err.message : 'CSV 업로드 실패'))
+      setMsg('' + (err instanceof Error ? err.message : 'CSV 업로드 실패'))
     } finally {
       setCsvUploading(false)
     }
@@ -414,7 +414,7 @@ function AdminConsole() {
     const required = cfg.fields.filter((f) => f.required)
     for (const f of required) {
       if (!String(form[f.name] || '').trim()) {
-        setMsg(`❌ ${f.label}은(는) 필수입니다.`)
+        setMsg(`${f.label}은(는) 필수입니다.`)
         return
       }
     }
@@ -429,11 +429,11 @@ function AdminConsole() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || '저장 실패')
       setShowForm(false)
-      setMsg('✅ 저장 완료')
+      setMsg('저장 완료')
       if (entity === 'profile') loadProfiles()
       loadItems()
     } catch (e) {
-      setMsg('❌ ' + (e instanceof Error ? e.message : '저장 실패'))
+      setMsg('' + (e instanceof Error ? e.message : '저장 실패'))
     } finally {
       setSaving(false)
     }

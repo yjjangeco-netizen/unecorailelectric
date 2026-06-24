@@ -30,7 +30,7 @@ export default function ManualManagementPage() {
       if (!res.ok) throw new Error(data?.error || 'Google 연결 준비에 실패했습니다.')
       window.location.href = data.url
     } catch (e) {
-      setSyncMsg('❌ ' + (e instanceof Error ? e.message : 'Google 연결에 실패했습니다.'))
+      setSyncMsg('' + (e instanceof Error ? e.message : 'Google 연결에 실패했습니다.'))
     }
   }
 
@@ -51,9 +51,9 @@ export default function ManualManagementPage() {
       })
       const data = await res.json()
       if (!res.ok || data?.ok === false) throw new Error(data?.error || '동기화에 실패했습니다.')
-      setSyncMsg(`✅ ${data.message || '동기화 완료'}`)
+      setSyncMsg(`${data.message || '동기화 완료'}`)
     } catch (e) {
-      setSyncMsg(`❌ ${e instanceof Error ? e.message : '동기화에 실패했습니다.'}`)
+      setSyncMsg(`${e instanceof Error ? e.message : '동기화에 실패했습니다.'}`)
     } finally {
       setSyncing(false)
     }

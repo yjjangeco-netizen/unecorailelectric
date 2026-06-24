@@ -81,7 +81,7 @@ export default function RichTextEditor({
           className="rounded px-2 py-1 text-sm text-gray-700 hover:bg-gray-200"
           title="링크"
         >
-          🔗 링크
+          링크
         </button>
       </div>
       <div
