@@ -169,6 +169,24 @@ export default function Sidebar() {
     return false
   })
 
+  // 접근 가능한 메뉴 경로를 미리 로드(prefetch)해 화면 전환을 빠르게 한다.
+  // (클릭 후에야 로드하던 것을 앱 진입 시 백그라운드로 미리 받아둠)
+  useEffect(() => {
+    if (!user?.id) return
+    const hrefs = new Set<string>()
+    filteredItems.forEach((item) => {
+      hrefs.add(item.href.split('?')[0])
+      item.subItems?.forEach((s) => {
+        hrefs.add(s.href.split('?')[0])
+        s.subItems?.forEach((leaf) => hrefs.add(leaf.href.split('?')[0]))
+      })
+    })
+    hrefs.forEach((h) => { try { router.prefetch(h) } catch { /* 무시 */ } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.level])
+
+  const prefetch = (href: string) => { try { router.prefetch(href.split('?')[0]) } catch { /* 무시 */ } }
+
   return (
     <aside className={cn(
       'z-[60] flex h-screen flex-col border-r border-gray-800 bg-[#1c1c1c] text-white transition-all duration-300',
@@ -210,6 +228,8 @@ export default function Sidebar() {
             <div key={item.key}>
               <Button
                 variant="ghost"
+                onMouseEnter={() => prefetch(item.href)}
+                onPointerDown={() => prefetch(item.href)}
                 onClick={() => {
                   if (item.subItems) {
                     toggleExpand(item.key)
@@ -299,6 +319,8 @@ export default function Sidebar() {
                         <Button
                           key={subItem.href}
                           variant="ghost"
+                          onMouseEnter={() => prefetch(subItem.href)}
+                          onPointerDown={() => prefetch(subItem.href)}
                           onClick={() => router.push(subItem.href)}
                           className={cn(
                             'h-8 w-full justify-start text-sm',
