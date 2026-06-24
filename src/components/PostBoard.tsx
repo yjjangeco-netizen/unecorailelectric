@@ -49,7 +49,11 @@ export default function PostBoard({
   const [current, setCurrent] = useState<PostDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [searchField, setSearchField] = useState<'title' | 'author'>('title')
+  const [page, setPage] = useState(1)
   const [msg, setMsg] = useState('')
+
+  const PAGE_SIZE = 15
 
   // 작성 폼
   const [formTitle, setFormTitle] = useState('')
@@ -144,8 +148,18 @@ export default function PostBoard({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return posts
-    return posts.filter((p) => p.title.toLowerCase().includes(q))
-  }, [posts, search])
+    return posts.filter((p) => {
+      const target = searchField === 'author' ? p.author_name : p.title
+      return (target || '').toLowerCase().includes(q)
+    })
+  }, [posts, search, searchField])
+
+  // 검색어/필드 변경 또는 글 갱신 시 1페이지로
+  useEffect(() => { setPage(1) }, [search, searchField, posts])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const pageSafe = Math.min(page, totalPages)
+  const paged = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE)
 
   const fmtDate = (s: string) =>
     s ? new Date(s).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' }) : ''
@@ -185,37 +199,106 @@ export default function PostBoard({
 
         {mode === 'list' && (
           <Card>
-            <CardContent className="p-4">
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="제목 검색 (말머리 포함)"
-                  className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none"
-                />
+            <CardContent className="p-0">
+              {/* 게시판형 목록 (번호·제목·작성자·작성일·조회·파일) */}
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-y border-gray-300 bg-gray-50 text-gray-600">
+                      <th className="w-16 px-3 py-3 text-center font-semibold">번호</th>
+                      <th className="px-3 py-3 text-left font-semibold">제목</th>
+                      <th className="w-28 px-3 py-3 text-center font-semibold">작성자</th>
+                      <th className="w-28 px-3 py-3 text-center font-semibold">작성일</th>
+                      <th className="w-16 px-3 py-3 text-center font-semibold">조회</th>
+                      <th className="w-14 px-3 py-3 text-center font-semibold">파일</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-gray-500">불러오는 중...</td>
+                      </tr>
+                    ) : paged.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-gray-500">등록된 글이 없습니다.</td>
+                      </tr>
+                    ) : (
+                      paged.map((p, i) => {
+                        const no = filtered.length - ((pageSafe - 1) * PAGE_SIZE + i)
+                        return (
+                          <tr key={p.id} className="border-b border-gray-100 hover:bg-blue-50/40">
+                            <td className="px-3 py-3 text-center text-gray-500">{no}</td>
+                            <td className="px-3 py-3">
+                              <button
+                                onClick={() => openPost(p.id)}
+                                className="text-left font-medium text-gray-800 hover:text-blue-600 hover:underline"
+                              >
+                                {p.title}
+                              </button>
+                            </td>
+                            <td className="px-3 py-3 text-center text-gray-600">{p.author_name}</td>
+                            <td className="px-3 py-3 text-center text-gray-500">{fmtDate(p.created_at)}</td>
+                            <td className="px-3 py-3 text-center text-gray-500">{p.views || 0}</td>
+                            <td className="px-3 py-3 text-center text-gray-400">-</td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
-              {loading ? (
-                <p className="py-8 text-center text-sm text-gray-500">불러오는 중...</p>
-              ) : filtered.length === 0 ? (
-                <p className="py-8 text-center text-sm text-gray-500">등록된 글이 없습니다.</p>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {filtered.map((p) => (
-                    <li key={p.id}>
-                      <button
-                        onClick={() => openPost(p.id)}
-                        className="flex w-full items-center justify-between gap-3 px-1 py-3 text-left hover:bg-gray-50"
-                      >
-                        <span className="truncate font-medium text-gray-800">{p.title}</span>
-                        <span className="shrink-0 text-xs text-gray-400">
-                          {p.author_name} · {fmtDate(p.created_at)} · 조회 {p.views || 0}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+
+              {/* 페이지네이션 */}
+              <div className="flex items-center justify-center gap-1 py-5">
+                <button
+                  onClick={() => setPage((n) => Math.max(1, n - 1))}
+                  disabled={pageSafe <= 1}
+                  className="rounded px-2 py-1 text-sm text-gray-500 disabled:opacity-30 hover:bg-gray-100"
+                >
+                  이전
+                </button>
+                {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className={
+                      n === pageSafe
+                        ? 'min-w-8 rounded bg-gray-800 px-2 py-1 text-sm font-semibold text-white'
+                        : 'min-w-8 rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100'
+                    }
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((n) => Math.min(totalPages, n + 1))}
+                  disabled={pageSafe >= totalPages}
+                  className="rounded px-2 py-1 text-sm text-gray-500 disabled:opacity-30 hover:bg-gray-100"
+                >
+                  다음
+                </button>
+              </div>
+
+              {/* 하단 검색 */}
+              <div className="flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 py-4">
+                <select
+                  value={searchField}
+                  onChange={(e) => setSearchField(e.target.value as 'title' | 'author')}
+                  className="rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="title">제목</option>
+                  <option value="author">작성자</option>
+                </select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="검색어 입력"
+                    className="rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
