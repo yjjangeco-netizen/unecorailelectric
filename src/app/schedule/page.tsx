@@ -389,9 +389,7 @@ export default function SchedulePage() {
 
 
       setEvents(newEvents)
-
-      // 홈 위젯용 일정 데이터 동기화 (단말 저장 → 네이티브 위젯이 읽음)
-      void syncWidgetEvents(newEvents)
+      // 위젯 동기화는 아래 events 변경 useEffect가 처리
 
       // 5. Todos (?먮윭 臾댁떆)
       try {
@@ -425,6 +423,13 @@ export default function SchedulePage() {
       fetchEvents()
     }
   }, [isAuthenticated, fetchEvents])
+
+  // 일정이 바뀔 때마다(추가·수정·삭제·드래그 이동 등) 홈 위젯 저장소를 즉시 갱신해
+  // 위젯이 다음 갱신 때 최신 데이터를 읽도록 한다.
+  useEffect(() => {
+    if (!isAuthenticated) return
+    void syncWidgetEvents(events)
+  }, [events, isAuthenticated])
 
   const handleAddEvent = () => {
     setSelectedDate(null)
